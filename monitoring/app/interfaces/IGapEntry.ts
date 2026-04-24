@@ -32,6 +32,9 @@ export interface IGapEntry {
   // Will this gap be addressed during the current mentorship cycle?
   coveredInMentorship: boolean | null   // null = not yet decided
 
+  // If not covered now, should this gap be handled later?
+  coveringLater: boolean
+
   // Free-text: 'next session', 'within 2 weeks', '3 months', etc.
   timeline?: string
 
