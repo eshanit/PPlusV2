@@ -1,6 +1,8 @@
 export default defineNuxtConfig({
   compatibilityDate: '2025-01-01',
 
+  ssr: false,
+
   devtools: { enabled: true },
 
   // Nuxt 4: source files live in app/
@@ -23,11 +25,11 @@ export default defineNuxtConfig({
 
   // Runtime config — override via .env
   runtimeConfig: {
-    couchdbUrl: process.env.COUCHDB_URL ?? '',
-    couchdbUser: process.env.COUCHDB_USER ?? '',
-    couchdbPassword: process.env.COUCHDB_PASSWORD ?? '',
     public: {
       appName: 'PenPlus Monitoring',
+      // CouchDB URL including credentials, e.g. http://admin:pass@localhost:5984
+      // Set NUXT_PUBLIC_COUCHDB_URL in .env to override
+      couchdbUrl: process.env.NUXT_PUBLIC_COUCHDB_URL ?? 'http://admin:1234@localhost:5984',
     },
   },
 })

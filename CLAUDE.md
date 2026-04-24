@@ -346,51 +346,57 @@ that config map so `php artisan sync:couchdb --db=sessions` works as documented.
 
 ## 7. Current State
 
-### monitoring/
+### monitoring/ — SCAFFOLD ONLY, no business logic yet
 
-Created:
+Done:
 
-- Nuxt 4 app scaffold
-- Nuxt UI, Pinia, VueUse config
-- strict TypeScript config
-- `app/interfaces/*`
-- `app/data/evaluationItemData.ts`
-- placeholder layout/page/app files
-
-Still needed:
-
-- Add PouchDB dependencies.
-- Add Capacitor after core screens work.
-- Build `useDb`, session/gap/user/sync stores, and replication.
-- Build field workflows: login/user setup, district/facility/mentee selection,
-  session form, counselling scores, gap mapping, previous score display,
-  competency closure logic.
-- Prevent new sessions for closed `evaluationGroupId` journeys.
-
-### reporting/
-
-Created:
-
-- Laravel 12 app
-- Filament admin provider at `/admin`
-- Inertia middleware
-- CouchDB config
-- `SyncCouchDb` command
-- migrations for custom reporting schema
-- Eloquent models for custom tables
-- scheduled `sync:couchdb` every five minutes
+- Nuxt 4 app scaffold with Nuxt UI, Pinia, VueUse
+- Strict TypeScript config
+- `app/interfaces/` — all 6 interfaces (IItemScore, ISession, IGapEntry, IUserRef, IEvalItem, ITool)
+- `app/data/evaluationItemData.ts` — all 11 tools + DC1–DC9 counselling
+- Placeholder `app/app.vue`, `app/layouts/default.vue`, `app/pages/index.vue`
+- MCP servers configured in `PPlusV2/.mcp.json` (nuxt, nuxt-ui)
 
 Still needed:
 
-- Create the local MySQL database if it does not exist:
-  `CREATE DATABASE penplus_reporting CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`
-- Build `ToolsAndItemsSeeder`.
-- Fix `DatabaseSeeder` and `UserFactory` to match the custom `users` schema.
-- Make `SyncCouchDb` use `config('couchdb.databases')` instead of hardcoded DB
-  names.
-- Build Filament resources and widgets.
-- Add reporting queries/views for competency closure and time-to-competence.
-- Test migrations, seeding, and sync against sample CouchDB data.
+- Install PouchDB: `pnpm add pouchdb pouchdb-adapter-idb && pnpm add -D @types/pouchdb`
+- Create `app/composables/useDb.ts` (PouchDB init with idb adapter)
+- Create Pinia stores: `sessionStore`, `gapStore`, `userStore`, `syncStore`
+- Implement CouchDB replication
+- Build all field workflow screens: user setup, district/facility/mentee
+  selection, session form, counselling scores, gap mapping, previous score
+  display, competency closure logic
+- Add Capacitor after core screens work
+- Prevent new sessions for closed `evaluationGroupId` journeys
+
+### reporting/ — COMPLETE (admin panel fully operational)
+
+Done:
+
+- Laravel 12 + Filament 3 + Inertia 3 installed
+- `penplus_reporting` MySQL database created
+- All 14 migrations run: 10 tables + `v_sessions_numbered` + `v_session_averages` views
+- All 10 Eloquent models: User, District, Facility, Tool, ToolCategory,
+  EvaluationItem, EvaluationSession, SessionItemScore, GapEntry, SyncCheckpoint
+- `ToolsAndItemsSeeder` written and run — tools, categories, and items seeded
+- All 5 CouchDB databases created on the CouchDB server
+- `sync:couchdb` command verified working end-to-end
+- Scheduled sync every 5 minutes in `routes/console.php`
+- Filament admin panel live at `/admin` with 5 resources:
+  - `DistrictResource` — read-only list, facilities count (nav group: Reference Data)
+  - `FacilityResource` — read-only list, filter by district
+  - `UserResource` — clinician list, "Manage Access" edit for email/password
+  - `EvaluationSessionResource` — table with tool/district/phase/date filters, view page with item scores infolist
+  - `GapEntryResource` — table with tool/resolved filters, view modal infolist
+- Admin user created via tinker (email: `admin@penplus.local`)
+- User model implements `HasName` (`getFilamentName()`) for Filament panel display
+
+Still needed in reporting/:
+
+- Filament dashboard widgets (sessions count, scores by district/tool, etc.)
+- `v_evaluation_group_status` view for competency closure metrics
+  (`basic_competent`, `fully_competent`, `sessions_to_competence`, `days_to_competence`)
+- Reporting pages / charts for time-to-competence analysis
 
 ---
 
@@ -454,26 +460,51 @@ Processors:
 
 ## 10. Next Work Order
 
-1. Fix small schema/code mismatches:
-   - add `coveringLater` to `IGapEntry.ts`
-   - make `SyncCouchDb` use configured DB names
-   - fix `DatabaseSeeder`/`UserFactory`
-2. Build `ToolsAndItemsSeeder`.
-3. Add reporting competency status logic:
-   - `basic_competent`
-   - `fully_competent`
-   - `sessions_to_competence`
-   - `days_to_competence`
-4. Run migrations/seeder and test the sync command.
-5. Build initial Filament resources:
-   - Districts
-   - Facilities
-   - Mentees/users
-   - Evaluation sessions
-   - Gap entries
-6. Build monitoring PouchDB/stores/session workflow.
-7. Add closure guard in monitoring so completed mentee+tool journeys cannot
-   receive another session.
+Steps 1–5 of the original plan are complete. Remaining work in priority order:
+
+### Step 6 — monitoring PouchDB + stores (next up)
+
+1. Install PouchDB:
+
+   ```bash
+   pnpm add pouchdb pouchdb-adapter-idb
+   pnpm add -D @types/pouchdb
+   ```
+
+2. Create `app/composables/useDb.ts` — init PouchDB with idb adapter, export db instance.
+3. Create `app/stores/sessionStore.ts` — CRUD for sessions, computed `sessionNumber`.
+4. Create `app/stores/gapStore.ts` — CRUD for gap entries.
+5. Create `app/stores/userStore.ts` — current user, mentee list.
+6. Create `app/stores/syncStore.ts` — CouchDB replication state and status.
+7. Implement CouchDB live replication via PouchDB `.sync()`.
+
+### Step 7 — monitoring field workflow screens
+
+Build pages in this order:
+
+1. Login / user identity setup
+2. Mentee selection (list, search, new mentee)
+3. Tool selection for a mentee
+4. Session form (items + counselling scores, phase, notes)
+5. Gap mapping screen
+6. Mentee journey view (previous sessions, scores over time)
+7. Competency closure logic — block new sessions when `basic_competent`
+
+### Step 8 — Capacitor (after core screens work)
+
+```bash
+pnpm add @capacitor/core @capacitor/cli
+npx cap init "PenPlus" "com.solidarmed.penplus"
+pnpm add @capacitor/android
+npx cap add android
+```
+
+### Step 9 — reporting enhancements (lower priority)
+
+- `v_evaluation_group_status` view: `basic_competent`, `fully_competent`,
+  `sessions_to_competence`, `days_to_competence` per `evaluation_group_id`
+- Filament dashboard widgets: sessions count, avg score by district/tool
+- Competency progress charts
 
 ---
 

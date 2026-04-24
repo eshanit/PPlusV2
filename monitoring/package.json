@@ -16,10 +16,13 @@
     "@vueuse/nuxt": "^13.0.0",
     "nuxt": "^4.0.0",
     "pinia": "^3.0.0",
+    "pouchdb": "^9.0.0",
+    "pouchdb-adapter-idb": "^9.0.0",
     "vue": "^3.5.0",
     "vue-router": "^4.5.0"
   },
   "devDependencies": {
+    "@types/pouchdb": "^6.4.2",
     "@vueuse/core": "^13.0.0",
     "shadcn-vue": "^2.6.2",
     "typescript": "^5.8.0"
@@ -28,6 +31,7 @@
     "onlyBuiltDependencies": [
       "@parcel/watcher",
       "esbuild",
+      "leveldown",
       "vue-demi"
     ]
   }
