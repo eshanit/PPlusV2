@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Filament\Models\Contracts\FilamentUser;
+use Filament\Models\Contracts\HasName;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable implements FilamentUser
+class User extends Authenticatable implements FilamentUser, HasName
 {
     use HasFactory, Notifiable;
 
@@ -76,8 +77,13 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(GapEntry::class, 'mentee_id');
     }
 
-    public function getFullNameAttribute(): string
+    public function getFilamentName(): string
     {
         return "{$this->firstname} {$this->lastname}";
+    }
+
+    public function getFullNameAttribute(): string
+    {
+        return $this->getFilamentName();
     }
 }
