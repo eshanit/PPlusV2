@@ -6,4 +6,7 @@ export interface IUserRef {
   firstname: string
   lastname: string
   username: string
+  profession?: string
+  facilityId?: string
+  districtId?: string
 }

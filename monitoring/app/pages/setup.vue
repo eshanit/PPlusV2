@@ -130,4 +130,8 @@ function select(user: IUserRef) {
   userStore.setCurrentUser(user)
   router.push('/')
 }
+
+onMounted(() => {
+  syncStore.pullAll()
+})
 </script>
