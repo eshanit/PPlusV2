@@ -7,14 +7,24 @@
           <span class="font-semibold text-sm tracking-wide">PenPlus NCD</span>
         </NuxtLink>
 
-        <NuxtLink to="/setup" class="flex items-center gap-2 group" title="Change identity">
-          <span class="text-sm text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors hidden sm:block">
-            {{ userStore.currentUserFullName }}
-          </span>
-          <div class="size-8 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-700 dark:text-primary-300 font-semibold text-xs ring-2 ring-transparent group-hover:ring-primary-400 transition-all">
-            {{ userStore.currentUserInitials }}
-          </div>
-        </NuxtLink>
+        <div class="flex items-center gap-2">
+          <UButton
+            to="/sync"
+            variant="soft"
+            color="neutral"
+            size="sm"
+            icon="i-heroicons-arrow-path"
+          />
+
+          <NuxtLink to="/setup" class="flex items-center gap-2 group" title="Change identity">
+            <span class="text-sm text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors hidden sm:block">
+              {{ userStore.currentUserFullName }}
+            </span>
+            <div class="size-8 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-700 dark:text-primary-300 font-semibold text-xs ring-2 ring-transparent group-hover:ring-primary-400 transition-all">
+              {{ userStore.currentUserInitials }}
+            </div>
+          </NuxtLink>
+        </div>
       </div>
     </header>
 

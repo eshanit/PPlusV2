@@ -41,7 +41,7 @@
       <ul class="space-y-2">
         <li v-for="journey in journeys" :key="journey.groupId">
           <NuxtLink
-            :to="`/sessions/new?menteeId=${route.params.id}&toolSlug=${journey.toolSlug}`"
+            :to="`/sessions/journey?menteeId=${route.params.id}&toolSlug=${journey.toolSlug}`"
             class="block bg-white dark:bg-gray-900 rounded-xl px-4 py-3.5 shadow-sm border border-gray-100 dark:border-gray-800 hover:border-primary-300 dark:hover:border-primary-700 transition-colors"
           >
             <div class="flex items-start justify-between gap-3">

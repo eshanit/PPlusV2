@@ -2,6 +2,12 @@ import { defineStore } from 'pinia'
 import { useDb } from '~/composables/useDb'
 import type { ISession } from '~/interfaces/ISession'
 
+export interface PreviousScore {
+  score: number | null
+  date: number
+  sessionNumber: number
+}
+
 export const useSessionStore = defineStore('sessions', () => {
   const { sessionsDb } = useDb()
 
@@ -60,5 +66,49 @@ export const useSessionStore = defineStore('sessions', () => {
     return sessionsForGroup(session.evaluationGroupId).findIndex(s => s._id === session._id) + 1
   }
 
-  return { sessions, loading, loadAll, save, remove, sessionsForGroup, sessionNumber }
+  // Get the latest score for a specific item from previous sessions
+  function getLatestScore(evaluationGroupId: string, itemSlug: string): PreviousScore | null {
+    const groupSessions = sessionsForGroup(evaluationGroupId)
+    if (groupSessions.length === 0) return null
+
+    // Go through sessions in reverse order (newest first)
+    for (const session of [...groupSessions].reverse()) {
+      // Check tool items
+      const toolScore = session.itemScores?.find(s => s.itemSlug === itemSlug)
+      if (toolScore && toolScore.menteeScore !== null) {
+        return {
+          score: toolScore.menteeScore,
+          date: session.evalDate,
+          sessionNumber: sessionNumber(session),
+        }
+      }
+      // Check counselling items
+      const counsScore = session.counsellingScores?.find(s => s.itemSlug === itemSlug)
+      if (counsScore && counsScore.menteeScore !== null) {
+        return {
+          score: counsScore.menteeScore,
+          date: session.evalDate,
+          sessionNumber: sessionNumber(session),
+        }
+      }
+    }
+    return null
+  }
+
+  // Get total session count for a specific mentee+tool
+  function getSessionCount(evaluationGroupId: string): number {
+    return sessionsForGroup(evaluationGroupId).length
+  }
+
+  return {
+    sessions,
+    loading,
+    loadAll,
+    save,
+    remove,
+    sessionsForGroup,
+    sessionNumber,
+    getLatestScore,
+    getSessionCount,
+  }
 })

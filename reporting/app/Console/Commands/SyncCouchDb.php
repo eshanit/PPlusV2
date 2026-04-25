@@ -125,6 +125,7 @@ class SyncCouchDb extends Command
                 if ($change['deleted'] ?? false) {
                     $this->handleDeleted($logicalName, $dbName, $change['id']);
                     $processed++;
+
                     continue;
                 }
 
@@ -327,8 +328,8 @@ class SyncCouchDb extends Command
     }
 
     /**
-     * @param  array<int, array{itemSlug: string, menteeScore: int|null}>  $scores
-     * @return array<int, array{session_id: string, item_id: int, mentee_score: int|null}>
+     * @param  array<int, array{itemSlug: string, menteeScore: int|null, notes?: string}>  $scores
+     * @return array<int, array{session_id: string, item_id: int, mentee_score: int|null, notes: string|null}>
      */
     private function sessionScoreRows(string $sessionId, array $scores): array
     {
@@ -345,6 +346,7 @@ class SyncCouchDb extends Command
                 'session_id' => $sessionId,
                 'item_id' => (int) $itemId,
                 'mentee_score' => $score['menteeScore'],
+                'notes' => $score['notes'] ?? null,
             ];
         }
 

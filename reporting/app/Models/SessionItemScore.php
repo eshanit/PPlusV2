@@ -13,6 +13,7 @@ class SessionItemScore extends Model
         'session_id',
         'item_id',
         'mentee_score',
+        'notes',
     ];
 
     protected function casts(): array
