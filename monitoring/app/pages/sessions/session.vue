@@ -41,6 +41,17 @@ const itemMetadata = computed(() => toolItems.value.map(item => ({
   number: item.number,
   title: item.title,
 })))
+
+const phaseLabels: Record<string, string> = {
+  initial_intensive: 'Initial Intensive',
+  ongoing: 'Ongoing',
+  supervision: 'Supervision',
+}
+
+function phaseLabel(phase: string | null | undefined): string {
+  if (!phase) return '—'
+  return phaseLabels[phase] ?? phase
+}
 </script>
 
 <template>
@@ -78,7 +89,7 @@ const itemMetadata = computed(() => toolItems.value.map(item => ({
             <p class="text-xs text-gray-500 dark:text-gray-400">Average</p>
           </div>
           <div>
-            <p class="text-2xl font-bold text-gray-600 dark:text-gray-400">{{ session.phase }}</p>
+            <p class="text-2xl font-bold text-gray-600 dark:text-gray-400">{{ phaseLabel(session.phase) }}</p>
             <p class="text-xs text-gray-500 dark:text-gray-400">Phase</p>
           </div>
         </div>
@@ -115,6 +126,8 @@ const itemMetadata = computed(() => toolItems.value.map(item => ({
           {{ session.notes }}
         </p>
       </div>
+
+      <div class="pb-8" />
     </div>
 
     <!-- No session -->

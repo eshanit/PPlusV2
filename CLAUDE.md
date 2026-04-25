@@ -195,11 +195,14 @@ Verify grey shading with the clinical team before go-live.
 | Framework | Nuxt 4 (`future.compatibilityVersion = 4`, source in `app/`) |
 | UI | Nuxt UI 4.6.1 |
 | State | Pinia 3 + `@pinia/nuxt` |
-| Utilities | VueUse |
+| Utilities | VueUse 13 (`@vueuse/core` + `@vueuse/nuxt`) |
+| Date handling | `date-fns ^4.1.0` |
+| Utilities | `lodash-es ^4.18.1` (types: `@types/lodash-es`) |
 | TypeScript | Strict mode |
 | Package manager | pnpm 10.x |
-| Mobile | Capacitor planned, not yet added in PPlusV2 |
-| Sync | PouchDB planned, not yet added in PPlusV2 |
+| Local storage | PouchDB 9 + `pouchdb-adapter-idb` (installed, wired via `useDb.ts`) |
+| Mobile | Capacitor — planned, not yet added |
+| Sync | CouchDB live replication via PouchDB `.sync()` — planned, not yet wired |
 
 pnpm 10 blocks build scripts by default. Keep the `pnpm.onlyBuiltDependencies`
 allowlist in `package.json`.
@@ -346,28 +349,48 @@ that config map so `php artisan sync:couchdb --db=sessions` works as documented.
 
 ## 7. Current State
 
-### monitoring/ — SCAFFOLD ONLY, no business logic yet
+### monitoring/ — Core field workflow complete
 
 Done:
 
-- Nuxt 4 app scaffold with Nuxt UI, Pinia, VueUse
-- Strict TypeScript config
+- Nuxt 4 app scaffold with Nuxt UI, Pinia, VueUse, strict TypeScript
 - `app/interfaces/` — all 6 interfaces (IItemScore, ISession, IGapEntry, IUserRef, IEvalItem, ITool)
 - `app/data/evaluationItemData.ts` — all 11 tools + DC1–DC9 counselling
-- Placeholder `app/app.vue`, `app/layouts/default.vue`, `app/pages/index.vue`
 - MCP servers configured in `PPlusV2/.mcp.json` (nuxt, nuxt-ui)
+- PouchDB 9 + `pouchdb-adapter-idb` installed
+- `app/composables/useDb.ts` — PouchDB init with idb adapter, exports `sessionsDb` and `gapsDb`
+- Pinia stores: `sessionStore`, `gapStore`, `userStore`, `districtStore`, `syncStore`
+- `app/middleware/identity.global.ts` — redirects to `/setup` if no current user set
+- `app/plugins/init.client.ts` — loads stores on app start
+- Layouts: `default.vue`, `setup.vue`
+
+Pages built:
+
+- `setup.vue` — user identity setup (pick name/role before using the app)
+- `mentees/index.vue` — mentee list with search
+- `mentees/[id].vue` — mentee detail: tool selection, per-tool journey cards with competency status; guards closed journeys (blocks new session with toast)
+- `sessions/new.vue` — session form: tool items + counselling scores, phase selector, notes
+- `sessions/preview.vue` — session preview before save (reads counselling metadata from `counsellingTool`, not hardcoded)
+- `sessions/journey.vue` — journey view: session list sorted by date, competency banner, full gap management (log gap via `GapForm` drawer, resolve via modal)
+- `sessions/session.vue` — individual session detail: score summary, score distribution, item scores, counselling scores, session notes
+- `sync.vue` — sync status page
+
+Composables:
+
+- `useCompetency.ts` — `getCompetencyStatus(sessions, tool)` pure function + `useCompetency(sessions, tool)` reactive composable returning `status`, `isBasicCompetent`, `isFullyCompetent`
+- `useSessionCalculations.ts` — `calculateScoreCounts()`, `calculateAverage()`, `formatDate()`
+
+Components:
+
+- `session/`: `EvalItemRow`, `ItemCard`, `ScoreButtons`, `ScorePill`, `PhaseSelector`, `SaveBar`, `ProgressBar`, `ScoreDistribution`, `ItemScoresList`, `ScoreLegend`
+- `journey/`: `SummaryCard`, `SessionCard`
+- `gap/`: `GapCard`, `GapForm` (UDrawer bottom sheet)
 
 Still needed:
 
-- Install PouchDB: `pnpm add pouchdb pouchdb-adapter-idb && pnpm add -D @types/pouchdb`
-- Create `app/composables/useDb.ts` (PouchDB init with idb adapter)
-- Create Pinia stores: `sessionStore`, `gapStore`, `userStore`, `syncStore`
-- Implement CouchDB replication
-- Build all field workflow screens: user setup, district/facility/mentee
-  selection, session form, counselling scores, gap mapping, previous score
-  display, competency closure logic
-- Add Capacitor after core screens work
-- Prevent new sessions for closed `evaluationGroupId` journeys
+- CouchDB live replication via PouchDB `.sync()` — `syncStore` has state scaffolding but actual replication is not wired
+- Capacitor setup after core screens are validated on device
+- Login / authentication (currently just a name/role picker in setup.vue)
 
 ### reporting/ — COMPLETE (admin panel fully operational)
 
@@ -460,37 +483,26 @@ Processors:
 
 ## 10. Next Work Order
 
-Steps 1–5 of the original plan are complete. Remaining work in priority order:
+Steps 1–7 of the original plan are largely complete. Remaining work in priority order:
 
-### Step 6 — monitoring PouchDB + stores (next up)
+### Step 8 — CouchDB live replication
 
-1. Install PouchDB:
+`startSync()` and `stopSync()` in `syncStore.ts` are implemented and wire live PouchDB `.sync()` for all four databases. This is ready but has not been tested against a live CouchDB instance in PPlusV2.
 
-   ```bash
-   pnpm add pouchdb pouchdb-adapter-idb
-   pnpm add -D @types/pouchdb
-   ```
+### Storage cleanup
 
-2. Create `app/composables/useDb.ts` — init PouchDB with idb adapter, export db instance.
-3. Create `app/stores/sessionStore.ts` — CRUD for sessions, computed `sessionNumber`.
-4. Create `app/stores/gapStore.ts` — CRUD for gap entries.
-5. Create `app/stores/userStore.ts` — current user, mentee list.
-6. Create `app/stores/syncStore.ts` — CouchDB replication state and status.
-7. Implement CouchDB live replication via PouchDB `.sync()`.
+Implemented. `syncStore.runCleanup()` runs a journey-aware purge strategy:
 
-### Step 7 — monitoring field workflow screens
+1. **Compact both DBs** (`sessionsDb.compact()` + `gapsDb.compact()`) — removes MVCC revision history, always safe.
+2. **Skip in-progress journeys** — any `evaluationGroupId` where `getCompetencyStatus` returns `'in_progress'` is left untouched.
+3. **Purge old sessions from closed journeys** — for journeys that are `basic_competent` or `fully_competent`, remove all sessions except the latest, provided the session is `syncStatus === 'synced'` **and** older than 30 days (`createdAt` and `updatedAt` both before the cutoff).
+4. **Reload the session store** if any documents were removed.
 
-Build pages in this order:
+Exposed state: `cleanupRunning`, `lastCleanupAt`, `lastCleanupPurged`.
 
-1. Login / user identity setup
-2. Mentee selection (list, search, new mentee)
-3. Tool selection for a mentee
-4. Session form (items + counselling scores, phase, notes)
-5. Gap mapping screen
-6. Mentee journey view (previous sessions, scores over time)
-7. Competency closure logic — block new sessions when `basic_competent`
+The cleanup is triggered manually from `sync.vue` ("Clean Up" button). It can also be called programmatically after a successful sync cycle.
 
-### Step 8 — Capacitor (after core screens work)
+### Step 9 — Capacitor (after replication validated)
 
 ```bash
 pnpm add @capacitor/core @capacitor/cli
@@ -499,7 +511,9 @@ pnpm add @capacitor/android
 npx cap add android
 ```
 
-### Step 9 — reporting enhancements (lower priority)
+Use `pouchdb-adapter-idb` for web; switch to `pouchdb-adapter-cordova-sqlite` if needed on Android for better storage guarantees.
+
+### Step 10 — reporting enhancements (lower priority)
 
 - `v_evaluation_group_status` view: `basic_competent`, `fully_competent`,
   `sessions_to_competence`, `days_to_competence` per `evaluation_group_id`
@@ -523,3 +537,15 @@ npx cap add android
   there are no downstream foreign keys from that table.
 - The old app is useful for workflow/reporting reference, not as a data model to
   copy wholesale.
+- **USelect inside UModal**: `USelect` portals its dropdown to `<body>` by
+  default (`portal: true`). The modal overlay sits above the teleported dropdown
+  and blocks pointer events. Fix: add `:portal="false"` to `USelect` inside any
+  `UModal`. Not needed inside `UDrawer` — the drawer doesn't create a blocking
+  overlay layer.
+- **USelect empty-string values**: Nuxt UI reserves `''` as the "clear
+  selection" sentinel. Never add `{ value: '' }` items. For an optional select,
+  use `ref<MyType | undefined>(undefined)` and set `placeholder="Not specified"`
+  on the `USelect` instead of a blank item.
+- **Gaps are journey-scoped, not session-scoped**: `IGapEntry` links to
+  `evaluationGroupId`, not to a session `_id`. Gap management belongs on
+  `sessions/journey.vue`. Do not add gap sections to `sessions/session.vue`.

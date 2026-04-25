@@ -9,7 +9,7 @@ export function calculateScoreCounts(items: ItemScore[]): Record<string, number>
   items.forEach(s => {
     const scoreKey = s.menteeScore?.toString() ?? 'N/A'
     if (scoreKey in counts) {
-      counts[scoreKey]++
+      counts[scoreKey] = (counts[scoreKey] ?? 0) + 1
     }
   })
   return counts

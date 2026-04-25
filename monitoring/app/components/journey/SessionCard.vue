@@ -7,7 +7,9 @@ interface Props {
 
 const props = defineProps<Props>()
 
-function getPhaseColor(phase: string): string {
+type BadgeColor = 'primary' | 'success' | 'warning' | 'neutral'
+
+function getPhaseColor(phase: string): BadgeColor {
   if (phase === 'initial_intensive') return 'primary'
   if (phase === 'ongoing') return 'success'
   return 'warning'

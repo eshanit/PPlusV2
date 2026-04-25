@@ -21,7 +21,7 @@ const legendItems: LegendItem[] = [
       Score Legend
     </h3>
     <div class="space-y-2">
-      <div v-for="item in legendItems" :key="item.score" class="flex items-center gap-2">
+      <div v-for="item in legendItems" :key="item.score ?? 'na'" class="flex items-center gap-2">
         <div class="w-3 h-3 rounded-full" :class="item.color" />
         <span class="text-xs text-gray-600 dark:text-gray-300">
           {{ item.score ?? 'N/A' }} - {{ item.label }}

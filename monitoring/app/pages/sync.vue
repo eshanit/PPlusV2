@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import { formatDistanceToNow } from 'date-fns'
+import { useIntervalFn } from '@vueuse/core'
 import { useDb } from '~/composables/useDb'
 import { useUserStore } from '~/stores/userStore'
 import { useSessionStore } from '~/stores/sessionStore'
 import { useDistrictStore } from '~/stores/districtStore'
+import { useSyncStore } from '~/stores/syncStore'
 
 const router = useRouter()
 const toast = useToast()
@@ -11,6 +14,7 @@ const { usersDb, sessionsDb, districtsDb } = useDb()
 const userStore = useUserStore()
 const sessionStore = useSessionStore()
 const districtStore = useDistrictStore()
+const syncStore = useSyncStore()
 
 const syncing = ref({
   users: false,
@@ -102,12 +106,34 @@ async function syncDistricts() {
   }
 }
 
-function formatTime(ts: number | null): string {
-  if (!ts) return 'Never'
-  return new Date(ts).toLocaleTimeString(undefined, {
-    hour: 'numeric',
-    minute: 'numeric',
-  })
+const now = ref(Date.now())
+useIntervalFn(() => { now.value = Date.now() }, 30_000)
+
+function formatSyncTime(ts: number | null): string {
+  if (!ts) return 'Never synced'
+  void now.value
+  return formatDistanceToNow(ts, { addSuffix: true })
+}
+
+async function doCleanup() {
+  try {
+    const { purgedSessions } = await syncStore.runCleanup()
+    toast.add({
+      title: 'Cleanup complete',
+      description: purgedSessions > 0
+        ? `Removed ${purgedSessions} old session${purgedSessions !== 1 ? 's' : ''} from closed journeys`
+        : 'Nothing to remove — storage is already tidy',
+      color: 'success',
+      icon: 'i-heroicons-check-circle',
+    })
+  } catch (err) {
+    toast.add({
+      title: 'Cleanup failed',
+      description: err instanceof Error ? err.message : String(err),
+      color: 'error',
+      icon: 'i-heroicons-x-circle',
+    })
+  }
 }
 </script>
 
@@ -143,7 +169,7 @@ function formatTime(ts: number | null): string {
         <div>
           <h2 class="font-medium text-gray-900 dark:text-white">Users</h2>
           <p class="text-sm text-gray-500 dark:text-gray-400">
-            {{ userStore.allUsers.length }} users loaded · Last synced: {{ formatTime(lastSynced.users) }}
+            {{ userStore.allUsers.length }} users loaded · Last synced: {{ formatSyncTime(lastSynced.users) }}
           </p>
           <p v-if="errorMsg.users" class="text-xs text-red-500 mt-1">{{ errorMsg.users }}</p>
         </div>
@@ -167,7 +193,7 @@ function formatTime(ts: number | null): string {
         <div>
           <h2 class="font-medium text-gray-900 dark:text-white">Sessions / Evaluations</h2>
           <p class="text-sm text-gray-500 dark:text-gray-400">
-            {{ sessionStore.sessions.length }} sessions loaded · Last synced: {{ formatTime(lastSynced.sessions) }}
+            {{ sessionStore.sessions.length }} sessions loaded · Last synced: {{ formatSyncTime(lastSynced.sessions) }}
           </p>
           <p v-if="errorMsg.sessions" class="text-xs text-red-500 mt-1">{{ errorMsg.sessions }}</p>
         </div>
@@ -191,7 +217,7 @@ function formatTime(ts: number | null): string {
         <div>
           <h2 class="font-medium text-gray-900 dark:text-white">Districts</h2>
           <p class="text-sm text-gray-500 dark:text-gray-400">
-            {{ districtStore.districts.length }} districts loaded · Last synced: {{ formatTime(lastSynced.districts) }}
+            {{ districtStore.districts.length }} districts loaded · Last synced: {{ formatSyncTime(lastSynced.districts) }}
           </p>
           <p v-if="errorMsg.districts" class="text-xs text-red-500 mt-1">{{ errorMsg.districts }}</p>
         </div>
@@ -221,6 +247,35 @@ function formatTime(ts: number | null): string {
         <UIcon name="i-heroicons-arrow-path" class="w-5 h-5 mr-2" />
         Sync All
       </UButton>
+    </div>
+
+    <!-- Storage Cleanup -->
+    <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
+      <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="font-medium text-gray-900 dark:text-white">Storage Cleanup</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+              Removes old sessions from completed journeys · keeps latest session per journey
+            </p>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+              Last run: {{ formatSyncTime(syncStore.lastCleanupAt) }}
+              <span v-if="syncStore.lastCleanupAt && syncStore.lastCleanupPurged >= 0">
+                · {{ syncStore.lastCleanupPurged }} removed
+              </span>
+            </p>
+          </div>
+          <UButton
+            color="neutral"
+            variant="soft"
+            :loading="syncStore.cleanupRunning"
+            @click="doCleanup"
+          >
+            <UIcon name="i-heroicons-trash" class="w-4 h-4 mr-2" />
+            Clean Up
+          </UButton>
+        </div>
+      </div>
     </div>
   </div>
 </template>

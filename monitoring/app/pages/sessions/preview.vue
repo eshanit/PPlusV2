@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useSessionStore } from '~/stores/sessionStore'
 import { useUserStore } from '~/stores/userStore'
-import { getToolBySlug } from '~/data/evaluationItemData'
+import { getToolBySlug, counsellingTool } from '~/data/evaluationItemData'
 import type { MentorshipPhase } from '~/interfaces/ISession'
 import { calculateScoreCounts, calculateAverage, formatDate } from '~/composables/useSessionCalculations'
 import ScoreLegend from '~/components/session/ScoreLegend.vue'
@@ -15,7 +15,7 @@ const userStore = useUserStore()
 
 const saving = ref(false)
 const evalDateStr = ref(new Date().toISOString().split('T')[0])
-const phase = ref<MentorshipPhase | null>(null)
+const phase = ref<string | undefined>(undefined)
 const notes = ref('')
 
 interface PreviewItem {
@@ -49,7 +49,7 @@ onMounted(async () => {
       const data = JSON.parse(stored) as PreviewData
       previewData.value = data
       evalDateStr.value = data.evalDate
-      phase.value = data.phase
+      phase.value = data.phase ?? undefined
       notes.value = data.notes
       sessionStorage.removeItem('penplus_preview')
     } catch {
@@ -72,7 +72,8 @@ const totalItems = computed(() => {
 
 const averageScore = computed(() => {
   if (!previewData.value) return '0'
-  return calculateAverage(previewData.value.items)
+  const items = previewData.value.items.map(i => ({ itemSlug: i.slug, menteeScore: i.score, notes: i.notes }))
+  return calculateAverage(items)
 })
 
 const naCount = computed(() => {
@@ -82,13 +83,13 @@ const naCount = computed(() => {
 
 const toolAverageScore = computed(() => {
   if (!previewData.value) return '0'
-  const items = previewData.value.items.filter(i => i.type === 'tool')
+  const items = previewData.value.items.filter(i => i.type === 'tool').map(i => ({ itemSlug: i.slug, menteeScore: i.score, notes: i.notes }))
   return calculateAverage(items)
 })
 
 const dcAverageScore = computed(() => {
   if (!previewData.value) return '0'
-  const items = previewData.value.items.filter(i => i.type === 'counselling')
+  const items = previewData.value.items.filter(i => i.type === 'counselling').map(i => ({ itemSlug: i.slug, menteeScore: i.score, notes: i.notes }))
   return calculateAverage(items)
 })
 
@@ -104,18 +105,19 @@ const scoreCounts = computed(() => calculateScoreCounts(toolScoresForDistributio
 async function saveSession() {
   if (!previewData.value || !userStore.currentUser) return
   saving.value = true
+  const pData = previewData.value
   try {
-    const mentee = userStore.allUsers.find(u => u.id === previewData.value.menteeId)
-    const tool = getToolBySlug(previewData.value.toolSlug)
+    const mentee = userStore.allUsers.find(u => u.id === pData.menteeId)
+    const tool = getToolBySlug(pData.toolSlug)
     if (!mentee || !tool) {
       throw new Error('Invalid session data')
     }
     const now = Date.now()
     const evalDate = new Date(evalDateStr.value + 'T12:00:00').getTime()
-    const evaluationGroupId = `${previewData.value.menteeId}::${tool.slug}`
+    const evaluationGroupId = `${pData.menteeId}::${tool.slug}`
 
-    const toolItems = previewData.value.items.filter(i => i.type === 'tool')
-    const counsellingItems = previewData.value.items.filter(i => i.type === 'counselling')
+    const toolItems = pData.items.filter(i => i.type === 'tool')
+    const counsellingItems = pData.items.filter(i => i.type === 'counselling')
 
     await sessionStore.save({
       _id: '',
@@ -123,7 +125,9 @@ async function saveSession() {
       evaluationGroupId,
       mentee: {
         id: mentee.id,
-        name: `${mentee.firstname} ${mentee.lastname}`,
+        firstname: mentee.firstname,
+        lastname: mentee.lastname,
+        username: mentee.username ?? '',
         facilityId: mentee.facilityId,
         districtId: mentee.districtId,
       },
@@ -142,7 +146,7 @@ async function saveSession() {
         menteeScore: (item.score ?? null) as 1 | 2 | 3 | 4 | 5 | null,
         notes: item.notes?.trim() || undefined,
       })),
-      phase: phase.value,
+      phase: (phase.value ?? null) as MentorshipPhase | null,
       notes: notes.value.trim() || undefined,
       syncStatus: 'pending',
       createdAt: now,
@@ -150,7 +154,7 @@ async function saveSession() {
     })
 
     toast.add({ title: 'Session saved', color: 'success', icon: 'i-heroicons-check-circle' })
-    router.push(`/mentees/${previewData.value.menteeId}`)
+    router.push(`/mentees/${pData.menteeId}`)
   } catch (err) {
     toast.add({ title: 'Save failed', description: String(err), color: 'error', icon: 'i-heroicons-x-circle' })
   } finally {
@@ -198,20 +202,9 @@ const counsellingItemsData = computed(() => {
     }))
 })
 
-// Get counselling item metadata from evaluationItemData
-const counsellingItemMetadata = computed(() => {
-  return [
-    { slug: 'counselling-DC1', number: 'DC1', title: 'General Counselling 1' },
-    { slug: 'counselling-DC2', number: 'DC2', title: 'General Counselling 2' },
-    { slug: 'counselling-DC3', number: 'DC3', title: 'General Counselling 3' },
-    { slug: 'counselling-DC4', number: 'DC4', title: 'General Counselling 4' },
-    { slug: 'counselling-DC5', number: 'DC5', title: 'General Counselling 5' },
-    { slug: 'counselling-DC6', number: 'DC6', title: 'General Counselling 6' },
-    { slug: 'counselling-DC7', number: 'DC7', title: 'General Counselling 7' },
-    { slug: 'counselling-DC8', number: 'DC8', title: 'General Counselling 8' },
-    { slug: 'counselling-DC9', number: 'DC9', title: 'General Counselling 9' },
-  ]
-})
+const counsellingItemMetadata = computed(() =>
+  counsellingTool.items.map(item => ({ slug: item.slug, number: item.number, title: item.title }))
+)
 
 function goBack() {
   router.back()

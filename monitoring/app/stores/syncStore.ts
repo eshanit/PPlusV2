@@ -1,6 +1,9 @@
 import { defineStore } from 'pinia'
 import PouchDB from 'pouchdb'
 import { useDb } from '~/composables/useDb'
+import { getCompetencyStatus } from '~/composables/useCompetency'
+import { getToolBySlug } from '~/data/evaluationItemData'
+import type { ISession } from '~/interfaces/ISession'
 import { useSessionStore } from './sessionStore'
 import { useGapStore } from './gapStore'
 import { useUserStore } from './userStore'
@@ -116,6 +119,78 @@ export const useSyncStore = defineStore('sync', () => {
     districtsState.value = 'idle'
   }
 
+  const cleanupRunning = ref(false)
+  const lastCleanupAt = ref<number | null>(null)
+  const lastCleanupPurged = ref(0)
+
+  async function runCleanup(): Promise<{ purgedSessions: number }> {
+    if (cleanupRunning.value) return { purgedSessions: 0 }
+    cleanupRunning.value = true
+
+    try {
+      const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000
+      const cutoff = Date.now() - THIRTY_DAYS
+
+      // Step 1: compact both DBs — removes old MVCC revision history
+      await Promise.all([sessionsDb.compact(), gapsDb.compact()])
+
+      // Step 2: load all session docs directly from PouchDB
+      const result = await sessionsDb.allDocs<ISession>({ include_docs: true })
+      const allSessions = result.rows
+        .map(r => r.doc!)
+        .filter(d => d && d.type === 'session')
+
+      // Step 3: group by evaluationGroupId, sorted oldest-first (needed for competency check)
+      const groups = new Map<string, ISession[]>()
+      for (const session of allSessions) {
+        const list = groups.get(session.evaluationGroupId) ?? []
+        list.push(session)
+        groups.set(session.evaluationGroupId, list)
+      }
+      for (const list of groups.values()) {
+        list.sort((a, b) => a.evalDate - b.evalDate || a.createdAt - b.createdAt)
+      }
+
+      // Step 4: purge old synced sessions from closed journeys
+      let purgedSessions = 0
+
+      for (const groupSessions of groups.values()) {
+        const toolSlug = groupSessions[0]?.toolSlug
+        const tool = toolSlug ? getToolBySlug(toolSlug) : undefined
+        const status = getCompetencyStatus(groupSessions, tool)
+
+        // Skip journeys still in progress
+        if (status === 'in_progress') continue
+
+        // Keep the latest session — purge everything before it
+        const candidates = groupSessions.slice(0, -1)
+
+        for (const session of candidates) {
+          // 30-day floor: never purge recent data regardless of sync state
+          if (session.createdAt > cutoff || session.updatedAt > cutoff) continue
+          // Only purge what has been confirmed synced to the server
+          if (session.syncStatus !== 'synced') continue
+
+          const doc = await sessionsDb.get(session._id)
+          await sessionsDb.remove(doc)
+          purgedSessions++
+        }
+      }
+
+      // Step 5: reload the store so the UI reflects the purge
+      if (purgedSessions > 0) {
+        const sessionStore = useSessionStore()
+        await sessionStore.loadAll()
+      }
+
+      lastCleanupPurged.value = purgedSessions
+      lastCleanupAt.value = Date.now()
+      return { purgedSessions }
+    } finally {
+      cleanupRunning.value = false
+    }
+  }
+
   const isOnline = computed(() =>
     sessionsState.value === 'active' ||
     sessionsState.value === 'paused' ||
@@ -144,9 +219,13 @@ export const useSyncStore = defineStore('sync', () => {
     lastSyncedAt,
     isOnline,
     hasError,
+    cleanupRunning,
+    lastCleanupAt,
+    lastCleanupPurged,
     pullAll,
     pullUsers,
     startSync,
     stopSync,
+    runCleanup,
   }
 })

@@ -54,6 +54,21 @@
               </div>
               <div class="flex flex-col items-end gap-1.5 shrink-0">
                 <UBadge
+                  v-if="journey.competencyStatus === 'fully_competent'"
+                  label="Fully Competent"
+                  color="success"
+                  variant="solid"
+                  size="xs"
+                />
+                <UBadge
+                  v-else-if="journey.competencyStatus === 'basic_competent'"
+                  label="Basic Competent"
+                  color="success"
+                  variant="soft"
+                  size="xs"
+                />
+                <UBadge
+                  v-else
                   :label="formatPhase(journey.latestPhase)"
                   :color="phaseColor(journey.latestPhase)"
                   variant="soft"
@@ -85,18 +100,32 @@
         <ul class="divide-y divide-gray-100 dark:divide-gray-800 -mx-4 -my-3">
           <li v-for="tool in evaluationTools" :key="tool.slug">
             <button
-              class="w-full flex items-center justify-between px-4 py-3.5 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors text-left"
+              class="w-full flex items-center justify-between px-4 py-3.5 transition-colors text-left"
+              :class="journeys.find(j => j.toolSlug === tool.slug)?.isClosed
+                ? 'opacity-50 cursor-not-allowed'
+                : 'hover:bg-primary-50 dark:hover:bg-primary-900/20'"
               @click="startSession(tool.slug)"
             >
               <div>
                 <p class="font-medium text-gray-900 dark:text-white text-sm">{{ tool.label }}</p>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ tool.items.length }} items</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  <template v-if="journeys.find(j => j.toolSlug === tool.slug)?.isClosed">
+                    Competency reached — journey closed
+                  </template>
+                  <template v-else>
+                    {{ tool.items.length }} items
+                  </template>
+                </p>
               </div>
               <UIcon
-                v-if="hasJourney(tool.slug)"
+                v-if="journeys.find(j => j.toolSlug === tool.slug)?.isClosed"
+                name="i-heroicons-lock-closed"
+                class="size-4 text-success-500 shrink-0"
+              />
+              <UIcon
+                v-else-if="hasJourney(tool.slug)"
                 name="i-heroicons-arrow-path"
                 class="size-4 text-primary-500 shrink-0"
-                title="Continue existing journey"
               />
               <UIcon v-else name="i-heroicons-plus-circle" class="size-4 text-gray-400 shrink-0" />
             </button>
@@ -113,9 +142,11 @@ import { useSessionStore } from '~/stores/sessionStore'
 import { useGapStore } from '~/stores/gapStore'
 import { evaluationTools } from '~/data/evaluationItemData'
 import type { MentorshipPhase } from '~/interfaces/ISession'
+import { getCompetencyStatus, type CompetencyStatus } from '~/composables/useCompetency'
 
 const route = useRoute()
 const router = useRouter()
+const toast = useToast()
 const userStore = useUserStore()
 const sessionStore = useSessionStore()
 const gapStore = useGapStore()
@@ -139,6 +170,8 @@ interface Journey {
   lastSessionDate: number
   latestPhase: MentorshipPhase | null
   openGaps: number
+  competencyStatus: CompetencyStatus
+  isClosed: boolean
 }
 
 const journeys = computed((): Journey[] => {
@@ -159,6 +192,8 @@ const journeys = computed((): Journey[] => {
     const openGaps = gapStore.gaps.filter(
       g => g.evaluationGroupId === groupId && !g.resolvedAt
     ).length
+    const competencyStatus = getCompetencyStatus(sessions, tool)
+    const isClosed = competencyStatus === 'basic_competent' || competencyStatus === 'fully_competent'
 
     return {
       groupId,
@@ -168,6 +203,8 @@ const journeys = computed((): Journey[] => {
       lastSessionDate: sorted[0]!.evalDate,
       latestPhase: sorted[0]!.phase,
       openGaps,
+      competencyStatus,
+      isClosed,
     }
   }).sort((a, b) => b.lastSessionDate - a.lastSessionDate)
 })
@@ -197,6 +234,16 @@ function phaseColor(phase: MentorshipPhase | null): 'info' | 'success' | 'warnin
 }
 
 function startSession(toolSlug: string) {
+  const journey = journeys.value.find(j => j.toolSlug === toolSlug)
+  if (journey?.isClosed) {
+    toast.add({
+      title: 'Journey closed',
+      description: `${journey.toolLabel}: this mentee has reached basic competency. No further sessions can be added.`,
+      color: 'warning',
+      icon: 'i-heroicons-lock-closed',
+    })
+    return
+  }
   showToolPicker.value = false
   router.push(`/sessions/new?menteeId=${menteeId.value}&toolSlug=${toolSlug}`)
 }

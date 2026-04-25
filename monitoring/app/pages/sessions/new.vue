@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { format } from 'date-fns'
+import { onKeyStroke } from '@vueuse/core'
 import { useUserStore } from '~/stores/userStore'
 import { useSessionStore } from '~/stores/sessionStore'
 import { getToolBySlug, counsellingTool } from '~/data/evaluationItemData'
@@ -47,7 +49,7 @@ const totalPreviousSessions = computed(() => {
 })
 
 const phase = ref<MentorshipPhase | null>(null)
-const evalDateStr = ref(new Date().toISOString().split('T')[0]!)
+const evalDateStr = ref(format(new Date(), 'yyyy-MM-dd'))
 const notes = ref('')
 const saving = ref(false)
 
@@ -177,6 +179,9 @@ function goToItem(index: number) {
     currentIndex.value = index
   }
 }
+
+onKeyStroke('ArrowRight', (e) => { e.preventDefault(); next() })
+onKeyStroke('ArrowLeft', (e) => { e.preventDefault(); prev() })
 
 const isValid = computed(() => phase.value !== null && !!evalDateStr.value)
 
