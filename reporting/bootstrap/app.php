@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AdminOnly;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\ReportingAuth;
 use Illuminate\Foundation\Application;
@@ -17,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'reporting.auth' => ReportingAuth::class,
+            'admin' => AdminOnly::class,
         ]);
         $middleware->web(append: [
             HandleInertiaRequests::class,

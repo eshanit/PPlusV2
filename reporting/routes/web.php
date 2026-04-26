@@ -5,6 +5,7 @@ use App\Http\Controllers\ReportingDashboardController;
 use App\Http\Controllers\Reports\CohortProgressController;
 use App\Http\Controllers\Reports\EvaluatorActivityController;
 use App\Http\Controllers\Reports\ExportsController;
+use App\Http\Controllers\Reports\GapController;
 use App\Http\Controllers\Reports\GapOverviewController;
 use App\Http\Controllers\Reports\JourneyStatusController;
 use App\Http\Controllers\Reports\LowScoreWatchlistController;
@@ -31,6 +32,14 @@ Route::middleware('reporting.auth')->group(function () {
     Route::get('/exports/{path}', [ExportsController::class, 'download'])
         ->where('path', '.+')
         ->name('reports.exports.download');
+
+    Route::middleware('can:admin')->group(function () {
+        Route::get('/gaps', [GapController::class, 'index'])->name('reports.gaps');
+        Route::get('/gaps/search', [GapController::class, 'search'])->name('reports.gaps.search');
+        Route::get('/gaps/{id}', [GapController::class, 'show'])->name('reports.gaps.show');
+        Route::put('/gaps/{id}', [GapController::class, 'update'])->name('reports.gaps.update');
+        Route::delete('/gaps/{id}', [GapController::class, 'destroy'])->name('reports.gaps.destroy');
+    });
 });
 
 Route::get('/login', [LoginController::class, 'create'])->name('login');

@@ -11,50 +11,64 @@ import {
     Gauge,
     LayoutDashboard,
     LogOut,
+    Settings,
     Target,
     TrendingUp,
     UserCheck,
     X,
 } from 'lucide-vue-next';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 
 const page = usePage();
 const mobileOpen = ref(false);
 
 const auth = page.props.auth;
 
-const sections = [
-    {
-        label: 'Overview',
-        items: [
-            { href: '/', label: 'Dashboard', icon: LayoutDashboard },
-            { href: '/exports', label: 'Exports', icon: FileSpreadsheet },
-        ],
-    },
-    {
-        label: 'Journey Reports',
-        items: [
-            { href: '/journey-status', label: 'Journey Status', icon: Target },
-            { href: '/low-score-watchlist', label: 'Low-Score Watchlist', icon: Activity },
-            { href: '/gap-overview', label: 'Gap Overview', icon: ClipboardList },
-        ],
-    },
-    {
-        label: 'Trend Analysis',
-        items: [
-            { href: '/needs-attention', label: 'Needs Attention', icon: Clock },
-            { href: '/score-trajectory', label: 'Score Trajectory', icon: TrendingUp },
-            { href: '/time-to-competence', label: 'Time to Competence', icon: Gauge },
-            { href: '/cohort-progress', label: 'Cohort Progress', icon: BarChart3 },
-        ],
-    },
-    {
-        label: 'Evaluators',
-        items: [
-            { href: '/evaluator-activity', label: 'Evaluator Activity', icon: UserCheck },
-        ],
-    },
-];
+const sections = computed(() => {
+    const s = [
+        {
+            label: 'Overview',
+            items: [
+                { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+                { href: '/exports', label: 'Exports', icon: FileSpreadsheet },
+            ],
+        },
+        {
+            label: 'Journey Reports',
+            items: [
+                { href: '/journey-status', label: 'Journey Status', icon: Target },
+                { href: '/low-score-watchlist', label: 'Low-Score Watchlist', icon: Activity },
+                { href: '/gap-overview', label: 'Gap Overview', icon: ClipboardList },
+            ],
+        },
+        {
+            label: 'Trend Analysis',
+            items: [
+                { href: '/needs-attention', label: 'Needs Attention', icon: Clock },
+                { href: '/score-trajectory', label: 'Score Trajectory', icon: TrendingUp },
+                { href: '/time-to-competence', label: 'Time to Competence', icon: Gauge },
+                { href: '/cohort-progress', label: 'Cohort Progress', icon: BarChart3 },
+            ],
+        },
+        {
+            label: 'Evaluators',
+            items: [
+                { href: '/evaluator-activity', label: 'Evaluator Activity', icon: UserCheck },
+            ],
+        },
+    ];
+
+    if (auth?.user?.is_admin) {
+        s.push({
+            label: 'Admin',
+            items: [
+                { href: '/gaps', label: 'Gap Manager', icon: Settings },
+            ],
+        });
+    }
+
+    return s;
+});
 
 function isActive(href) {
     if (href === '/') return page.url === '/' || page.url === '/dashboard';

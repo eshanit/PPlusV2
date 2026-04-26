@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -61,6 +62,8 @@ class SyncCouchDb extends Command
                 $batchSize,
             );
         }
+
+        $this->clearReportCache();
 
         return self::SUCCESS;
     }
@@ -432,5 +435,37 @@ class SyncCouchDb extends Command
         }
 
         return date('Y-m-d H:i:s', intdiv((int) $ms, 1000));
+    }
+
+    private function clearReportCache(): void
+    {
+        $userIds = DB::table('users')->pluck('id')->toArray();
+        $districtIds = array_merge([null], DB::table('districts')->pluck('id')->toArray());
+
+        $keys = [
+            'report:dashboard:summary',
+            'report:dashboard:tool_progress',
+            'report:dashboard:district_progress',
+            'report:dashboard:recent_completions',
+            'report:dashboard:active_journeys',
+            'report:dashboard:gap_summary',
+            'report:journey_status',
+            'report:gap_overview',
+            'report:low_score_watchlist',
+            'report:needs_attention',
+            'report:evaluator_activity',
+        ];
+
+        foreach ($keys as $key) {
+            Cache::forget($key);
+
+            foreach ($userIds as $userId) {
+                foreach ($districtIds as $districtId) {
+                    Cache::forget("{$key}:user{$userId}:district{$districtId}");
+                }
+            }
+        }
+
+        $this->info('Cleared report caches.');
     }
 }
