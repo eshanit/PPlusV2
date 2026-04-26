@@ -114,7 +114,20 @@ const scoreColor = (score) => {
                                 </span>
                                 <span v-else class="text-muted-foreground/50">—</span>
                             </td>
-                            <td class="px-4 py-3 text-right tabular-nums">{{ j.totalSessions }}</td>
+                            <td class="px-4 py-3 text-right tabular-nums">
+                                <div class="group relative inline-block">
+                                    <Link
+                                        :href="`/journey-sessions?group_id=${encodeURIComponent(j.evaluationGroupId)}`"
+                                        class="font-semibold text-teal-600 underline decoration-dotted decoration-teal-400/60 underline-offset-2 hover:text-teal-700 hover:decoration-teal-600"
+                                    >
+                                        {{ j.totalSessions }}
+                                    </Link>
+                                    <div class="pointer-events-none absolute bottom-full right-0 z-20 mb-2 min-w-max translate-y-1 rounded-md border border-teal-300/60 bg-teal-400/20 px-3 py-1.5 text-xs font-medium text-teal-900 opacity-0 shadow-sm backdrop-blur-sm transition-all duration-150 group-hover:translate-y-0 group-hover:opacity-100">
+                                        Click to view {{ j.totalSessions === 1 ? 'the session' : 'all sessions' }}
+                                        <div class="absolute -bottom-1 right-3 size-2 rotate-45 border-b border-r border-teal-300/60 bg-teal-400/20 backdrop-blur-sm" />
+                                    </div>
+                                </div>
+                            </td>
                             <td class="px-4 py-3 text-right tabular-nums">
                                 <span :class="scoreColor(j.latestAvgScore)" class="font-medium">
                                     {{ j.latestAvgScore != null ? j.latestAvgScore.toFixed(1) : '—' }}

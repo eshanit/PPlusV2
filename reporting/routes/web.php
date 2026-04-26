@@ -7,6 +7,7 @@ use App\Http\Controllers\Reports\EvaluatorActivityController;
 use App\Http\Controllers\Reports\ExportsController;
 use App\Http\Controllers\Reports\GapController;
 use App\Http\Controllers\Reports\GapOverviewController;
+use App\Http\Controllers\Reports\JourneySessionsController;
 use App\Http\Controllers\Reports\JourneyStatusController;
 use App\Http\Controllers\Reports\LowScoreWatchlistController;
 use App\Http\Controllers\Reports\NeedsAttentionController;
@@ -20,6 +21,7 @@ Route::middleware('reporting.auth')->group(function () {
     Route::get('/dashboard', ReportingDashboardController::class)->name('dashboard.index');
 
     Route::get('/journey-status', JourneyStatusController::class)->name('reports.journey-status');
+    Route::get('/journey-sessions', JourneySessionsController::class)->name('reports.journey-sessions');
     Route::get('/low-score-watchlist', LowScoreWatchlistController::class)->name('reports.low-score-watchlist');
     Route::get('/gap-overview', GapOverviewController::class)->name('reports.gap-overview');
 
