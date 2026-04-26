@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Reports;
 
 use App\Http\Controllers\Controller;
+use App\Services\ReportScopeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -10,22 +11,13 @@ use Inertia\Response;
 
 class CohortProgressController extends Controller
 {
-    private function baseWhere(): string
-    {
-        $user = auth()->user();
+    public function __construct(private readonly ReportScopeService $scope) {}
 
-        if (! $user || $user->isAdmin() || ! $user->district_id) {
-            return '1=1';
-        }
-
-        return "sn.district_id = {$user->district_id}";
-    }
-
-    private function scopedDistricts()
+    private function scopedDistricts(): array
     {
         $user = auth()->user();
         if ($user && ! $user->isAdmin() && $user->district_id) {
-            return collect([]);
+            return [];
         }
 
         return DB::table('districts')->orderBy('name')->get(['id', 'name'])
@@ -40,7 +32,7 @@ class CohortProgressController extends Controller
         $rows = DB::table('v_sessions_numbered as sn')
             ->join('v_session_averages as sa', 'sa.session_id', '=', 'sn.id')
             ->join('tools', 'tools.id', '=', 'sn.tool_id')
-            ->whereRaw($this->baseWhere())
+            ->whereRaw(...$this->scope->scope('sn'))
             ->where('tools.slug', '!=', 'counselling')
             ->when($toolId, fn ($q) => $q->where('sn.tool_id', $toolId))
             ->when($districtId, fn ($q) => $q->where('sn.district_id', $districtId))

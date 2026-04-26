@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\District;
 use App\Models\EvaluationItem;
 use App\Models\Tool;
+use App\Services\ReportScopeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -20,16 +21,7 @@ class LowScoreWatchlistController extends Controller
         'total_journeys' => 'COUNT(*)',
     ];
 
-    private function baseWhere(): string
-    {
-        $user = auth()->user();
-
-        if (! $user || $user->isAdmin() || ! $user->district_id) {
-            return '1=1';
-        }
-
-        return "vlis.district_id = {$user->district_id}";
-    }
+    public function __construct(private readonly ReportScopeService $scope) {}
 
     private function scopedDistricts()
     {
@@ -61,7 +53,7 @@ class LowScoreWatchlistController extends Controller
             ->join('v_latest_item_scores as vlis', 'vlis.item_id', '=', 'evaluation_items.id')
             ->join('tools', 'tools.id', '=', 'evaluation_items.tool_id')
             ->where('tools.slug', '!=', 'counselling')
-            ->whereRaw($this->baseWhere())
+            ->whereRaw(...$this->scope->scope('vlis'))
             ->when($request->tool_id, fn ($q) => $q->where('evaluation_items.tool_id', $request->tool_id))
             ->when($request->district_id, fn ($q) => $q->where('vlis.district_id', $request->district_id))
             ->groupBy(

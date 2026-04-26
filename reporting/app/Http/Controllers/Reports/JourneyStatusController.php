@@ -6,27 +6,19 @@ use App\Http\Controllers\Controller;
 use App\Models\District;
 use App\Models\JourneySummary;
 use App\Models\Tool;
+use App\Services\ReportScopeService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class JourneyStatusController extends Controller
 {
-    private function baseWhere(): string
-    {
-        $user = auth()->user();
-
-        if (! $user || $user->isAdmin() || ! $user->district_id) {
-            return '1=1';
-        }
-
-        return "v_journey_summary.district_id = {$user->district_id}";
-    }
+    public function __construct(private readonly ReportScopeService $scope) {}
 
     public function __invoke(Request $request): Response
     {
         $query = JourneySummary::query()
-            ->whereRaw($this->baseWhere())
+            ->whereRaw(...$this->scope->scope('v_journey_summary'))
             ->when($request->tool_id, fn ($q) => $q->where('tool_id', $request->tool_id))
             ->when($request->district_id, fn ($q) => $q->where('district_id', $request->district_id))
             ->when($request->status, fn ($q) => $q->where('competency_status', $request->status))

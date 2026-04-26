@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Reports;
 
 use App\Http\Controllers\Controller;
+use App\Services\ReportScopeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -12,16 +13,7 @@ class TimeToCompetenceController extends Controller
 {
     private static array $BIN_LABELS = ['0–30d', '31–60d', '61–90d', '91–180d', '181d+'];
 
-    private function baseWhere(): string
-    {
-        $user = auth()->user();
-
-        if (! $user || $user->isAdmin() || ! $user->district_id) {
-            return '1=1';
-        }
-
-        return "vgs.district_id = {$user->district_id}";
-    }
+    public function __construct(private readonly ReportScopeService $scope) {}
 
     public function __invoke(Request $request): Response
     {
@@ -29,7 +21,7 @@ class TimeToCompetenceController extends Controller
 
         $rows = DB::table('v_evaluation_group_status as vgs')
             ->join('tools', 'tools.id', '=', 'vgs.tool_id')
-            ->whereRaw($this->baseWhere())
+            ->whereRaw(...$this->scope->scope('vgs'))
             ->where('tools.slug', '!=', 'counselling')
             ->whereNotNull('vgs.days_to_basic_competence')
             ->when($toolId, fn ($q) => $q->where('vgs.tool_id', $toolId))
@@ -54,7 +46,7 @@ class TimeToCompetenceController extends Controller
 
         $summary = DB::table('v_evaluation_group_status as vgs')
             ->join('tools', 'tools.id', '=', 'vgs.tool_id')
-            ->whereRaw($this->baseWhere())
+            ->whereRaw(...$this->scope->scope('vgs'))
             ->where('tools.slug', '!=', 'counselling')
             ->whereNotNull('vgs.days_to_basic_competence')
             ->when($toolId, fn ($q) => $q->where('vgs.tool_id', $toolId))

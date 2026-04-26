@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Reports;
 
 use App\Http\Controllers\Controller;
+use App\Services\ReportScopeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -10,22 +11,13 @@ use Inertia\Response;
 
 class EvaluatorActivityController extends Controller
 {
-    private function baseWhere(): string
-    {
-        $user = auth()->user();
+    public function __construct(private readonly ReportScopeService $scope) {}
 
-        if (! $user || $user->isAdmin() || ! $user->district_id) {
-            return '1=1';
-        }
-
-        return "es.district_id = {$user->district_id}";
-    }
-
-    private function scopedDistricts()
+    private function scopedDistricts(): array
     {
         $user = auth()->user();
         if ($user && ! $user->isAdmin() && $user->district_id) {
-            return collect([]);
+            return [];
         }
 
         return DB::table('districts')->orderBy('name')->get(['id', 'name'])
@@ -41,7 +33,7 @@ class EvaluatorActivityController extends Controller
             ->join('users as evaluators', 'evaluators.id', '=', 'es.evaluator_id')
             ->join('tools', 'tools.id', '=', 'es.tool_id')
             ->leftJoin('v_session_averages as sa', 'sa.session_id', '=', 'es.id')
-            ->whereRaw($this->baseWhere())
+            ->whereRaw(...$this->scope->scope('es'))
             ->where('tools.slug', '!=', 'counselling')
             ->when($month, fn ($q) => $q->whereRaw('DATE_FORMAT(es.eval_date, "%Y-%m") = ?', [$month]))
             ->when($districtId, fn ($q) => $q->where('es.district_id', $districtId))
@@ -65,19 +57,17 @@ class EvaluatorActivityController extends Controller
             ->all();
 
         $availableMonths = DB::table('evaluation_sessions as es')
-            ->whereRaw($this->baseWhere())
+            ->whereRaw(...$this->scope->scope('es'))
             ->selectRaw('DATE_FORMAT(es.eval_date, "%Y-%m") as month')
             ->groupByRaw('DATE_FORMAT(es.eval_date, "%Y-%m")')
             ->orderByRaw('DATE_FORMAT(es.eval_date, "%Y-%m") DESC')
             ->pluck('month')
             ->all();
 
-        $districts = $this->scopedDistricts();
-
         return Inertia::render('Reports/EvaluatorActivity', [
             'rows' => $rows,
             'availableMonths' => $availableMonths,
-            'districts' => $districts,
+            'districts' => $this->scopedDistricts(),
             'filters' => ['month' => $month, 'district_id' => $districtId],
         ]);
     }

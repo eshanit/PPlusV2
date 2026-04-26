@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\ReportScopeService;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -11,6 +12,8 @@ use Inertia\Response;
 class ReportingDashboardController extends Controller
 {
     private const CACHE_TTL = 300; // 5 minutes
+
+    public function __construct(private readonly ReportScopeService $scope) {}
 
     public function __invoke(): Response
     {
@@ -56,30 +59,6 @@ class ReportingDashboardController extends Controller
         return Cache::remember($key, $ttl, $fallback);
     }
 
-    private function baseWhere(string $table, string $column = 'district_id'): string
-    {
-        $user = auth()->user();
-
-        if (! $user || $user->isAdmin() || ! $user->district_id) {
-            return '1=1';
-        }
-
-        return "{$table}.{$column} = {$user->district_id}";
-    }
-
-    private function gapBaseWhere(): string
-    {
-        $user = auth()->user();
-
-        if (! $user || $user->isAdmin() || ! $user->district_id) {
-            return '1=1';
-        }
-
-        return "gap_entries.evaluation_group_id IN (
-            SELECT evaluation_group_id FROM evaluation_sessions WHERE district_id = {$user->district_id}
-        )";
-    }
-
     /**
      * @return array<string, mixed>
      */
@@ -117,8 +96,8 @@ class ReportingDashboardController extends Controller
     private function summary(): array
     {
         return $this->cached('summary', function () {
-            $where = $this->baseWhere('vgs');
-            $base = DB::table('v_evaluation_group_status as vgs')->whereRaw($where);
+            $base = DB::table('v_evaluation_group_status as vgs')
+                ->whereRaw(...$this->scope->scope('vgs'));
 
             $totalJourneys = (clone $base)->count();
             $basicComplete = (clone $base)->whereNotNull('sessions_to_basic_competence')->count();
@@ -133,7 +112,10 @@ class ReportingDashboardController extends Controller
                 'basicCompletionRate' => $this->rate($basicComplete, $totalJourneys),
                 'averageSessionsToBasic' => $this->average('sessions_to_basic_competence'),
                 'averageDaysToBasic' => $this->average('days_to_basic_competence'),
-                'openGaps' => DB::table('gap_entries')->whereRaw($this->gapBaseWhere())->whereNull('resolved_at')->count(),
+                'openGaps' => DB::table('gap_entries')
+                    ->whereRaw(...$this->scope->gapScope())
+                    ->whereNull('resolved_at')
+                    ->count(),
             ];
         });
     }
@@ -146,7 +128,7 @@ class ReportingDashboardController extends Controller
         return $this->cached('tool_progress', function () {
             return DB::table('v_evaluation_group_status as status')
                 ->join('tools', 'tools.id', '=', 'status.tool_id')
-                ->whereRaw($this->baseWhere('status'))
+                ->whereRaw(...$this->scope->scope('status'))
                 ->select([
                     'tools.slug',
                     'tools.label',
@@ -181,7 +163,7 @@ class ReportingDashboardController extends Controller
         return $this->cached('district_progress', function () {
             $baseQuery = DB::table('v_evaluation_group_status as status')
                 ->leftJoin('districts', 'districts.id', '=', 'status.district_id')
-                ->whereRaw($this->baseWhere('status'))
+                ->whereRaw(...$this->scope->scope('status'))
                 ->select([
                     'districts.id',
                     'districts.name',
@@ -222,7 +204,7 @@ class ReportingDashboardController extends Controller
                 ->join('tools', 'tools.id', '=', 'status.tool_id')
                 ->leftJoin('facilities', 'facilities.id', '=', 'status.facility_id')
                 ->leftJoin('districts', 'districts.id', '=', 'status.district_id')
-                ->whereRaw($this->baseWhere('status'))
+                ->whereRaw(...$this->scope->scope('status'))
                 ->whereNotNull('status.basic_competent_at')
                 ->orderByDesc('status.basic_competent_at')
                 ->limit(8)
@@ -261,7 +243,7 @@ class ReportingDashboardController extends Controller
                 ->join('users as mentees', 'mentees.id', '=', 'status.mentee_id')
                 ->join('tools', 'tools.id', '=', 'status.tool_id')
                 ->leftJoin('facilities', 'facilities.id', '=', 'status.facility_id')
-                ->whereRaw($this->baseWhere('status'))
+                ->whereRaw(...$this->scope->scope('status'))
                 ->whereNull('status.sessions_to_basic_competence')
                 ->orderByDesc('status.latest_session_date')
                 ->limit(8)
@@ -292,16 +274,15 @@ class ReportingDashboardController extends Controller
     private function gapSummary(): array
     {
         return $this->cached('gap_summary', function () {
-            $baseWhere = $this->gapBaseWhere();
-            $total = DB::table('gap_entries')->whereRaw($baseWhere)->count();
-            $open = DB::table('gap_entries')->whereRaw($baseWhere)->whereNull('resolved_at')->count();
+            $total = DB::table('gap_entries')->whereRaw(...$this->scope->gapScope())->count();
+            $open = DB::table('gap_entries')->whereRaw(...$this->scope->gapScope())->whereNull('resolved_at')->count();
             $coveredNow = DB::table('gap_entries')
-                ->whereRaw($baseWhere)
+                ->whereRaw(...$this->scope->gapScope())
                 ->whereNull('resolved_at')
                 ->where('covered_in_mentorship', true)
                 ->count();
             $coveringLater = DB::table('gap_entries')
-                ->whereRaw($baseWhere)
+                ->whereRaw(...$this->scope->gapScope())
                 ->whereNull('resolved_at')
                 ->where('covering_later', true)
                 ->count();
@@ -309,7 +290,7 @@ class ReportingDashboardController extends Controller
             $supervisionLevels = DB::table('gap_entries')
                 ->select('supervision_level')
                 ->selectRaw('COUNT(*) as total')
-                ->whereRaw($baseWhere)
+                ->whereRaw(...$this->scope->gapScope())
                 ->whereNull('resolved_at')
                 ->whereNotNull('supervision_level')
                 ->groupBy('supervision_level')
@@ -336,7 +317,7 @@ class ReportingDashboardController extends Controller
     {
         return $this->nullableFloat(
             DB::table('v_evaluation_group_status as vgs')
-                ->whereRaw($this->baseWhere('vgs'))
+                ->whereRaw(...$this->scope->scope('vgs'))
                 ->whereNotNull($column)
                 ->avg($column)
         );

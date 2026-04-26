@@ -146,7 +146,7 @@ return new class extends Migration
                 sc.phase AS latest_phase,
                 MAX(CASE WHEN sc.basic_competent_in_session THEN 1 ELSE 0 END) AS basic_competent,
                 MAX(CASE WHEN sc.fully_competent_in_session THEN 1 ELSE 0 END) AS fully_competent,
-                COALESCE(fc.first_basic_date, NULL) AS first_competency_date,
+                COALESCE(fc.first_basic_date, NULL) AS basic_competent_at,
                 COALESCE(fc.sessions_to_basic_competence, NULL) AS sessions_to_basic_competence,
                 COALESCE(DATEDIFF(fc.first_basic_date, (
                     SELECT MIN(eval_date) FROM evaluation_sessions 
@@ -183,7 +183,7 @@ return new class extends Migration
                 vgs.latest_phase,
                 vgs.basic_competent,
                 vgs.fully_competent,
-                vgs.first_competency_date,
+                vgs.basic_competent_at,
                 vgs.sessions_to_basic_competence,
                 vgs.days_to_basic_competence,
                 vgs.first_full_competency_date,
@@ -236,7 +236,7 @@ return new class extends Migration
             ) ge_resolved ON ge_resolved.evaluation_group_id = vgs.evaluation_group_id
             GROUP BY vgs.evaluation_group_id, vgs.mentee_id, vgs.evaluator_id, vgs.tool_id,
                      vgs.district_id, vgs.facility_id, vgs.latest_session_id, vgs.latest_session_date,
-                     vgs.latest_phase, vgs.basic_competent, vgs.fully_competent, vgs.first_competency_date,
+                     vgs.latest_phase, vgs.basic_competent, vgs.fully_competent, vgs.basic_competent_at,
                      vgs.sessions_to_basic_competence, vgs.days_to_basic_competence, vgs.first_full_competency_date,
                      vgs.sessions_to_full_competence, vgs.days_to_full_competence, vgs.total_sessions,
                      t.label, t.slug, d.name, f.name, u.firstname, u.lastname, u.email,

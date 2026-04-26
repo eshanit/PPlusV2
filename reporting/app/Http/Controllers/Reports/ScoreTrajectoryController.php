@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Reports;
 
 use App\Http\Controllers\Controller;
+use App\Services\ReportScopeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -10,16 +11,7 @@ use Inertia\Response;
 
 class ScoreTrajectoryController extends Controller
 {
-    private function baseWhere(): string
-    {
-        $user = auth()->user();
-
-        if (! $user || $user->isAdmin() || ! $user->district_id) {
-            return '1=1';
-        }
-
-        return "v_journey_summary.district_id = {$user->district_id}";
-    }
+    public function __construct(private readonly ReportScopeService $scope) {}
 
     public function __invoke(Request $request): Response
     {
@@ -39,7 +31,7 @@ class ScoreTrajectoryController extends Controller
 
         if ($toolId) {
             $journeys = DB::table('v_journey_summary')
-                ->whereRaw($this->baseWhere())
+                ->whereRaw(...$this->scope->scope('v_journey_summary'))
                 ->where('tool_id', $toolId)
                 ->orderBy('mentee_lastname')
                 ->orderBy('mentee_firstname')

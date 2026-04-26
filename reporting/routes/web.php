@@ -33,7 +33,7 @@ Route::middleware('reporting.auth')->group(function () {
         ->where('path', '.+')
         ->name('reports.exports.download');
 
-    Route::middleware('can:admin')->group(function () {
+    Route::middleware('admin')->group(function () {
         Route::get('/gaps', [GapController::class, 'index'])->name('reports.gaps');
         Route::get('/gaps/search', [GapController::class, 'search'])->name('reports.gaps.search');
         Route::get('/gaps/{id}', [GapController::class, 'show'])->name('reports.gaps.show');

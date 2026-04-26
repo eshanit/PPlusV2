@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Reports;
 
 use App\Http\Controllers\Controller;
 use App\Models\Tool;
+use App\Services\ReportScopeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -19,23 +20,12 @@ class GapOverviewController extends Controller
         'attitude' => 'Attitude',
     ];
 
-    private function baseWhere(): string
-    {
-        $user = auth()->user();
-
-        if (! $user || $user->isAdmin() || ! $user->district_id) {
-            return '1=1';
-        }
-
-        return "gap_entries.evaluation_group_id IN (
-            SELECT evaluation_group_id FROM evaluation_sessions WHERE district_id = {$user->district_id}
-        )";
-    }
+    public function __construct(private readonly ReportScopeService $scope) {}
 
     public function __invoke(Request $request): Response
     {
         $base = DB::table('gap_entries')
-            ->whereRaw($this->baseWhere())
+            ->whereRaw(...$this->scope->gapScope())
             ->when($request->tool_id, fn ($q) => $q->where('gap_entries.tool_id', $request->tool_id))
             ->when($request->domain, fn ($q) => $q->whereJsonContains('gap_entries.domains', $request->domain))
             ->when($request->status === 'open', fn ($q) => $q->whereNull('gap_entries.resolved_at'))
@@ -77,7 +67,7 @@ class GapOverviewController extends Controller
 
         $bySupervision = DB::table('gap_entries')
             ->select('supervision_level', DB::raw('COUNT(*) as total'))
-            ->whereRaw($this->baseWhere())
+            ->whereRaw(...$this->scope->gapScope())
             ->whereNull('gap_entries.resolved_at')
             ->when($request->tool_id, fn ($q) => $q->where('gap_entries.tool_id', $request->tool_id))
             ->when($request->domain, fn ($q) => $q->whereJsonContains('gap_entries.domains', $request->domain))
@@ -97,6 +87,43 @@ class GapOverviewController extends Controller
             ])
             ->all();
 
+        // Domain breakdown: fetch raw rows and expand JSON arrays in PHP.
+        // Excludes the domain filter so the chart always shows all domains.
+        $domainRows = DB::table('gap_entries')
+            ->whereRaw(...$this->scope->gapScope())
+            ->when($request->tool_id, fn ($q) => $q->where('gap_entries.tool_id', $request->tool_id))
+            ->when($request->status === 'open', fn ($q) => $q->whereNull('gap_entries.resolved_at'))
+            ->when($request->status === 'resolved', fn ($q) => $q->whereNotNull('gap_entries.resolved_at'))
+            ->select('domains', 'resolved_at')
+            ->get();
+
+        $domainCounts = [];
+        foreach ($domainRows as $row) {
+            $domains = json_decode($row->domains ?? '[]', true) ?: [];
+            foreach ($domains as $domain) {
+                if (! isset($domainCounts[$domain])) {
+                    $domainCounts[$domain] = ['open' => 0, 'resolved' => 0];
+                }
+                if ($row->resolved_at === null) {
+                    $domainCounts[$domain]['open']++;
+                } else {
+                    $domainCounts[$domain]['resolved']++;
+                }
+            }
+        }
+
+        $byDomain = collect($domainCounts)
+            ->map(fn (array $counts, string $domain): array => [
+                'domain' => $domain,
+                'label' => self::DOMAIN_OPTIONS[$domain] ?? $domain,
+                'open' => $counts['open'],
+                'resolved' => $counts['resolved'],
+                'total' => $counts['open'] + $counts['resolved'],
+            ])
+            ->sortByDesc('total')
+            ->values()
+            ->all();
+
         return Inertia::render('Reports/GapOverview', [
             'summary' => [
                 'total' => (int) ($summary->total ?? 0),
@@ -105,6 +132,7 @@ class GapOverviewController extends Controller
                 'avgDaysToResolve' => $summary->avg_days_to_resolve !== null ? (float) $summary->avg_days_to_resolve : null,
             ],
             'byTool' => $byTool,
+            'byDomain' => $byDomain,
             'bySupervision' => $bySupervision,
             'tools' => Tool::where('slug', '!=', 'counselling')
                 ->orderBy('sort_order')
