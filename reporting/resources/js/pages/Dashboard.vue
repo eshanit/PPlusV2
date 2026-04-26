@@ -1,23 +1,23 @@
 <script setup>
+import MetricCard from '../components/MetricCard.vue';
+import Badge from '../components/ui/Badge.vue';
+import Card from '../components/ui/Card.vue';
+import AppLayout from '../layouts/AppLayout.vue';
 import { Head } from '@inertiajs/vue3';
 import {
     Activity,
-    ArrowUpRight,
     CheckCircle2,
     CircleDot,
     ClipboardList,
     Clock3,
     Gauge,
-    LayoutDashboard,
     MapPin,
     ShieldCheck,
     TrendingUp,
     Users,
 } from 'lucide-vue-next';
-import MetricCard from '../components/MetricCard.vue';
-import Badge from '../components/ui/Badge.vue';
-import Button from '../components/ui/Button.vue';
-import Card from '../components/ui/Card.vue';
+
+defineOptions({ layout: AppLayout });
 
 defineProps({
     summary: {
@@ -60,31 +60,7 @@ function trimNumber(value) {
 <template>
     <Head title="Dashboard" />
 
-    <main class="min-h-screen bg-background">
-        <header class="border-b bg-card">
-            <div class="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
-                <div class="flex items-start gap-3">
-                    <div class="rounded-md bg-primary p-2 text-primary-foreground">
-                        <LayoutDashboard class="size-5" />
-                    </div>
-                    <div>
-                        <p class="text-sm font-medium text-muted-foreground">PEN-Plus</p>
-                        <h1 class="text-2xl font-semibold tracking-normal">Competency reporting</h1>
-                    </div>
-                </div>
-
-                <div class="flex flex-wrap items-center gap-2">
-                    <Badge variant="secondary">Mentee score only</Badge>
-                    <Badge variant="outline">Unlimited sessions</Badge>
-                    <Button as="a" href="/admin" variant="outline" size="sm">
-                        Admin
-                        <ArrowUpRight class="size-4" />
-                    </Button>
-                </div>
-            </div>
-        </header>
-
-        <div class="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+    <main class="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
             <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <MetricCard
                     label="Evaluation journeys"
@@ -330,6 +306,5 @@ function trimNumber(value) {
                     </div>
                 </Card>
             </section>
-        </div>
     </main>
 </template>

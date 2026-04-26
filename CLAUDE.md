@@ -388,8 +388,7 @@ Components:
 
 Still needed:
 
-- CouchDB live replication via PouchDB `.sync()` — `syncStore` has state scaffolding but actual replication is not wired
-- Capacitor setup after core screens are validated on device
+- Capacitor — deferred, not a current priority
 - Login / authentication (currently just a name/role picker in setup.vue)
 
 ### reporting/ — COMPLETE (admin panel fully operational)
@@ -483,42 +482,36 @@ Processors:
 
 ## 10. Next Work Order
 
-Steps 1–7 of the original plan are largely complete. Remaining work in priority order:
+### Completed
 
-### Step 8 — CouchDB live replication
+- Steps 1–7: full monitoring field workflow
+- Step 8: CouchDB live replication (`startSync` / `stopSync`) — implemented and tested end-to-end
+- Storage cleanup: `syncStore.runCleanup()` — journey-aware purge, triggered from `sync.vue`
 
-`startSync()` and `stopSync()` in `syncStore.ts` are implemented and wire live PouchDB `.sync()` for all four databases. This is ready but has not been tested against a live CouchDB instance in PPlusV2.
+### Storage cleanup detail
 
-### Storage cleanup
-
-Implemented. `syncStore.runCleanup()` runs a journey-aware purge strategy:
+`syncStore.runCleanup()` strategy:
 
 1. **Compact both DBs** (`sessionsDb.compact()` + `gapsDb.compact()`) — removes MVCC revision history, always safe.
 2. **Skip in-progress journeys** — any `evaluationGroupId` where `getCompetencyStatus` returns `'in_progress'` is left untouched.
-3. **Purge old sessions from closed journeys** — for journeys that are `basic_competent` or `fully_competent`, remove all sessions except the latest, provided the session is `syncStatus === 'synced'` **and** older than 30 days (`createdAt` and `updatedAt` both before the cutoff).
+3. **Purge old sessions from closed journeys** — for journeys that are `basic_competent` or `fully_competent`, remove all sessions except the latest, provided `syncStatus === 'synced'` **and** older than 30 days.
 4. **Reload the session store** if any documents were removed.
 
-Exposed state: `cleanupRunning`, `lastCleanupAt`, `lastCleanupPurged`.
+Exposed state: `cleanupRunning`, `lastCleanupAt`, `lastCleanupPurged`. Triggered manually from `sync.vue`.
 
-The cleanup is triggered manually from `sync.vue` ("Clean Up" button). It can also be called programmatically after a successful sync cycle.
+### Next — reporting enhancements (current priority)
 
-### Step 9 — Capacitor (after replication validated)
+1. **`v_evaluation_group_status` MySQL view** — derives per-journey metrics:
+   `basic_competent`, `fully_competent`, `sessions_to_competence`, `days_to_competence`,
+   `first_session_date`, `competent_session_date`
 
-```bash
-pnpm add @capacitor/core @capacitor/cli
-npx cap init "PenPlus" "com.solidarmed.penplus"
-pnpm add @capacitor/android
-npx cap add android
-```
+2. **Filament dashboard widgets** — sessions count, avg score by district/tool, competency rates
 
-Use `pouchdb-adapter-idb` for web; switch to `pouchdb-adapter-cordova-sqlite` if needed on Android for better storage guarantees.
+3. **Competency progress charts** — item-level score trends over sessions
 
-### Step 10 — reporting enhancements (lower priority)
+### Deferred
 
-- `v_evaluation_group_status` view: `basic_competent`, `fully_competent`,
-  `sessions_to_competence`, `days_to_competence` per `evaluation_group_id`
-- Filament dashboard widgets: sessions count, avg score by district/tool
-- Competency progress charts
+- Capacitor (Android packaging) — not a current priority
 
 ---
 

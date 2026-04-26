@@ -18,12 +18,13 @@ class SyncCouchDb extends Command
 
     protected $description = 'Pull changes from CouchDB and upsert into MySQL';
 
+    // Dimensions must be synced before facts — sessions/gaps have FKs to users and districts.
     private const PROCESSORS = [
-        'sessions' => 'processSession',
-        'gaps' => 'processGap',
-        'users' => 'processUser',
         'districts' => 'processDistrict',
         'facilities' => 'processFacility',
+        'users' => 'processUser',
+        'sessions' => 'processSession',
+        'gaps' => 'processGap',
     ];
 
     public function handle(): int
@@ -192,6 +193,11 @@ class SyncCouchDb extends Command
             throw new RuntimeException("Unknown toolSlug: {$doc['toolSlug']}");
         }
 
+        // Sessions store facility/district as name strings inherited from the mentee profile.
+        // Resolve them to IDs so joins work in reports.
+        $districtId = $this->resolveDistrictId($doc['districtId'] ?? null);
+        $facilityId = $this->resolveFacilityId($districtId, $doc['facilityId'] ?? null);
+
         DB::table('evaluation_sessions')->upsert([
             'id' => $doc['_id'],
             'evaluation_group_id' => $doc['evaluationGroupId'],
@@ -199,8 +205,8 @@ class SyncCouchDb extends Command
             'evaluator_id' => $doc['evaluator']['id'],
             'tool_id' => $toolId,
             'eval_date' => date('Y-m-d', intdiv((int) $doc['evalDate'], 1000)),
-            'facility_id' => $doc['facilityId'] ?? null,
-            'district_id' => $doc['districtId'] ?? null,
+            'facility_id' => $facilityId,
+            'district_id' => $districtId,
             'phase' => $doc['phase'] ?? null,
             'notes' => $doc['notes'] ?? null,
             'couchdb_rev' => $doc['_rev'] ?? null,
@@ -277,14 +283,19 @@ class SyncCouchDb extends Command
 
     private function processUser(array $doc): void
     {
+        // User docs use 'facility' and 'district' (name strings), not 'facilityId'/'districtId'.
+        // Resolve names to IDs so FK constraints are satisfied.
+        $districtId = $this->resolveDistrictId($doc['district'] ?? null);
+        $facilityId = $this->resolveFacilityId($districtId, $doc['facility'] ?? null);
+
         DB::table('users')->upsert([
             'id' => $doc['_id'],
             'firstname' => $doc['firstname'],
             'lastname' => $doc['lastname'],
             'username' => $doc['username'] ?? null,
             'profession' => $doc['profession'] ?? null,
-            'facility_id' => $doc['facilityId'] ?? null,
-            'district_id' => $doc['districtId'] ?? null,
+            'facility_id' => $facilityId,
+            'district_id' => $districtId,
             'couchdb_rev' => $doc['_rev'] ?? null,
             'created_at' => now(),
             'updated_at' => $this->msToDatetime($doc['updatedAt'] ?? null) ?? now(),
@@ -304,27 +315,46 @@ class SyncCouchDb extends Command
 
     private function processDistrict(array $doc): void
     {
+        // District docs use 'district' for the name field and embed facilities as a string array.
+        // Facilities have no separate CouchDB database — they live inside district docs.
+        $districtId = $doc['_id'];
+        $districtName = $doc['district'] ?? null;
+
+        if (! $districtName) {
+            throw new RuntimeException("District doc {$districtId} missing 'district' field");
+        }
+
         DB::table('districts')->upsert([
-            'id' => $doc['_id'],
-            'name' => $doc['name'],
+            'id' => $districtId,
+            'name' => $districtName,
             'couchdb_rev' => $doc['_rev'] ?? null,
             'created_at' => now(),
             'updated_at' => now(),
             'synced_at' => now(),
         ], uniqueBy: ['id'], update: ['name', 'couchdb_rev', 'updated_at', 'synced_at']);
+
+        foreach ($doc['facilities'] ?? [] as $facilityName) {
+            if (! is_string($facilityName) || $facilityName === '') {
+                continue;
+            }
+
+            // Use a deterministic ID so re-syncing the same district doesn't create duplicates.
+            DB::table('facilities')->upsert([
+                'id' => md5($districtId.'::'.$facilityName),
+                'district_id' => $districtId,
+                'name' => $facilityName,
+                'couchdb_rev' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+                'synced_at' => now(),
+            ], uniqueBy: ['id'], update: ['name', 'updated_at', 'synced_at']);
+        }
     }
 
     private function processFacility(array $doc): void
     {
-        DB::table('facilities')->upsert([
-            'id' => $doc['_id'],
-            'district_id' => $doc['districtId'],
-            'name' => $doc['name'],
-            'couchdb_rev' => $doc['_rev'] ?? null,
-            'created_at' => now(),
-            'updated_at' => now(),
-            'synced_at' => now(),
-        ], uniqueBy: ['id'], update: ['district_id', 'name', 'couchdb_rev', 'updated_at', 'synced_at']);
+        // Facilities are embedded in district docs and extracted by processDistrict.
+        // The penplus_facilities CouchDB database is not used; this processor is a no-op.
     }
 
     /**
@@ -351,6 +381,27 @@ class SyncCouchDb extends Command
         }
 
         return $rows;
+    }
+
+    private function resolveDistrictId(?string $districtName): ?string
+    {
+        if (! $districtName) {
+            return null;
+        }
+
+        return DB::table('districts')->where('name', $districtName)->value('id');
+    }
+
+    private function resolveFacilityId(?string $districtId, ?string $facilityName): ?string
+    {
+        if (! $districtId || ! $facilityName) {
+            return null;
+        }
+
+        return DB::table('facilities')
+            ->where('district_id', $districtId)
+            ->where('name', $facilityName)
+            ->value('id');
     }
 
     private function handleDeleted(string $logicalName, string $dbName, string $docId): void
