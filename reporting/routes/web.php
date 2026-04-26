@@ -11,6 +11,7 @@ use App\Http\Controllers\Reports\JourneyStatusController;
 use App\Http\Controllers\Reports\LowScoreWatchlistController;
 use App\Http\Controllers\Reports\NeedsAttentionController;
 use App\Http\Controllers\Reports\ScoreTrajectoryController;
+use App\Http\Controllers\Reports\SessionReportController;
 use App\Http\Controllers\Reports\TimeToCompetenceController;
 use Illuminate\Support\Facades\Route;
 
@@ -27,6 +28,8 @@ Route::middleware('reporting.auth')->group(function () {
     Route::get('/time-to-competence', TimeToCompetenceController::class)->name('reports.time-to-competence');
     Route::get('/cohort-progress', CohortProgressController::class)->name('reports.cohort-progress');
     Route::get('/evaluator-activity', EvaluatorActivityController::class)->name('reports.evaluator-activity');
+
+    Route::get('/sessions/{session}', SessionReportController::class)->name('reports.session');
 
     Route::get('/exports', [ExportsController::class, 'index'])->name('reports.exports');
     Route::get('/exports/{path}', [ExportsController::class, 'download'])

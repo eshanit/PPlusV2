@@ -3,7 +3,7 @@ import ApexChart from '../../components/ui/ApexChart.vue';
 import Badge from '../../components/ui/Badge.vue';
 import Card from '../../components/ui/Card.vue';
 import AppLayout from '../../layouts/AppLayout.vue';
-import { Head, router } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { TrendingUp } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 
@@ -175,6 +175,7 @@ const scoreColor = (score) => {
                                 <th class="px-4 py-3 font-medium">Phase</th>
                                 <th class="px-4 py-3 font-medium text-right">Avg Score</th>
                                 <th class="px-4 py-3 font-medium text-right">Items Scored</th>
+                                <th class="px-4 py-3 font-medium text-right"></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -191,6 +192,14 @@ const scoreColor = (score) => {
                                     <span :class="scoreColor(s.avgScore)">{{ s.avgScore != null ? s.avgScore.toFixed(2) : '—' }}</span>
                                 </td>
                                 <td class="px-4 py-3 text-right tabular-nums text-muted-foreground">{{ s.scoredItems }}</td>
+                                <td class="px-4 py-3 text-right">
+                                    <Link
+                                        :href="`/sessions/${s.sessionId}`"
+                                        class="text-xs text-primary hover:underline"
+                                    >
+                                        View →
+                                    </Link>
+                                </td>
                             </tr>
                         </tbody>
                     </table>

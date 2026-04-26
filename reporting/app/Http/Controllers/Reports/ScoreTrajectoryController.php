@@ -66,6 +66,7 @@ class ScoreTrajectoryController extends Controller
                 ->where('sn.evaluation_group_id', $groupId)
                 ->orderBy('sn.session_number')
                 ->get([
+                    'sn.id as session_id',
                     'sn.session_number',
                     'sn.eval_date',
                     'sn.phase',
@@ -73,6 +74,7 @@ class ScoreTrajectoryController extends Controller
                     'sa.scored_items',
                 ])
                 ->map(fn (object $s): array => [
+                    'sessionId' => $s->session_id,
                     'session' => (int) $s->session_number,
                     'date' => $s->eval_date,
                     'phase' => $s->phase,

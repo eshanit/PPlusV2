@@ -4,7 +4,7 @@ import Badge from '../../components/ui/Badge.vue';
 import Card from '../../components/ui/Card.vue';
 import Pagination from '../../components/ui/Pagination.vue';
 import AppLayout from '../../layouts/AppLayout.vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import { MapPin } from 'lucide-vue-next';
 
 defineOptions({ layout: AppLayout });
@@ -91,6 +91,7 @@ const scoreColor = (score) => {
                             <th class="hidden px-4 py-3 font-medium text-right xl:table-cell">Days→Competent</th>
                             <th class="px-4 py-3 font-medium text-right">Last Session</th>
                             <th class="px-4 py-3 font-medium text-right">Open Gaps</th>
+                            <th class="px-4 py-3 font-medium text-right"></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -135,6 +136,15 @@ const scoreColor = (score) => {
                                     class="font-semibold text-red-600"
                                 >{{ j.openGaps }}</span>
                                 <span v-else class="text-muted-foreground/50">—</span>
+                            </td>
+                            <td class="px-4 py-3 text-right">
+                                <Link
+                                    v-if="j.latestSessionId"
+                                    :href="`/sessions/${j.latestSessionId}`"
+                                    class="text-xs text-primary hover:underline"
+                                >
+                                    Latest session →
+                                </Link>
                             </td>
                         </tr>
                     </tbody>

@@ -27,6 +27,7 @@ class JourneyStatusController extends Controller
         $paginator = $query->paginate(25)->withQueryString();
         $journeys = $paginator->map(fn (JourneySummary $j): array => [
             'evaluationGroupId' => $j->evaluation_group_id,
+            'latestSessionId' => $j->latest_session_id,
             'mentee' => trim("{$j->mentee_firstname} {$j->mentee_lastname}"),
             'tool' => $j->tool_label,
             'district' => $j->district_name,
