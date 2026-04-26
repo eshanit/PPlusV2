@@ -4,8 +4,8 @@ import Badge from '../../components/ui/Badge.vue';
 import Card from '../../components/ui/Card.vue';
 import AppLayout from '../../layouts/AppLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
-import { ArrowLeft, ChevronDown, ChevronRight, FileText, MapPin } from 'lucide-vue-next';
-import { computed, ref } from 'vue';
+import { ArrowLeft, ChevronDown, ChevronRight, FileText, MapPin, Printer } from 'lucide-vue-next';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 
 defineOptions({ layout: AppLayout });
 
@@ -18,6 +18,35 @@ const props = defineProps({
     trajectory: { type: Array, default: () => [] },
     journeyStatus: { type: Object, default: null },
 });
+
+// ── print ────────────────────────────────────────────────────────────────────
+let savedBuckets = null;
+
+function handleBeforePrint() {
+    savedBuckets = new Set(openBuckets.value);
+    openBuckets.value = new Set(['na', 1, 2, 3, 4, 5]);
+}
+
+function handleAfterPrint() {
+    if (savedBuckets !== null) {
+        openBuckets.value = savedBuckets;
+        savedBuckets = null;
+    }
+}
+
+onMounted(() => {
+    window.addEventListener('beforeprint', handleBeforePrint);
+    window.addEventListener('afterprint', handleAfterPrint);
+});
+
+onBeforeUnmount(() => {
+    window.removeEventListener('beforeprint', handleBeforePrint);
+    window.removeEventListener('afterprint', handleAfterPrint);
+});
+
+function printReport() {
+    window.print();
+}
 
 // ── accordion state ─────────────────────────────────────────────────────────
 const openBuckets = ref(new Set([1, 2, 3])); // low scores open by default
@@ -166,17 +195,34 @@ const trajectoryOptions = computed(() => ({
 
     <main class="mx-auto max-w-7xl space-y-5 px-4 py-6 sm:px-6 lg:px-8">
 
-        <!-- Back link -->
-        <div class="flex items-center gap-2 text-sm text-muted-foreground">
-            <Link
-                :href="`/score-trajectory?tool_id=&group_id=${session.evaluationGroupId}`"
-                class="flex items-center gap-1 hover:text-foreground"
+        <!-- Back link + print button -->
+        <div class="flex items-center justify-between print:hidden">
+            <div class="flex items-center gap-2 text-sm text-muted-foreground">
+                <Link
+                    :href="`/score-trajectory?tool_id=&group_id=${session.evaluationGroupId}`"
+                    class="flex items-center gap-1 hover:text-foreground"
+                >
+                    <ArrowLeft class="size-4" />
+                    Back to journey
+                </Link>
+                <ChevronRight class="size-3 opacity-50" />
+                <span class="text-foreground">Session {{ session.sessionNumber }}</span>
+            </div>
+            <button
+                type="button"
+                class="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground shadow-sm hover:bg-muted/60"
+                @click="printReport"
             >
-                <ArrowLeft class="size-4" />
-                Back to journey
-            </Link>
-            <ChevronRight class="size-3 opacity-50" />
-            <span class="text-foreground">Session {{ session.sessionNumber }}</span>
+                <Printer class="size-4" />
+                Print / Save PDF
+            </button>
+        </div>
+
+        <!-- Print-only header -->
+        <div class="hidden print:block">
+            <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">PEN-Plus · Session Report</p>
+            <h1 class="text-2xl font-bold">{{ session.menteeName }}</h1>
+            <p class="text-sm text-muted-foreground">{{ session.toolLabel }} · {{ session.date }} · Session {{ session.sessionNumber }} of {{ session.totalSessions }}</p>
         </div>
 
         <!-- Session header -->
@@ -314,7 +360,7 @@ const trajectoryOptions = computed(() => ({
             <div class="divide-y">
                 <div v-for="b in buckets" :key="b.key">
                     <button
-                        class="flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-muted/30"
+                        class="flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-muted/30 print:pointer-events-none"
                         @click="toggleBucket(b.key)"
                     >
                         <div class="flex items-center gap-2">
@@ -330,7 +376,7 @@ const trajectoryOptions = computed(() => ({
                         />
                     </button>
 
-                    <div v-if="openBuckets.has(b.key) && itemsByBucket[b.key]?.length > 0" class="bg-muted/20 px-4 pb-3 pt-1">
+                    <div v-if="openBuckets.has(b.key) && itemsByBucket[b.key]?.length > 0" class="accordion-panel bg-muted/20 px-4 pb-3 pt-1">
                         <div class="space-y-1">
                             <div
                                 v-for="item in itemsByBucket[b.key]"
@@ -350,7 +396,7 @@ const trajectoryOptions = computed(() => ({
                             </div>
                         </div>
                     </div>
-                    <div v-else-if="openBuckets.has(b.key) && b.count === 0" class="bg-muted/20 px-4 py-3 text-xs text-muted-foreground">
+                    <div v-else-if="openBuckets.has(b.key) && b.count === 0" class="accordion-panel bg-muted/20 px-4 py-3 text-xs text-muted-foreground">
                         No items in this bucket.
                     </div>
                 </div>
@@ -358,7 +404,7 @@ const trajectoryOptions = computed(() => ({
         </Card>
 
         <!-- Full item score table -->
-        <Card>
+        <Card class="page-break-before">
             <div class="border-b px-4 py-3">
                 <h2 class="text-base font-semibold">All Items — {{ session.toolLabel }}</h2>
             </div>
@@ -476,7 +522,7 @@ const trajectoryOptions = computed(() => ({
         </Card>
 
         <!-- Journey trajectory -->
-        <Card v-if="trajectory.length > 1" class="p-4">
+        <Card v-if="trajectory.length > 1" class="p-4 print-hide-chart">
             <h2 class="mb-1 text-base font-semibold">Journey Trajectory</h2>
             <p class="mb-3 text-xs text-muted-foreground">Average score across all sessions in this journey. Current session highlighted.</p>
             <ApexChart type="line" :series="trajectorySeries" :options="trajectoryOptions" :height="220" />
@@ -484,3 +530,64 @@ const trajectoryOptions = computed(() => ({
 
     </main>
 </template>
+
+<style>
+@media print {
+    @page {
+        margin: 1.5cm;
+        size: A4 portrait;
+    }
+
+    /* Hide AppLayout sidebar and mobile header */
+    aside,
+    header {
+        display: none !important;
+    }
+
+    /* Make the content area full width */
+    .flex-1 {
+        display: block !important;
+        width: 100% !important;
+    }
+
+    /* Remove card shadows and use simple borders */
+    .shadow,
+    .shadow-sm,
+    .shadow-md {
+        box-shadow: none !important;
+    }
+
+    /* Keep borders visible */
+    [class*='border'] {
+        border-color: #d1d5db !important;
+    }
+
+    /* Background colours that browsers strip — force them back for score badges */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Avoid page breaks inside cards and table rows */
+    .card,
+    tr {
+        break-inside: avoid;
+    }
+
+    /* Force a page break before the full item table */
+    .page-break-before {
+        break-before: page;
+    }
+
+    /* Ensure accordion content is always visible (JS opens all before print,
+       but this is a safety net for any that weren't v-if rendered yet) */
+    .accordion-panel {
+        display: block !important;
+    }
+
+    /* Hide the trajectory chart — SVG charts can mis-scale on print */
+    .print-hide-chart {
+        display: none !important;
+    }
+}
+</style>
