@@ -4,15 +4,14 @@ import { Link, usePage } from '@inertiajs/vue3';
 import {
     Activity,
     BarChart3,
-    ChevronDown,
     ChevronRight,
     ClipboardList,
     Clock,
+    FileSpreadsheet,
     Gauge,
     LayoutDashboard,
     Target,
     TrendingUp,
-    Users,
     UserCheck,
     X,
 } from 'lucide-vue-next';
@@ -26,6 +25,7 @@ const sections = [
         label: 'Overview',
         items: [
             { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+            { href: '/exports', label: 'Exports', icon: FileSpreadsheet },
         ],
     },
     {

@@ -3,6 +3,7 @@
 use App\Http\Controllers\ReportingDashboardController;
 use App\Http\Controllers\Reports\CohortProgressController;
 use App\Http\Controllers\Reports\EvaluatorActivityController;
+use App\Http\Controllers\Reports\ExportsController;
 use App\Http\Controllers\Reports\GapOverviewController;
 use App\Http\Controllers\Reports\JourneyStatusController;
 use App\Http\Controllers\Reports\LowScoreWatchlistController;
@@ -23,3 +24,8 @@ Route::get('/score-trajectory', ScoreTrajectoryController::class)->name('reports
 Route::get('/time-to-competence', TimeToCompetenceController::class)->name('reports.time-to-competence');
 Route::get('/cohort-progress', CohortProgressController::class)->name('reports.cohort-progress');
 Route::get('/evaluator-activity', EvaluatorActivityController::class)->name('reports.evaluator-activity');
+
+Route::get('/exports', [ExportsController::class, 'index'])->name('reports.exports');
+Route::get('/exports/{path}', [ExportsController::class, 'download'])
+    ->where('path', '.+')
+    ->name('reports.exports.download');
