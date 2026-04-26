@@ -25,8 +25,9 @@ class User extends Authenticatable implements FilamentUser, HasName
         'lastname',
         'username',
         'profession',
-        'facility_id',
+        'role_id',
         'district_id',
+        'facility_id',
         'couchdb_rev',
         'synced_at',
         'email',
@@ -50,6 +51,11 @@ class User extends Authenticatable implements FilamentUser, HasName
     public function canAccessPanel(Panel $panel): bool
     {
         return $this->password !== null;
+    }
+
+    public function role(): BelongsTo
+    {
+        return $this->belongsTo(Role::class);
     }
 
     public function district(): BelongsTo
@@ -85,5 +91,15 @@ class User extends Authenticatable implements FilamentUser, HasName
     public function getFullNameAttribute(): string
     {
         return $this->getFilamentName();
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role?->name === 'admin';
+    }
+
+    public function isDistrictAdmin(): bool
+    {
+        return $this->role?->name === 'district_admin';
     }
 }

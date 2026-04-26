@@ -19,13 +19,27 @@ class GapOverviewController extends Controller
         'attitude' => 'Attitude',
     ];
 
+    private function baseWhere(): string
+    {
+        $user = auth()->user();
+
+        if (! $user || $user->isAdmin() || ! $user->district_id) {
+            return '1=1';
+        }
+
+        return "gap_entries.evaluation_group_id IN (
+            SELECT evaluation_group_id FROM evaluation_sessions WHERE district_id = {$user->district_id}
+        )";
+    }
+
     public function __invoke(Request $request): Response
     {
         $base = DB::table('gap_entries')
-            ->when($request->tool_id, fn ($q) => $q->where('tool_id', $request->tool_id))
-            ->when($request->domain, fn ($q) => $q->whereJsonContains('domains', $request->domain))
-            ->when($request->status === 'open', fn ($q) => $q->whereNull('resolved_at'))
-            ->when($request->status === 'resolved', fn ($q) => $q->whereNotNull('resolved_at'));
+            ->whereRaw($this->baseWhere())
+            ->when($request->tool_id, fn ($q) => $q->where('gap_entries.tool_id', $request->tool_id))
+            ->when($request->domain, fn ($q) => $q->whereJsonContains('gap_entries.domains', $request->domain))
+            ->when($request->status === 'open', fn ($q) => $q->whereNull('gap_entries.resolved_at'))
+            ->when($request->status === 'resolved', fn ($q) => $q->whereNotNull('gap_entries.resolved_at'));
 
         $summary = (clone $base)
             ->selectRaw('
@@ -63,10 +77,11 @@ class GapOverviewController extends Controller
 
         $bySupervision = DB::table('gap_entries')
             ->select('supervision_level', DB::raw('COUNT(*) as total'))
-            ->whereNull('resolved_at')
-            ->when($request->tool_id, fn ($q) => $q->where('tool_id', $request->tool_id))
-            ->when($request->domain, fn ($q) => $q->whereJsonContains('domains', $request->domain))
-            ->whereNotNull('supervision_level')
+            ->whereRaw($this->baseWhere())
+            ->whereNull('gap_entries.resolved_at')
+            ->when($request->tool_id, fn ($q) => $q->where('gap_entries.tool_id', $request->tool_id))
+            ->when($request->domain, fn ($q) => $q->whereJsonContains('gap_entries.domains', $request->domain))
+            ->whereNotNull('gap_entries.supervision_level')
             ->groupBy('supervision_level')
             ->orderByDesc('total')
             ->get()

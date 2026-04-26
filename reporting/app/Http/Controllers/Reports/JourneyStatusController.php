@@ -12,9 +12,21 @@ use Inertia\Response;
 
 class JourneyStatusController extends Controller
 {
+    private function baseWhere(): string
+    {
+        $user = auth()->user();
+
+        if (! $user || $user->isAdmin() || ! $user->district_id) {
+            return '1=1';
+        }
+
+        return "v_journey_summary.district_id = {$user->district_id}";
+    }
+
     public function __invoke(Request $request): Response
     {
         $query = JourneySummary::query()
+            ->whereRaw($this->baseWhere())
             ->when($request->tool_id, fn ($q) => $q->where('tool_id', $request->tool_id))
             ->when($request->district_id, fn ($q) => $q->where('district_id', $request->district_id))
             ->when($request->status, fn ($q) => $q->where('competency_status', $request->status))
@@ -36,6 +48,12 @@ class JourneyStatusController extends Controller
             'openGaps' => $j->open_gaps,
         ]);
 
+        $districtsQuery = District::orderBy('name');
+        $user = auth()->user();
+        if ($user && ! $user->isAdmin() && $user->district_id) {
+            $districtsQuery->where('id', $user->district_id);
+        }
+
         return Inertia::render('Reports/JourneyStatus', [
             'journeys' => $journeys,
             'meta' => [
@@ -50,7 +68,7 @@ class JourneyStatusController extends Controller
             'tools' => Tool::where('slug', '!=', 'counselling')
                 ->orderBy('sort_order')
                 ->get(['id', 'label']),
-            'districts' => District::orderBy('name')->get(['id', 'name']),
+            'districts' => $districtsQuery->get(['id', 'name']),
             'filters' => $request->only(['tool_id', 'district_id', 'status']),
         ]);
     }

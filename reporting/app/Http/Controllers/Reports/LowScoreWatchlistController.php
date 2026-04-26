@@ -20,6 +20,27 @@ class LowScoreWatchlistController extends Controller
         'total_journeys' => 'COUNT(*)',
     ];
 
+    private function baseWhere(): string
+    {
+        $user = auth()->user();
+
+        if (! $user || $user->isAdmin() || ! $user->district_id) {
+            return '1=1';
+        }
+
+        return "vlis.district_id = {$user->district_id}";
+    }
+
+    private function scopedDistricts()
+    {
+        $user = auth()->user();
+        if ($user && ! $user->isAdmin() && $user->district_id) {
+            return District::where('id', $user->district_id)->get(['id', 'name']);
+        }
+
+        return District::orderBy('name')->get(['id', 'name']);
+    }
+
     public function __invoke(Request $request): Response
     {
         $sort = array_key_exists($request->sort, self::SORT_MAP) ? $request->sort : 'avg_score';
@@ -40,6 +61,7 @@ class LowScoreWatchlistController extends Controller
             ->join('v_latest_item_scores as vlis', 'vlis.item_id', '=', 'evaluation_items.id')
             ->join('tools', 'tools.id', '=', 'evaluation_items.tool_id')
             ->where('tools.slug', '!=', 'counselling')
+            ->whereRaw($this->baseWhere())
             ->when($request->tool_id, fn ($q) => $q->where('evaluation_items.tool_id', $request->tool_id))
             ->when($request->district_id, fn ($q) => $q->where('vlis.district_id', $request->district_id))
             ->groupBy(
@@ -79,7 +101,7 @@ class LowScoreWatchlistController extends Controller
             'tools' => Tool::where('slug', '!=', 'counselling')
                 ->orderBy('sort_order')
                 ->get(['id', 'label']),
-            'districts' => District::orderBy('name')->get(['id', 'name']),
+            'districts' => $this->scopedDistricts(),
             'filters' => $request->only(['tool_id', 'district_id']),
             'sort' => $sort,
             'direction' => $direction,

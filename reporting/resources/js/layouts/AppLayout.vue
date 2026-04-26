@@ -10,6 +10,7 @@ import {
     FileSpreadsheet,
     Gauge,
     LayoutDashboard,
+    LogOut,
     Target,
     TrendingUp,
     UserCheck,
@@ -19,6 +20,8 @@ import { ref } from 'vue';
 
 const page = usePage();
 const mobileOpen = ref(false);
+
+const auth = page.props.auth;
 
 const sections = [
     {
@@ -61,6 +64,10 @@ function isActive(href) {
 function closeMobile() {
     mobileOpen.value = false;
 }
+
+function logout() {
+    document.getElementById('logout-form').submit();
+}
 </script>
 
 <template>
@@ -71,7 +78,10 @@ function closeMobile() {
                     <div class="rounded-md bg-primary p-1.5 text-primary-foreground">
                         <LayoutDashboard class="size-4" />
                     </div>
-                    <span class="text-sm font-semibold">PEN-Plus</span>
+                    <div>
+                        <span class="text-sm font-semibold">PEN-Plus</span>
+                        <p class="text-[10px] text-muted-foreground">Reporting</p>
+                    </div>
                 </div>
                 <button class="lg:hidden" @click="closeMobile">
                     <X class="size-4 text-muted-foreground" />
@@ -102,9 +112,23 @@ function closeMobile() {
             </nav>
 
             <div class="border-t p-3">
-                <Button as="a" href="/admin" variant="outline" size="sm" class="w-full justify-center">
-                    Admin Panel ↗
-                </Button>
+                <div class="mb-2 flex items-center gap-2 px-1">
+                    <div class="min-w-0 flex-1">
+                        <p class="truncate text-xs font-medium">{{ auth?.user?.firstname }} {{ auth?.user?.lastname }}</p>
+                        <p class="truncate text-[10px] text-muted-foreground">{{ auth?.user?.email }}</p>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <Button as="a" href="/admin" variant="outline" size="sm" class="flex-1 justify-center">
+                        Admin ↗
+                    </Button>
+                    <form id="logout-form" method="POST" action="/logout" class="flex-1">
+                        <input type="hidden" name="_token" :value="page.props.csrf_token" />
+                        <Button type="button" variant="ghost" size="sm" class="w-full justify-center" @click="logout">
+                            <LogOut class="size-4" />
+                        </Button>
+                    </form>
+                </div>
             </div>
         </aside>
 

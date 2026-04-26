@@ -10,6 +10,28 @@ use Inertia\Response;
 
 class CohortProgressController extends Controller
 {
+    private function baseWhere(): string
+    {
+        $user = auth()->user();
+
+        if (! $user || $user->isAdmin() || ! $user->district_id) {
+            return '1=1';
+        }
+
+        return "sn.district_id = {$user->district_id}";
+    }
+
+    private function scopedDistricts()
+    {
+        $user = auth()->user();
+        if ($user && ! $user->isAdmin() && $user->district_id) {
+            return collect([]);
+        }
+
+        return DB::table('districts')->orderBy('name')->get(['id', 'name'])
+            ->map(fn ($d) => ['id' => (int) $d->id, 'name' => $d->name])->all();
+    }
+
     public function __invoke(Request $request): Response
     {
         $toolId = $request->input('tool_id');
@@ -18,6 +40,7 @@ class CohortProgressController extends Controller
         $rows = DB::table('v_sessions_numbered as sn')
             ->join('v_session_averages as sa', 'sa.session_id', '=', 'sn.id')
             ->join('tools', 'tools.id', '=', 'sn.tool_id')
+            ->whereRaw($this->baseWhere())
             ->where('tools.slug', '!=', 'counselling')
             ->when($toolId, fn ($q) => $q->where('sn.tool_id', $toolId))
             ->when($districtId, fn ($q) => $q->where('sn.district_id', $districtId))
@@ -42,16 +65,10 @@ class CohortProgressController extends Controller
             ->map(fn ($t) => ['id' => (int) $t->id, 'label' => $t->label])
             ->all();
 
-        $districts = DB::table('districts')
-            ->orderBy('name')
-            ->get(['id', 'name'])
-            ->map(fn ($d) => ['id' => (int) $d->id, 'name' => $d->name])
-            ->all();
-
         return Inertia::render('Reports/CohortProgress', [
             'rows' => $rows,
             'tools' => $tools,
-            'districts' => $districts,
+            'districts' => $this->scopedDistricts(),
             'filters' => ['tool_id' => $toolId, 'district_id' => $districtId],
         ]);
     }

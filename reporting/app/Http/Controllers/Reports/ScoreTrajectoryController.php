@@ -10,6 +10,17 @@ use Inertia\Response;
 
 class ScoreTrajectoryController extends Controller
 {
+    private function baseWhere(): string
+    {
+        $user = auth()->user();
+
+        if (! $user || $user->isAdmin() || ! $user->district_id) {
+            return '1=1';
+        }
+
+        return "v_journey_summary.district_id = {$user->district_id}";
+    }
+
     public function __invoke(Request $request): Response
     {
         $toolId = $request->input('tool_id');
@@ -28,6 +39,7 @@ class ScoreTrajectoryController extends Controller
 
         if ($toolId) {
             $journeys = DB::table('v_journey_summary')
+                ->whereRaw($this->baseWhere())
                 ->where('tool_id', $toolId)
                 ->orderBy('mentee_lastname')
                 ->orderBy('mentee_firstname')

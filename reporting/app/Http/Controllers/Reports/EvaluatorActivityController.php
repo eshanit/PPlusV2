@@ -10,6 +10,28 @@ use Inertia\Response;
 
 class EvaluatorActivityController extends Controller
 {
+    private function baseWhere(): string
+    {
+        $user = auth()->user();
+
+        if (! $user || $user->isAdmin() || ! $user->district_id) {
+            return '1=1';
+        }
+
+        return "es.district_id = {$user->district_id}";
+    }
+
+    private function scopedDistricts()
+    {
+        $user = auth()->user();
+        if ($user && ! $user->isAdmin() && $user->district_id) {
+            return collect([]);
+        }
+
+        return DB::table('districts')->orderBy('name')->get(['id', 'name'])
+            ->map(fn ($d) => ['id' => (int) $d->id, 'name' => $d->name])->all();
+    }
+
     public function __invoke(Request $request): Response
     {
         $month = $request->input('month');
@@ -19,6 +41,7 @@ class EvaluatorActivityController extends Controller
             ->join('users as evaluators', 'evaluators.id', '=', 'es.evaluator_id')
             ->join('tools', 'tools.id', '=', 'es.tool_id')
             ->leftJoin('v_session_averages as sa', 'sa.session_id', '=', 'es.id')
+            ->whereRaw($this->baseWhere())
             ->where('tools.slug', '!=', 'counselling')
             ->when($month, fn ($q) => $q->whereRaw('DATE_FORMAT(es.eval_date, "%Y-%m") = ?', [$month]))
             ->when($districtId, fn ($q) => $q->where('es.district_id', $districtId))
@@ -41,18 +64,15 @@ class EvaluatorActivityController extends Controller
             ])
             ->all();
 
-        $availableMonths = DB::table('evaluation_sessions')
-            ->selectRaw('DATE_FORMAT(eval_date, "%Y-%m") as month')
-            ->groupByRaw('DATE_FORMAT(eval_date, "%Y-%m")')
-            ->orderByRaw('DATE_FORMAT(eval_date, "%Y-%m") DESC')
+        $availableMonths = DB::table('evaluation_sessions as es')
+            ->whereRaw($this->baseWhere())
+            ->selectRaw('DATE_FORMAT(es.eval_date, "%Y-%m") as month')
+            ->groupByRaw('DATE_FORMAT(es.eval_date, "%Y-%m")')
+            ->orderByRaw('DATE_FORMAT(es.eval_date, "%Y-%m") DESC')
             ->pluck('month')
             ->all();
 
-        $districts = DB::table('districts')
-            ->orderBy('name')
-            ->get(['id', 'name'])
-            ->map(fn ($d) => ['id' => (int) $d->id, 'name' => $d->name])
-            ->all();
+        $districts = $this->scopedDistricts();
 
         return Inertia::render('Reports/EvaluatorActivity', [
             'rows' => $rows,

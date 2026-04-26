@@ -10,12 +10,35 @@ use Inertia\Response;
 
 class NeedsAttentionController extends Controller
 {
+    private function baseWhere(): string
+    {
+        $user = auth()->user();
+
+        if (! $user || $user->isAdmin() || ! $user->district_id) {
+            return '1=1';
+        }
+
+        return "v_journey_summary.district_id = {$user->district_id}";
+    }
+
+    private function scopedDistricts()
+    {
+        $user = auth()->user();
+        if ($user && ! $user->isAdmin() && $user->district_id) {
+            return collect([]);
+        }
+
+        return DB::table('districts')->orderBy('name')->get(['id', 'name'])
+            ->map(fn ($d) => ['id' => (int) $d->id, 'name' => $d->name])->all();
+    }
+
     public function __invoke(Request $request): Response
     {
         $toolId = $request->input('tool_id');
         $districtId = $request->input('district_id');
 
         $base = DB::table('v_journey_summary')
+            ->whereRaw($this->baseWhere())
             ->where('competency_status', 'in_progress')
             ->whereRaw('DATEDIFF(CURDATE(), latest_session_date) >= 30')
             ->when($toolId, fn ($q) => $q->where('tool_id', $toolId))
@@ -55,6 +78,7 @@ class NeedsAttentionController extends Controller
         ];
 
         $chartData = DB::table('v_journey_summary')
+            ->whereRaw($this->baseWhere())
             ->where('competency_status', 'in_progress')
             ->whereRaw('DATEDIFF(CURDATE(), latest_session_date) >= 30')
             ->selectRaw('DATEDIFF(CURDATE(), latest_session_date) as days_stale, tool_label')
@@ -84,11 +108,7 @@ class NeedsAttentionController extends Controller
             ->map(fn ($t) => ['id' => (int) $t->id, 'label' => $t->label])
             ->all();
 
-        $districts = DB::table('districts')
-            ->orderBy('name')
-            ->get(['id', 'name'])
-            ->map(fn ($d) => ['id' => (int) $d->id, 'name' => $d->name])
-            ->all();
+        $districts = $this->scopedDistricts();
 
         return Inertia::render('Reports/NeedsAttention', [
             'items' => $items,
