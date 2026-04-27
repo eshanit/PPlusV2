@@ -3,15 +3,18 @@ import Button from '../components/ui/Button.vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import {
     Activity,
+    BarChart2,
     BarChart3,
     ChevronRight,
     ClipboardList,
     Clock,
     FileSpreadsheet,
+    Flame,
     Gauge,
     LayoutDashboard,
     LogOut,
     Settings,
+    ShieldAlert,
     Target,
     TrendingUp,
     UserCheck,
@@ -37,8 +40,16 @@ const sections = computed(() => {
             label: 'Journey Reports',
             items: [
                 { href: '/journey-status', label: 'Journey Status', icon: Target },
+                { href: '/tool-analysis', label: 'Tool Analysis', icon: BarChart2 },
+                { href: '/hot-spots', label: 'Hot Spots', icon: Flame },
                 { href: '/low-score-watchlist', label: 'Low-Score Watchlist', icon: Activity },
                 { href: '/gap-overview', label: 'Gap Overview', icon: ClipboardList },
+            ],
+        },
+        {
+            label: 'Safety',
+            items: [
+                { href: '/high-risk-alerts', label: 'High-Risk Alerts', icon: ShieldAlert },
             ],
         },
         {

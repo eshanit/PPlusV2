@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Reports;
 
 use App\Http\Controllers\Controller;
 use App\Models\District;
+use App\Models\Facility;
 use App\Models\JourneySummary;
 use App\Models\Tool;
 use App\Services\ReportScopeService;
@@ -21,6 +22,7 @@ class JourneyStatusController extends Controller
             ->whereRaw(...$this->scope->scope('v_journey_summary'))
             ->when($request->tool_id, fn ($q) => $q->where('tool_id', $request->tool_id))
             ->when($request->district_id, fn ($q) => $q->where('district_id', $request->district_id))
+            ->when($request->facility_id, fn ($q) => $q->where('facility_id', $request->facility_id))
             ->when($request->status, fn ($q) => $q->where('competency_status', $request->status))
             ->orderBy('latest_session_date', 'desc');
 
@@ -42,9 +44,11 @@ class JourneyStatusController extends Controller
         ]);
 
         $districtsQuery = District::orderBy('name');
+        $facilitiesQuery = Facility::orderBy('name');
         $user = auth()->user();
         if ($user && ! $user->isAdmin() && $user->district_id) {
             $districtsQuery->where('id', $user->district_id);
+            $facilitiesQuery->where('district_id', $user->district_id);
         }
 
         return Inertia::render('Reports/JourneyStatus', [
@@ -62,7 +66,8 @@ class JourneyStatusController extends Controller
                 ->orderBy('sort_order')
                 ->get(['id', 'label']),
             'districts' => $districtsQuery->get(['id', 'name']),
-            'filters' => $request->only(['tool_id', 'district_id', 'status']),
+            'facilities' => $facilitiesQuery->get(['id', 'name']),
+            'filters' => $request->only(['tool_id', 'district_id', 'facility_id', 'status']),
         ]);
     }
 }

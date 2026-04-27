@@ -17,6 +17,7 @@ class EvaluationItem extends Model
         'number',
         'title',
         'is_advanced',
+        'is_critical',
         'sort_order',
     ];
 
@@ -24,6 +25,7 @@ class EvaluationItem extends Model
     {
         return [
             'is_advanced' => 'boolean',
+            'is_critical' => 'boolean',
         ];
     }
 

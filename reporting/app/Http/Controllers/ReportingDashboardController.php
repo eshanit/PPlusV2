@@ -24,7 +24,7 @@ class ReportingDashboardController extends Controller
         return Inertia::render('Dashboard', [
             'summary' => $this->summary(),
             'toolProgress' => $this->toolProgress(),
-            'districtProgress' => $this->districtProgress(),
+            'facilityProgress' => $this->facilityProgress(),
             'recentCompletions' => $this->recentCompletions(),
             'activeJourneys' => $this->activeJourneys(),
             'gapSummary' => $this->gapSummary(),
@@ -76,7 +76,7 @@ class ReportingDashboardController extends Controller
                 'openGaps' => 0,
             ],
             'toolProgress' => [],
-            'districtProgress' => [],
+            'facilityProgress' => [],
             'recentCompletions' => [],
             'activeJourneys' => [],
             'gapSummary' => [
@@ -130,6 +130,7 @@ class ReportingDashboardController extends Controller
                 ->join('tools', 'tools.id', '=', 'status.tool_id')
                 ->whereRaw(...$this->scope->scope('status'))
                 ->select([
+                    'tools.id',
                     'tools.slug',
                     'tools.label',
                 ])
@@ -142,6 +143,7 @@ class ReportingDashboardController extends Controller
                 ->orderBy('tools.sort_order')
                 ->get()
                 ->map(fn (object $row): array => [
+                    'id' => $row->id,
                     'slug' => $row->slug,
                     'label' => $row->label,
                     'totalJourneys' => (int) $row->total_journeys,
@@ -158,32 +160,29 @@ class ReportingDashboardController extends Controller
     /**
      * @return array<int, array<string, mixed>>
      */
-    private function districtProgress(): array
+    private function facilityProgress(): array
     {
-        return $this->cached('district_progress', function () {
-            $baseQuery = DB::table('v_evaluation_group_status as status')
+        return $this->cached('facility_progress', function () {
+            return DB::table('v_evaluation_group_status as status')
+                ->leftJoin('facilities', 'facilities.id', '=', 'status.facility_id')
                 ->leftJoin('districts', 'districts.id', '=', 'status.district_id')
                 ->whereRaw(...$this->scope->scope('status'))
                 ->select([
-                    'districts.id',
-                    'districts.name',
+                    'facilities.id',
+                    'facilities.name',
+                    'districts.name as district_name',
                 ])
                 ->selectRaw('COUNT(*) as total_journeys')
                 ->selectRaw('SUM(CASE WHEN status.sessions_to_basic_competence IS NOT NULL THEN 1 ELSE 0 END) as basic_complete')
                 ->selectRaw('ROUND(AVG(status.days_to_basic_competence), 1) as avg_days_to_basic')
-                ->groupBy('districts.id', 'districts.name')
+                ->groupBy('facilities.id', 'facilities.name', 'districts.name')
                 ->orderByDesc('total_journeys')
-                ->limit(8);
-
-            $user = auth()->user();
-            if ($user && $user->isDistrictAdmin() && $user->district_id) {
-                $baseQuery->where('districts.id', $user->district_id);
-            }
-
-            return $baseQuery->get()
+                ->limit(8)
+                ->get()
                 ->map(fn (object $row): array => [
                     'id' => $row->id,
                     'name' => $row->name ?? 'Unassigned',
+                    'district' => $row->district_name ?? '—',
                     'totalJourneys' => (int) $row->total_journeys,
                     'basicComplete' => (int) $row->basic_complete,
                     'completionRate' => $this->rate((int) $row->basic_complete, (int) $row->total_journeys),

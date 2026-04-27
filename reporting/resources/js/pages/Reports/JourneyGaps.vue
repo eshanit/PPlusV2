@@ -10,7 +10,7 @@ defineOptions({ layout: AppLayout });
 
 const props = defineProps({
     journey: { type: Object, required: true },
-    sessions: { type: Array, default: () => [] },
+    gaps: { type: Array, default: () => [] },
 });
 
 const statusVariant = (status) =>
@@ -19,27 +19,24 @@ const statusVariant = (status) =>
 const statusLabel = (status) =>
     ({ fully_competent: 'Fully Competent', basic_competent: 'Basic Competent', in_progress: 'In Progress' }[status] ?? '—');
 
-const phaseLabel = (phase) =>
-    ({
-        initial_intensive: 'Initial Intensive',
-        ongoing: 'Ongoing',
-        supervision: 'Supervision',
-    }[phase] ?? phase ?? '—');
-
-const scoreColor = (score) => {
-    if (score == null) return 'text-muted-foreground';
-    if (score >= 4) return 'text-emerald-600 font-semibold';
-    if (score >= 3) return 'text-amber-600';
-    return 'text-red-600';
+const domainConfig = {
+    knowledge: { label: 'Knowledge', cls: 'bg-blue-100 text-blue-700' },
+    critical_reasoning: { label: 'Critical Reasoning', cls: 'bg-purple-100 text-purple-700' },
+    clinical_skills: { label: 'Clinical Skills', cls: 'bg-emerald-100 text-emerald-700' },
+    communication: { label: 'Communication', cls: 'bg-amber-100 text-amber-700' },
+    attitude: { label: 'Attitude', cls: 'bg-rose-100 text-rose-700' },
 };
 
-const isCompetencySession = (sessionNumber) =>
-    props.journey.sessionsToBasic !== null &&
-    sessionNumber === Number(props.journey.sessionsToBasic);
+const supervisionLabel = (level) =>
+    ({
+        intensive_mentorship: 'Intensive Mentorship',
+        ongoing_mentorship: 'Ongoing Mentorship',
+        independent_practice: 'Independent Practice',
+    }[level] ?? level ?? '—');
 </script>
 
 <template>
-    <Head :title="`Sessions — ${journey.menteeName}`" />
+    <Head :title="`Gaps — ${journey.menteeName}`" />
 
     <main class="mx-auto max-w-5xl space-y-5 px-4 py-6 sm:px-6 lg:px-8">
 
@@ -50,7 +47,14 @@ const isCompetencySession = (sessionNumber) =>
                 Journey Status
             </Link>
             <ChevronRight class="size-3 opacity-50" />
-            <span class="text-foreground">{{ journey.menteeName }}</span>
+            <Link
+                :href="`/journey-sessions?group_id=${encodeURIComponent(journey.groupId)}`"
+                class="hover:text-foreground"
+            >
+                {{ journey.menteeName }}
+            </Link>
+            <ChevronRight class="size-3 opacity-50" />
+            <span class="text-foreground">Open Gaps</span>
         </div>
 
         <!-- Journey header -->
@@ -73,94 +77,93 @@ const isCompetencySession = (sessionNumber) =>
                     </div>
                 </div>
 
-                <!-- Summary stats -->
                 <div class="flex gap-4 text-center">
                     <div>
                         <p class="text-2xl font-bold tabular-nums">{{ journey.totalSessions }}</p>
                         <p class="text-xs text-muted-foreground">Total sessions</p>
                     </div>
-                    <div v-if="journey.sessionsToBasic">
-                        <p class="text-2xl font-bold tabular-nums text-emerald-600">{{ journey.sessionsToBasic }}</p>
-                        <p class="text-xs text-muted-foreground">Sessions to competency</p>
-                    </div>
-                    <div v-if="journey.daysToBasic">
-                        <p class="text-2xl font-bold tabular-nums">{{ journey.daysToBasic }}</p>
-                        <p class="text-xs text-muted-foreground">Days to competency</p>
-                    </div>
                     <div v-if="journey.openGaps > 0">
-                        <p class="text-2xl font-bold tabular-nums text-red-600">{{ journey.openGaps }}</p>
+                        <p class="text-2xl font-bold tabular-nums text-orange-600">{{ journey.openGaps }}</p>
                         <p class="text-xs text-muted-foreground">Open gaps</p>
+                    </div>
+                    <div v-if="journey.resolvedGaps > 0">
+                        <p class="text-2xl font-bold tabular-nums text-emerald-600">{{ journey.resolvedGaps }}</p>
+                        <p class="text-xs text-muted-foreground">Resolved gaps</p>
                     </div>
                 </div>
             </div>
-
-            <div v-if="journey.basicCompetentAt" class="mt-3 flex items-center gap-2 rounded-md bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
-                <span class="font-medium">Basic competency achieved:</span>
-                <span>{{ journey.basicCompetentAt }}</span>
-            </div>
         </Card>
 
-        <!-- Sessions table -->
+        <!-- Gaps table -->
         <Card>
             <div class="border-b px-4 py-3">
-                <h2 class="text-base font-semibold">All Sessions</h2>
-                <p class="text-xs text-muted-foreground">Click any session to view the full item-level report.</p>
+                <h2 class="text-base font-semibold">All Gaps</h2>
+                <p class="text-xs text-muted-foreground">Click any gap to view detailed analysis and reporting.</p>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-sm">
                     <thead class="bg-muted/60 text-xs uppercase text-muted-foreground">
                         <tr>
                             <th class="px-4 py-3 font-medium">#</th>
-                            <th class="px-4 py-3 font-medium">Date</th>
-                            <th class="px-4 py-3 font-medium">Phase</th>
-                            <th class="px-4 py-3 font-medium text-right">Avg Score</th>
-                            <th class="px-4 py-3 font-medium text-right">Scored</th>
-                            <th class="px-4 py-3 font-medium text-right">N/A</th>
+                            <th class="px-4 py-3 font-medium">Description</th>
+                            <th class="px-4 py-3 font-medium">Domains</th>
+                            <th class="px-4 py-3 font-medium">Identified</th>
+                            <th class="px-4 py-3 font-medium">Supervision</th>
+                            <th class="px-4 py-3 font-medium">Status</th>
                             <th class="px-4 py-3 font-medium text-right"></th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-if="sessions.length === 0">
+                        <tr v-if="gaps.length === 0">
                             <td colspan="7" class="px-4 py-10 text-center text-muted-foreground">
-                                No sessions found for this journey.
+                                No gaps recorded for this journey.
                             </td>
                         </tr>
                         <tr
-                            v-for="s in sessions"
-                            :key="s.sessionId"
+                            v-for="(g, i) in gaps"
+                            :key="g.id"
                             class="border-t transition-colors hover:bg-muted/30"
-                            :class="isCompetencySession(s.sessionNumber) ? 'bg-emerald-50' : ''"
                         >
+                            <td class="px-4 py-3 font-mono text-xs text-muted-foreground">{{ i + 1 }}</td>
+                            <td class="max-w-xs px-4 py-3">
+                                <p class="line-clamp-2 text-sm">{{ g.description }}</p>
+                            </td>
                             <td class="px-4 py-3">
-                                <div class="flex items-center gap-2">
-                                    <span class="font-mono text-xs font-medium text-muted-foreground">{{ s.sessionNumber }}</span>
+                                <div class="flex flex-wrap gap-1">
                                     <span
-                                        v-if="isCompetencySession(s.sessionNumber)"
-                                        class="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700"
+                                        v-for="d in g.domains"
+                                        :key="d"
+                                        :class="domainConfig[d]?.cls ?? 'bg-muted text-muted-foreground'"
+                                        class="rounded-full px-2 py-0.5 text-[10px] font-medium"
                                     >
-                                        Competent
+                                        {{ domainConfig[d]?.label ?? d }}
                                     </span>
                                 </div>
                             </td>
-                            <td class="px-4 py-3 tabular-nums">{{ s.date }}</td>
-                            <td class="px-4 py-3 text-muted-foreground">{{ phaseLabel(s.phase) }}</td>
-                            <td class="px-4 py-3 text-right tabular-nums">
-                                <span :class="scoreColor(s.avgScore)">
-                                    {{ s.avgScore != null ? s.avgScore.toFixed(2) : '—' }}
+                            <td class="px-4 py-3 tabular-nums text-muted-foreground">{{ g.identifiedAt }}</td>
+                            <td class="px-4 py-3 text-muted-foreground">
+                                {{ g.supervisionLevel ? supervisionLabel(g.supervisionLevel) : '—' }}
+                            </td>
+                            <td class="px-4 py-3">
+                                <span
+                                    v-if="g.isResolved"
+                                    class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700"
+                                >
+                                    Resolved
                                 </span>
-                            </td>
-                            <td class="px-4 py-3 text-right tabular-nums text-muted-foreground">
-                                {{ s.scoredItems ?? '—' }}
-                            </td>
-                            <td class="px-4 py-3 text-right tabular-nums text-muted-foreground">
-                                {{ s.naItems ?? '—' }}
+                                <span
+                                    v-else
+                                    class="rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold text-orange-700"
+                                >
+                                    Open
+                                </span>
                             </td>
                             <td class="px-4 py-3 text-right">
                                 <TableLink
-                                    :href="`/sessions/${s.sessionId}`"
-                                    tooltip="View the full session report"
+                                    :href="`/gap-report/${g.id}`"
+                                    tooltip="View gap analysis and reporting"
                                 >
-                                    View report →
+                                    View analysis →
                                 </TableLink>
                             </td>
                         </tr>

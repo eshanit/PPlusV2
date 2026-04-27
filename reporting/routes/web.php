@@ -7,6 +7,12 @@ use App\Http\Controllers\Reports\EvaluatorActivityController;
 use App\Http\Controllers\Reports\ExportsController;
 use App\Http\Controllers\Reports\GapController;
 use App\Http\Controllers\Reports\GapOverviewController;
+use App\Http\Controllers\Reports\GapReportController;
+use App\Http\Controllers\Reports\HighRiskAlertsController;
+use App\Http\Controllers\Reports\HotSpotsController;
+use App\Http\Controllers\Reports\ItemAnalysisController;
+use App\Http\Controllers\Reports\JourneyGapsController;
+use App\Http\Controllers\Reports\JourneyHeatmapController;
 use App\Http\Controllers\Reports\JourneySessionsController;
 use App\Http\Controllers\Reports\JourneyStatusController;
 use App\Http\Controllers\Reports\LowScoreWatchlistController;
@@ -14,6 +20,7 @@ use App\Http\Controllers\Reports\NeedsAttentionController;
 use App\Http\Controllers\Reports\ScoreTrajectoryController;
 use App\Http\Controllers\Reports\SessionReportController;
 use App\Http\Controllers\Reports\TimeToCompetenceController;
+use App\Http\Controllers\Reports\ToolAnalysisController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('reporting.auth')->group(function () {
@@ -22,6 +29,8 @@ Route::middleware('reporting.auth')->group(function () {
 
     Route::get('/journey-status', JourneyStatusController::class)->name('reports.journey-status');
     Route::get('/journey-sessions', JourneySessionsController::class)->name('reports.journey-sessions');
+    Route::get('/journey-gaps', JourneyGapsController::class)->name('reports.journey-gaps');
+    Route::get('/gap-report/{id}', GapReportController::class)->name('reports.gap-report');
     Route::get('/low-score-watchlist', LowScoreWatchlistController::class)->name('reports.low-score-watchlist');
     Route::get('/gap-overview', GapOverviewController::class)->name('reports.gap-overview');
 
@@ -30,6 +39,13 @@ Route::middleware('reporting.auth')->group(function () {
     Route::get('/time-to-competence', TimeToCompetenceController::class)->name('reports.time-to-competence');
     Route::get('/cohort-progress', CohortProgressController::class)->name('reports.cohort-progress');
     Route::get('/evaluator-activity', EvaluatorActivityController::class)->name('reports.evaluator-activity');
+
+    Route::get('/tool-analysis', ToolAnalysisController::class)->name('reports.tool-analysis');
+    Route::get('/tool-analysis/items/{id}', ItemAnalysisController::class)->name('reports.item-analysis');
+
+    Route::get('/hot-spots', HotSpotsController::class)->name('reports.hot-spots');
+    Route::get('/journey-heatmap', JourneyHeatmapController::class)->name('reports.journey-heatmap');
+    Route::get('/high-risk-alerts', HighRiskAlertsController::class)->name('reports.high-risk-alerts');
 
     Route::get('/sessions/{session}', SessionReportController::class)->name('reports.session');
 
