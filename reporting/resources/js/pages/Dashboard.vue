@@ -50,6 +50,10 @@ function trimNumber(value) {
     <Head title="Dashboard" />
 
     <main class="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+           <div class="flex flex-col gap-1">
+            <h1 class="text-2xl font-semibold tracking-normal">Dashboard</h1>
+            <p class="text-sm text-muted-foreground">NCD Pen-Plus Mentorship Tool.</p>
+        </div>
 
         <!-- Summary metric cards -->
         <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

@@ -1,5 +1,7 @@
 <?php
 
+use App\Mcp\Servers\ScoreAnalysisServer;
 use Laravel\Mcp\Facades\Mcp;
 
-// Mcp::web('/mcp/demo', \App\Mcp\Servers\PublicServer::class);
+// Score Analysis API — provides score distribution and gap analysis tools
+Mcp::web('/mcp/score-analysis', ScoreAnalysisServer::class);

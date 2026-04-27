@@ -3,44 +3,24 @@
 namespace App\Http\Controllers\Reports;
 
 use App\Http\Controllers\Controller;
-use App\Services\ReportScopeService;
-use Illuminate\Http\Request;
+use App\Http\Requests\JourneyGapsRequest;
+use App\Services\ReportQueryService;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class JourneyGapsController extends Controller
 {
-    public function __construct(private readonly ReportScopeService $scope) {}
+    public function __construct(
+        private readonly ReportQueryService $queries,
+    ) {}
 
-    public function __invoke(Request $request): Response
+    public function __invoke(JourneyGapsRequest $request): Response
     {
         $groupId = $request->input('group_id');
+        $journey = $this->queries->getJourneySummaryData($groupId);
 
-        if (! $groupId) {
-            abort(404);
-        }
-
-        $journey = DB::table('v_journey_summary')
-            ->whereRaw(...$this->scope->scope('v_journey_summary'))
-            ->where('evaluation_group_id', $groupId)
-            ->select([
-                'evaluation_group_id',
-                'mentee_firstname',
-                'mentee_lastname',
-                'evaluator_firstname',
-                'evaluator_lastname',
-                'tool_label',
-                'district_name',
-                'facility_name',
-                'competency_status',
-                'total_sessions',
-                'open_gaps',
-                'resolved_gaps',
-            ])
-            ->first();
-
-        if (! $journey) {
+        if (! $journey?->getGroupId()) {
             abort(404);
         }
 
@@ -75,18 +55,7 @@ class JourneyGapsController extends Controller
             ->all();
 
         return Inertia::render('Reports/JourneyGaps', [
-            'journey' => [
-                'groupId' => $journey->evaluation_group_id,
-                'menteeName' => trim("{$journey->mentee_firstname} {$journey->mentee_lastname}"),
-                'evaluatorName' => trim("{$journey->evaluator_firstname} {$journey->evaluator_lastname}"),
-                'toolLabel' => $journey->tool_label,
-                'district' => $journey->district_name,
-                'facility' => $journey->facility_name,
-                'status' => $journey->competency_status,
-                'totalSessions' => (int) $journey->total_sessions,
-                'openGaps' => (int) $journey->open_gaps,
-                'resolvedGaps' => (int) $journey->resolved_gaps,
-            ],
+            'journey' => $journey->toArrayForGaps(),
             'gaps' => $gaps,
         ]);
     }

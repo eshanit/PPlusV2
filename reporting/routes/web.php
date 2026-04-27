@@ -21,6 +21,8 @@ use App\Http\Controllers\Reports\ScoreTrajectoryController;
 use App\Http\Controllers\Reports\SessionReportController;
 use App\Http\Controllers\Reports\TimeToCompetenceController;
 use App\Http\Controllers\Reports\ToolAnalysisController;
+use App\Http\Controllers\Reports\ToolScoreDistributionController;
+use App\Http\Controllers\ScoreAnalysisExportController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('reporting.auth')->group(function () {
@@ -41,6 +43,7 @@ Route::middleware('reporting.auth')->group(function () {
     Route::get('/evaluator-activity', EvaluatorActivityController::class)->name('reports.evaluator-activity');
 
     Route::get('/tool-analysis', ToolAnalysisController::class)->name('reports.tool-analysis');
+    Route::get('/tool-score-distribution', ToolScoreDistributionController::class)->name('reports.tool-score-distribution');
     Route::get('/tool-analysis/items/{id}', ItemAnalysisController::class)->name('reports.item-analysis');
 
     Route::get('/hot-spots', HotSpotsController::class)->name('reports.hot-spots');
@@ -60,6 +63,10 @@ Route::middleware('reporting.auth')->group(function () {
         Route::get('/gaps/{id}', [GapController::class, 'show'])->name('reports.gaps.show');
         Route::put('/gaps/{id}', [GapController::class, 'update'])->name('reports.gaps.update');
         Route::delete('/gaps/{id}', [GapController::class, 'destroy'])->name('reports.gaps.destroy');
+
+        // Score Analysis Exports
+        Route::get('/score-analysis/export', [ScoreAnalysisExportController::class, 'exportCsv'])->name('score-analysis.export');
+        Route::get('/score-analysis/export-items', [ScoreAnalysisExportController::class, 'exportItemsCsv'])->name('score-analysis.export-items');
     });
 });
 

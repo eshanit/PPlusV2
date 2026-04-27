@@ -13,6 +13,7 @@ import {
     Gauge,
     LayoutDashboard,
     LogOut,
+    PieChart,
     Settings,
     ShieldAlert,
     Target,
@@ -41,6 +42,7 @@ const sections = computed(() => {
             items: [
                 { href: '/journey-status', label: 'Journey Status', icon: Target },
                 { href: '/tool-analysis', label: 'Tool Analysis', icon: BarChart2 },
+                { href: '/tool-score-distribution', label: 'Score Distribution', icon: PieChart },
                 { href: '/hot-spots', label: 'Hot Spots', icon: Flame },
                 { href: '/low-score-watchlist', label: 'Low-Score Watchlist', icon: Activity },
                 { href: '/gap-overview', label: 'Gap Overview', icon: ClipboardList },
