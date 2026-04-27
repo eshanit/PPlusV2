@@ -24,7 +24,10 @@ return new class extends Migration
             $table->index('item_id', 'idx_scores_item');
         });
 
-        DB::statement('ALTER TABLE session_item_scores ADD CONSTRAINT chk_mentee_score CHECK (mentee_score BETWEEN 1 AND 5)');
+        // SQLite doesn't support CHECK constraints
+        if (DB::connection()->getDriverName() !== 'sqlite') {
+            DB::statement('ALTER TABLE session_item_scores ADD CONSTRAINT chk_mentee_score CHECK (mentee_score BETWEEN 1 AND 5)');
+        }
     }
 
     public function down(): void

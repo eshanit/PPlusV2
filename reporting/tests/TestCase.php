@@ -12,4 +12,9 @@ abstract class TestCase extends BaseTestCase
 
         $this->withoutVite();
     }
+
+    protected function defineEnvironment($app): void
+    {
+        // Skip CHECK constraints on SQLite - not supported
+    }
 }

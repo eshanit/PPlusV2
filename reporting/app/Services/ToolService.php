@@ -12,8 +12,8 @@ class ToolService
         return DB::table('tools')
             ->where('slug', '!=', 'counselling')
             ->orderBy('sort_order')
-            ->get(['id', 'label'])
-            ->map(fn ($t) => ['id' => (int) $t->id, 'label' => $t->label])
+            ->get(['id', 'label', 'slug'])
+            ->map(fn ($t) => ['id' => (int) $t->id, 'label' => $t->label, 'slug' => $t->slug])
             ->all();
     }
 
