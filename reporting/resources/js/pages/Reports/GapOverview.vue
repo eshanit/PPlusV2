@@ -3,6 +3,7 @@ import FilterBar from '../../components/FilterBar.vue';
 import MetricCard from '../../components/MetricCard.vue';
 import Badge from '../../components/ui/Badge.vue';
 import Card from '../../components/ui/Card.vue';
+import TableLink from '../../components/ui/TableLink.vue';
 import AppLayout from '../../layouts/AppLayout.vue';
 import { Head } from '@inertiajs/vue3';
 import { Activity, CheckCircle2, Clock3, Flag } from 'lucide-vue-next';
@@ -98,11 +99,12 @@ const metric = (n, suffix = '') => (n == null ? '—' : `${Number(n).toFixed(1)}
                                 <th class="px-4 py-3 font-medium text-right">Resolved</th>
                                 <th class="px-4 py-3 font-medium">% Resolved</th>
                                 <th class="px-4 py-3 font-medium text-right">Avg Days</th>
+                                <th class="px-4 py-3 font-medium"></th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr v-if="byTool.length === 0">
-                                <td colspan="6" class="px-4 py-10 text-center text-muted-foreground">
+                                <td colspan="7" class="px-4 py-10 text-center text-muted-foreground">
                                     No gaps match the current filters.
                                 </td>
                             </tr>
@@ -134,6 +136,14 @@ const metric = (n, suffix = '') => (n == null ? '—' : `${Number(n).toFixed(1)}
                                 </td>
                                 <td class="px-4 py-3 text-right tabular-nums text-muted-foreground">
                                     {{ row.avgDaysToResolve != null ? row.avgDaysToResolve.toFixed(1) + 'd' : '—' }}
+                                </td>
+                                <td class="px-4 py-3 text-right">
+                                    <TableLink
+                                        :href="`/gap-list?tool_id=${row.toolId}`"
+                                        tooltip="View individual gaps for this tool"
+                                    >
+                                        View Gaps →
+                                    </TableLink>
                                 </td>
                             </tr>
                         </tbody>

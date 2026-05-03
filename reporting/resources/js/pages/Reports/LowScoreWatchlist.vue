@@ -2,6 +2,7 @@
 import FilterBar from '../../components/FilterBar.vue';
 import Card from '../../components/ui/Card.vue';
 import Pagination from '../../components/ui/Pagination.vue';
+import TableLink from '../../components/ui/TableLink.vue';
 import AppLayout from '../../layouts/AppLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-vue-next';
@@ -96,11 +97,12 @@ const goalBarWidth = (pct) => `${Math.min(100, Math.max(0, pct))}%`;
                                     />
                                 </span>
                             </th>
+                            <th class="px-4 py-3 font-medium"></th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-if="items.length === 0">
-                            <td colspan="7" class="px-4 py-10 text-center text-muted-foreground">
+                            <td colspan="8" class="px-4 py-10 text-center text-muted-foreground">
                                 No items match the current filters.
                             </td>
                         </tr>
@@ -144,6 +146,14 @@ const goalBarWidth = (pct) => `${Math.min(100, Math.max(0, pct))}%`;
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-right tabular-nums text-muted-foreground">{{ item.totalJourneys }}</td>
+                            <td class="px-4 py-3 text-right">
+                                <TableLink
+                                    :href="`/tool-analysis/items/${item.id}`"
+                                    tooltip="View mentees with scores for this item"
+                                >
+                                    View Mentees →
+                                </TableLink>
+                            </td>
                         </tr>
                     </tbody>
                 </table>

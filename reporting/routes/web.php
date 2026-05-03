@@ -6,6 +6,7 @@ use App\Http\Controllers\Reports\CohortProgressController;
 use App\Http\Controllers\Reports\EvaluatorActivityController;
 use App\Http\Controllers\Reports\ExportsController;
 use App\Http\Controllers\Reports\GapController;
+use App\Http\Controllers\Reports\GapListController;
 use App\Http\Controllers\Reports\GapOverviewController;
 use App\Http\Controllers\Reports\GapReportController;
 use App\Http\Controllers\Reports\HighRiskAlertsController;
@@ -35,6 +36,7 @@ Route::middleware('reporting.auth')->group(function () {
     Route::get('/gap-report/{id}', GapReportController::class)->name('reports.gap-report');
     Route::get('/low-score-watchlist', LowScoreWatchlistController::class)->name('reports.low-score-watchlist');
     Route::get('/gap-overview', GapOverviewController::class)->name('reports.gap-overview');
+    Route::get('/gap-list', GapListController::class)->name('reports.gap-list');
 
     Route::get('/needs-attention', NeedsAttentionController::class)->name('reports.needs-attention');
     Route::get('/score-trajectory', ScoreTrajectoryController::class)->name('reports.score-trajectory');
