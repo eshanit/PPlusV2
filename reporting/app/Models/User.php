@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 
 class User extends Authenticatable implements FilamentUser, HasName
 {
@@ -18,6 +19,13 @@ class User extends Authenticatable implements FilamentUser, HasName
     public $incrementing = false;
 
     protected $keyType = 'string';
+
+    protected static function booted(): void
+    {
+        static::creating(function (User $user): void {
+            $user->id ??= (string) Str::uuid();
+        });
+    }
 
     protected $fillable = [
         'id',
