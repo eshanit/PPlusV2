@@ -34,6 +34,24 @@ export const useSyncStore = defineStore('sync', () => {
     return `${(config.public.couchdbUrl as string).replace(/\/$/, '')}/${dbName}`
   }
 
+  // Docs are created with syncStatus: 'pending' and nothing ever flips it — once a
+  // push to CouchDB is confirmed, mark the pushed docs 'synced' so the UI badge and
+  // storage cleanup's syncStatus === 'synced' check both reflect reality.
+  async function markPushedDocsSynced(db: PouchDB.Database<object>, info: PouchDB.Replication.SyncResult<object>) {
+    if (info.direction !== 'push') return
+
+    for (const doc of info.change.docs) {
+      const pending = doc as { syncStatus?: string }
+      if (pending.syncStatus !== 'pending') continue
+
+      try {
+        await db.put({ ...doc, syncStatus: 'synced', syncedAt: Date.now() })
+      } catch {
+        // Doc moved on (edited/deleted) since the push — next push cycle will retry.
+      }
+    }
+  }
+
   // One-shot pull of users and districts from CouchDB
   async function pullAll() {
     const userStore = useUserStore()
@@ -80,21 +98,30 @@ export const useSyncStore = defineStore('sync', () => {
       .on('active', () => { sessionsState.value = 'active'; sessionsError.value = null })
       .on('paused', () => { sessionsState.value = 'paused'; lastSyncedAt.value = Date.now() })
       .on('error', (err: unknown) => { sessionsState.value = 'error'; sessionsError.value = err instanceof Error ? err.message : String(err) })
-      .on('change', () => sessionStore.loadAll())
+      .on('change', (info) => {
+        sessionStore.loadAll()
+        void markPushedDocsSynced(sessionsDb, info)
+      })
 
     gapsSync = gapsDb
       .sync(remoteUrl('penplus_gaps'), { live: true, retry: true })
       .on('active', () => { gapsState.value = 'active'; gapsError.value = null })
       .on('paused', () => { gapsState.value = 'paused'; lastSyncedAt.value = Date.now() })
       .on('error', (err: unknown) => { gapsState.value = 'error'; gapsError.value = err instanceof Error ? err.message : String(err) })
-      .on('change', () => gapStore.loadAll())
+      .on('change', (info) => {
+        gapStore.loadAll()
+        void markPushedDocsSynced(gapsDb, info)
+      })
 
     usersSync = usersDb
       .sync(remoteUrl('penplus_users'), { live: true, retry: true })
       .on('active', () => { usersState.value = 'active'; usersError.value = null })
       .on('paused', () => { usersState.value = 'paused'; lastSyncedAt.value = Date.now() })
       .on('error', (err: unknown) => { usersState.value = 'error'; usersError.value = err instanceof Error ? err.message : String(err) })
-      .on('change', () => userStore.loadUsers())
+      .on('change', (info) => {
+        userStore.loadUsers()
+        void markPushedDocsSynced(usersDb, info)
+      })
 
     districtsSync = districtsDb
       .sync(remoteUrl('penplus_districts'), { live: true, retry: true })

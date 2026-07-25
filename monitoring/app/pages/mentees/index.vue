@@ -391,73 +391,76 @@ onMounted(() => {
       </li>
     </ul>
 
-    <!-- Create/edit modal -->
-    <UModal
+    <!-- Create/edit drawer -->
+    <UDrawer
       v-model:open="showForm"
       :title="formTitle"
       :description="formMode === 'create' ? 'Create a local profile for mentorship sessions.' : 'Update this mentee profile.'"
       :dismissible="!saving"
     >
       <template #body>
-        <form class="space-y-4" @submit.prevent="saveMentee">
+        <form class="space-y-5 px-4 pb-4" @submit.prevent="saveMentee">
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <label class="space-y-1.5">
-              <span class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                First name
-              </span>
-              <UInput v-model="form.firstname" autocomplete="given-name" autofocus />
-            </label>
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
+                First name <span class="text-red-500">*</span>
+              </label>
+              <UInput v-model="form.firstname" autocomplete="given-name" autofocus class="w-full" />
+            </div>
 
-            <label class="space-y-1.5">
-              <span class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Last name
-              </span>
-              <UInput v-model="form.lastname" autocomplete="family-name" />
-            </label>
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
+                Last name <span class="text-red-500">*</span>
+              </label>
+              <UInput v-model="form.lastname" autocomplete="family-name" class="w-full" />
+            </div>
           </div>
 
-          <label class="space-y-1.5 block">
-            <span class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
               Profession
-            </span>
-            <UInput v-model="form.profession" placeholder="Nurse, clinician, doctor..." />
-          </label>
+            </label>
+            <UInput v-model="form.profession" placeholder="Nurse, clinician, doctor..." class="w-full" />
+          </div>
 
-          <label class="space-y-1.5 block">
-            <span class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
               District <span class="text-red-500">*</span>
-            </span>
+            </label>
             <USelect
               v-model="form.district"
               :items="districtOptions"
               placeholder="Select district"
               :loading="loadingDistricts"
+              class="w-full"
             />
-          </label>
+          </div>
 
-          <label class="space-y-1.5 block">
-            <span class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
               Facility <span class="text-red-500">*</span>
-            </span>
+            </label>
             <USelect
               v-model="form.facility"
               :items="facilityOptionsForDistrict"
               placeholder="Select facility"
               :disabled="!form.district"
               :loading="loadingDistricts"
+              class="w-full"
             />
             <p v-if="!form.district" class="text-xs text-gray-400 mt-1">
               Please select a district first
             </p>
-          </label>
+          </div>
         </form>
       </template>
 
       <template #footer>
-        <div class="flex w-full justify-end gap-2">
+        <div class="flex gap-3 px-4 pb-6 pt-2">
           <UButton
+            variant="outline"
             color="neutral"
-            variant="ghost"
+            class="flex-1"
             :disabled="saving"
             @click="showForm = false"
           >
@@ -465,6 +468,7 @@ onMounted(() => {
           </UButton>
           <UButton
             color="primary"
+            class="flex-1"
             :loading="saving"
             :disabled="!isFormValid"
             @click="saveMentee"
@@ -473,7 +477,7 @@ onMounted(() => {
           </UButton>
         </div>
       </template>
-    </UModal>
+    </UDrawer>
 
     <!-- Delete modal -->
     <UModal
