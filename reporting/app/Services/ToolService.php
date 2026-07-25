@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Auth;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class ToolService
@@ -24,16 +24,18 @@ class ToolService
         if ($user && ! $user->isAdmin() && $user->district_id) {
             return DB::table('districts')
                 ->where('id', $user->district_id)
+                ->whereNull('deleted_at')
                 ->orderBy('name')
                 ->get(['id', 'name'])
-                ->map(fn ($d) => ['id' => (int) $d->id, 'name' => $d->name])
+                ->map(fn ($d) => ['id' => $d->id, 'name' => $d->name])
                 ->all();
         }
 
         return DB::table('districts')
+            ->whereNull('deleted_at')
             ->orderBy('name')
             ->get(['id', 'name'])
-            ->map(fn ($d) => ['id' => (int) $d->id, 'name' => $d->name])
+            ->map(fn ($d) => ['id' => $d->id, 'name' => $d->name])
             ->all();
     }
 

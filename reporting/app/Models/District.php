@@ -4,12 +4,23 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 class District extends Model
 {
+    use SoftDeletes;
+
     public $incrementing = false;
 
     protected $keyType = 'string';
+
+    protected static function booted(): void
+    {
+        static::creating(function (District $district): void {
+            $district->id ??= (string) Str::uuid();
+        });
+    }
 
     protected $fillable = [
         'id',

@@ -50,12 +50,14 @@ class GapEntry extends Model
 
     public function mentee(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'mentee_id');
+        // withTrashed: historical gaps must keep showing the mentee's name
+        // even if that clinician was later soft-deleted.
+        return $this->belongsTo(User::class, 'mentee_id')->withTrashed();
     }
 
     public function evaluator(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'evaluator_id');
+        return $this->belongsTo(User::class, 'evaluator_id')->withTrashed();
     }
 
     public function tool(): BelongsTo

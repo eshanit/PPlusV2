@@ -43,12 +43,14 @@ class EvaluationSession extends Model
 
     public function mentee(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'mentee_id');
+        // withTrashed: historical sessions must keep showing the mentee's name
+        // even if that clinician was later soft-deleted.
+        return $this->belongsTo(User::class, 'mentee_id')->withTrashed();
     }
 
     public function evaluator(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'evaluator_id');
+        return $this->belongsTo(User::class, 'evaluator_id')->withTrashed();
     }
 
     public function tool(): BelongsTo
@@ -58,12 +60,12 @@ class EvaluationSession extends Model
 
     public function facility(): BelongsTo
     {
-        return $this->belongsTo(Facility::class);
+        return $this->belongsTo(Facility::class)->withTrashed();
     }
 
     public function district(): BelongsTo
     {
-        return $this->belongsTo(District::class);
+        return $this->belongsTo(District::class)->withTrashed();
     }
 
     public function itemScores(): HasMany

@@ -8,13 +8,14 @@ use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 
 class User extends Authenticatable implements FilamentUser, HasName
 {
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, SoftDeletes;
 
     public $incrementing = false;
 
@@ -68,12 +69,14 @@ class User extends Authenticatable implements FilamentUser, HasName
 
     public function district(): BelongsTo
     {
-        return $this->belongsTo(District::class);
+        // withTrashed: a clinician under a since-deleted district should still show its name.
+        return $this->belongsTo(District::class)->withTrashed();
     }
 
     public function facility(): BelongsTo
     {
-        return $this->belongsTo(Facility::class);
+        // withTrashed: a clinician under a since-deleted facility should still show its name.
+        return $this->belongsTo(Facility::class)->withTrashed();
     }
 
     public function sessionsAsMentee(): HasMany

@@ -4,6 +4,8 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\FacilityResource\Pages;
 use App\Models\Facility;
+use Filament\Forms;
+use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Filters\SelectFilter;
@@ -18,6 +20,22 @@ class FacilityResource extends Resource
     protected static ?string $navigationGroup = 'Reference Data';
 
     protected static ?int $navigationSort = 2;
+
+    public static function form(Form $form): Form
+    {
+        return $form
+            ->schema([
+                Forms\Components\TextInput::make('name')
+                    ->required()
+                    ->maxLength(255),
+                Forms\Components\Select::make('district_id')
+                    ->label('District')
+                    ->relationship('district', 'name')
+                    ->required()
+                    ->searchable()
+                    ->preload(),
+            ]);
+    }
 
     public static function table(Table $table): Table
     {
@@ -34,6 +52,10 @@ class FacilityResource extends Resource
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('deleted_at')
+                    ->label('Deleted')
+                    ->dateTime()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('name')
             ->filters([
@@ -41,8 +63,13 @@ class FacilityResource extends Resource
                     ->relationship('district', 'name')
                     ->searchable()
                     ->preload(),
+                Tables\Filters\TrashedFilter::make(),
             ])
-            ->actions([])
+            ->actions([
+                Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\RestoreAction::make(),
+            ])
             ->bulkActions([]);
     }
 
@@ -50,6 +77,8 @@ class FacilityResource extends Resource
     {
         return [
             'index' => Pages\ListFacilities::route('/'),
+            'create' => Pages\CreateFacility::route('/create'),
+            'edit' => Pages\EditFacility::route('/{record}/edit'),
         ];
     }
 }
