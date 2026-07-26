@@ -14,7 +14,12 @@ class ReportScopeService
      *
      * Usage: ->whereRaw(...$this->scope->scope('v_journey_summary'))
      *
-     * @return array{0: string, 1: array<int, int>}
+     * district_id is a char(36) UUID, not an integer — casting it to (int) makes the
+     * bound value 0, and MySQL's implicit numeric coercion then matches that against
+     * every UUID string (since a non-numeric string casts to 0 too), silently turning
+     * this into a no-op for every non-admin user. Bind the raw string instead.
+     *
+     * @return array{0: string, 1: array<int, string>}
      */
     public function scope(string $table, string $column = 'district_id'): array
     {
@@ -24,7 +29,7 @@ class ReportScopeService
             return ['1=1', []];
         }
 
-        return ["{$table}.{$column} = ?", [(int) $user->district_id]];
+        return ["{$table}.{$column} = ?", [$user->district_id]];
     }
 
     /**
@@ -33,7 +38,7 @@ class ReportScopeService
      *
      * Usage: ->whereRaw(...$this->scope->gapScope())
      *
-     * @return array{0: string, 1: array<int, int>}
+     * @return array{0: string, 1: array<int, string>}
      */
     public function gapScope(): array
     {
@@ -45,7 +50,7 @@ class ReportScopeService
 
         return [
             'gap_entries.evaluation_group_id IN (SELECT evaluation_group_id FROM evaluation_sessions WHERE district_id = ?)',
-            [(int) $user->district_id],
+            [$user->district_id],
         ];
     }
 

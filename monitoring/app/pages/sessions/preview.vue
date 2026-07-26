@@ -210,7 +210,7 @@ function goBack() {
   router.back()
 }
 
-const isValid = computed(() => phase.value !== null && !!evalDateStr.value)
+const isValid = computed(() => !!phase.value && !!evalDateStr.value)
 </script>
 
 <template>

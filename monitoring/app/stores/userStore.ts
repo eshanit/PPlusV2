@@ -126,15 +126,6 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  function usernameExists(username: string, exceptId?: string): boolean {
-    const value = username.trim().toLowerCase()
-
-    return allUsers.value.some(user =>
-      user.id !== exceptId &&
-      user.username.trim().toLowerCase() === value
-    )
-  }
-
   async function saveUser(input: IUserInput): Promise<IUserRef> {
     const firstname = cleanText(input.firstname)
     const lastname = cleanText(input.lastname)
@@ -234,7 +225,6 @@ export const useUserStore = defineStore('user', () => {
     loadUsers,
     saveUser,
     removeUser,
-    usernameExists,
     pullFromCouchDb,
   }
 })

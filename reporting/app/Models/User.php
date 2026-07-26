@@ -59,7 +59,10 @@ class User extends Authenticatable implements FilamentUser, HasName
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return $this->password !== null;
+        // Filament /admin manages Districts/Facilities/Clinicians directly — admin only.
+        // district_admin's elevated access is scoped to gap management on the
+        // reporting-dashboard side (see GapManagerOnly), not the Filament panel.
+        return $this->isAdmin() && $this->password !== null;
     }
 
     public function role(): BelongsTo

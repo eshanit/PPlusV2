@@ -19,8 +19,8 @@ class HotSpotsController extends Controller
     public function __invoke(Request $request): Response
     {
         $toolId = $request->integer('tool_id') ?: null;
-        $facilityId = $request->integer('facility_id') ?: null;
-        $districtId = $request->integer('district_id') ?: null;
+        $facilityId = $request->input('facility_id') ?: null;
+        $districtId = $request->input('district_id') ?: null;
 
         $rows = DB::table('evaluation_items as ei')
             ->join('tool_categories as tc', 'tc.id', '=', 'ei.category_id')

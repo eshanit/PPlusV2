@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\AdminOnly;
+use App\Http\Middleware\GapManagerOnly;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\ReportingAuth;
 use Illuminate\Foundation\Application;
@@ -19,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'reporting.auth' => ReportingAuth::class,
             'admin' => AdminOnly::class,
+            'gap.manager' => GapManagerOnly::class,
         ]);
         $middleware->web(append: [
             HandleInertiaRequests::class,

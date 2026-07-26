@@ -42,10 +42,6 @@ export const useDistrictStore = defineStore('district', () => {
     return opts.sort((a, b) => a.facility.localeCompare(b.facility))
   })
 
-  function getDistricts(): string[] {
-    return districts.value.map(d => d.district)
-  }
-
   function getFacilities(district: string): string[] {
     const d = districts.value.find(d => d.district === district)
     return d?.facilities ?? []
@@ -56,7 +52,6 @@ export const useDistrictStore = defineStore('district', () => {
     loading,
     loadAll,
     facilityOptions,
-    getDistricts,
     getFacilities,
   }
 })

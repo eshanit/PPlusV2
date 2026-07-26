@@ -54,9 +54,5 @@ export const useGapStore = defineStore('gaps', () => {
       .sort((a, b) => a.identifiedAt - b.identifiedAt)
   }
 
-  function unresolvedGaps(evaluationGroupId: string): IGapEntry[] {
-    return gapsForGroup(evaluationGroupId).filter(g => !g.resolvedAt)
-  }
-
-  return { gaps, loading, loadAll, save, remove, gapsForGroup, unresolvedGaps }
+  return { gaps, loading, loadAll, save, remove, gapsForGroup }
 })

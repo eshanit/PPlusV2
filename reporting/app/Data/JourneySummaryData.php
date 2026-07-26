@@ -36,6 +36,11 @@ readonly class JourneySummaryData
         return $this->source?->tool_label;
     }
 
+    public function getToolId(): ?int
+    {
+        return $this->source?->tool_id !== null ? (int) $this->source->tool_id : null;
+    }
+
     public function getDistrict(): ?string
     {
         return $this->source?->district_name;
@@ -102,6 +107,20 @@ readonly class JourneySummaryData
             'totalSessions' => $this->getTotalSessions(),
             'openGaps' => $this->getOpenGaps(),
             'resolvedGaps' => $this->getResolvedGaps(),
+        ];
+    }
+
+    public function toArrayForHeatmap(): array
+    {
+        return [
+            'groupId' => $this->getGroupId(),
+            'mentee' => $this->getMenteeName(),
+            'tool' => $this->getToolLabel(),
+            'toolId' => $this->getToolId(),
+            'facility' => $this->getFacility(),
+            'district' => $this->getDistrict(),
+            'status' => $this->getStatus(),
+            'totalSessions' => $this->getTotalSessions(),
         ];
     }
 }

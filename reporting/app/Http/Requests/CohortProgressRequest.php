@@ -15,7 +15,7 @@ class CohortProgressRequest extends FormRequest
     {
         return [
             'tool_id' => ['nullable', 'integer', 'exists:tools,id'],
-            'district_id' => ['nullable', 'integer', 'exists:districts,id'],
+            'district_id' => ['nullable', 'string', 'exists:districts,id'],
         ];
     }
 }

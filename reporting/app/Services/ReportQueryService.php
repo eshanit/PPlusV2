@@ -36,7 +36,7 @@ class ReportQueryService
             ->all();
     }
 
-    public function getCohortProgress(?int $toolId = null, ?int $districtId = null): array
+    public function getCohortProgress(?int $toolId = null, ?string $districtId = null): array
     {
         return DB::table('v_sessions_numbered as sn')
             ->join('v_session_averages as sa', 'sa.session_id', '=', 'sn.id')

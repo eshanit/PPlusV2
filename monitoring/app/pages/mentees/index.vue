@@ -32,7 +32,6 @@ const needSync = computed(() => !loadingDistricts.value && districts.value.lengt
 const search = ref('')
 const showForm = ref(false)
 const showDelete = ref(false)
-const showSyncAlert = ref(false)
 const formMode = ref<FormMode>('create')
 const editingUserId = ref<string | null>(null)
 const deleteTarget = ref<IUserRef | null>(null)
@@ -522,48 +521,6 @@ onMounted(() => {
             @click="deleteMentee"
           >
             Delete
-          </UButton>
-        </div>
-      </template>
-    </UModal>
-
-    <!-- Sync required alert -->
-    <UModal
-      v-model:open="showSyncAlert"
-      title="Sync Required"
-      :dismissible="!syncing"
-    >
-      <template #body>
-        <div class="space-y-3">
-          <div class="flex items-start gap-3">
-            <UIcon name="i-heroicons-cloud-arrow-down" class="size-6 text-primary-500 shrink-0 mt-0.5" />
-            <p class="text-sm text-gray-600 dark:text-gray-300">
-              Before adding mentees, please sync to load facilities from the server.
-            </p>
-          </div>
-          <p class="text-xs text-gray-500">
-            This will download the latest facility list from the server.
-          </p>
-        </div>
-      </template>
-
-      <template #footer>
-        <div class="flex w-full justify-end gap-2">
-          <UButton
-            color="neutral"
-            variant="ghost"
-            :disabled="syncing"
-            @click="showSyncAlert = false"
-          >
-            Cancel
-          </UButton>
-          <UButton
-            color="primary"
-            icon="i-heroicons-arrow-path"
-            :loading="syncing"
-            @click="doSync"
-          >
-            Sync Now
           </UButton>
         </div>
       </template>

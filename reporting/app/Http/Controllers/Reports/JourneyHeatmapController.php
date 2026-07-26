@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Reports;
 
 use App\Http\Controllers\Controller;
+use App\Services\ReportQueryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -10,6 +11,10 @@ use Inertia\Response;
 
 class JourneyHeatmapController extends Controller
 {
+    public function __construct(
+        private readonly ReportQueryService $queries,
+    ) {}
+
     public function __invoke(Request $request): Response
     {
         $groupId = $request->input('group_id');
@@ -23,11 +28,9 @@ class JourneyHeatmapController extends Controller
             ]);
         }
 
-        $journey = DB::table('v_journey_summary')
-            ->where('evaluation_group_id', $groupId)
-            ->first();
+        $journey = $this->queries->getJourneySummaryData($groupId);
 
-        if (! $journey) {
+        if (! $journey->getGroupId()) {
             abort(404);
         }
 
@@ -53,7 +56,7 @@ class JourneyHeatmapController extends Controller
         // All items for this tool, ordered by category then item
         $items = DB::table('evaluation_items as ei')
             ->join('tool_categories as tc', 'tc.id', '=', 'ei.category_id')
-            ->where('ei.tool_id', $journey->tool_id)
+            ->where('ei.tool_id', $journey->getToolId())
             ->orderBy('tc.sort_order')
             ->orderBy('ei.sort_order')
             ->select([
@@ -96,16 +99,7 @@ class JourneyHeatmapController extends Controller
         })->all();
 
         return Inertia::render('Reports/JourneyHeatmap', [
-            'journey' => [
-                'groupId' => $journey->evaluation_group_id,
-                'mentee' => trim("{$journey->mentee_firstname} {$journey->mentee_lastname}"),
-                'tool' => $journey->tool_label,
-                'toolId' => $journey->tool_id,
-                'facility' => $journey->facility_name,
-                'district' => $journey->district_name,
-                'status' => $journey->competency_status,
-                'totalSessions' => (int) $journey->total_sessions,
-            ],
+            'journey' => $journey->toArrayForHeatmap(),
             'sessions' => $sessions->map(fn (object $s): array => [
                 'id' => $s->id,
                 'number' => (int) $s->session_number,

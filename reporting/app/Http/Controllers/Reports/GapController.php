@@ -5,9 +5,13 @@ namespace App\Http\Controllers\Reports;
 use App\Http\Controllers\Controller;
 use App\Models\GapEntry;
 use App\Models\Tool;
+use App\Services\ReportScopeService;
 use Carbon\Carbon;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -26,6 +30,36 @@ class GapController extends Controller
         'ongoing_mentorship' => 'Ongoing Mentorship',
         'independent_practice' => 'Independent Practice',
     ];
+
+    public function __construct(
+        private readonly ReportScopeService $scope,
+    ) {}
+
+    /**
+     * Admins may manage any gap. district_admins are restricted to gaps whose
+     * journey belongs to their own district — gap_entries has no district_id of
+     * its own, so this resolves it via the journey's evaluation_sessions rows.
+     */
+    private function authorizeGapAccess(GapEntry $gap): void
+    {
+        $user = Auth::user();
+
+        if (! $user || $user->isAdmin()) {
+            return;
+        }
+
+        if (! $user->isDistrictAdmin()) {
+            throw new AuthorizationException('Gap management access required.');
+        }
+
+        $gapDistrictId = DB::table('evaluation_sessions')
+            ->where('evaluation_group_id', $gap->evaluation_group_id)
+            ->value('district_id');
+
+        if ($gapDistrictId !== $user->district_id) {
+            throw new AuthorizationException('This gap belongs to a different district.');
+        }
+    }
 
     public function index(): Response
     {
@@ -47,10 +81,13 @@ class GapController extends Controller
         }
 
         $gaps = GapEntry::query()
+            ->whereRaw(...$this->scope->gapScope())
             ->with(['mentee:id,firstname,lastname', 'tool:id,label'])
-            ->where('id', 'like', "{$query}%")
-            ->orWhereHas('mentee', fn ($q) => $q->where('firstname', 'like', "%{$query}%")->orWhere('lastname', 'like', "%{$query}%"))
-            ->orWhere('description', 'like', "%{$query}%")
+            ->where(function ($q) use ($query) {
+                $q->where('id', 'like', "{$query}%")
+                    ->orWhereHas('mentee', fn ($q2) => $q2->where('firstname', 'like', "%{$query}%")->orWhere('lastname', 'like', "%{$query}%"))
+                    ->orWhere('description', 'like', "%{$query}%");
+            })
             ->limit(20)
             ->get()
             ->map(fn (GapEntry $g): array => [
@@ -68,6 +105,7 @@ class GapController extends Controller
     public function show(string $id): Response
     {
         $gap = GapEntry::findOrFail($id);
+        $this->authorizeGapAccess($gap);
 
         return Inertia::render('Reports/GapEdit', [
             'gap' => [
@@ -99,6 +137,7 @@ class GapController extends Controller
     public function update(Request $request, string $id): RedirectResponse
     {
         $gap = GapEntry::findOrFail($id);
+        $this->authorizeGapAccess($gap);
 
         $validated = $request->validate([
             'description' => ['required', 'string', 'max:1000'],
@@ -128,6 +167,7 @@ class GapController extends Controller
     public function destroy(string $id): RedirectResponse
     {
         $gap = GapEntry::findOrFail($id);
+        $this->authorizeGapAccess($gap);
         $gap->delete();
 
         return redirect()->route('reports.gap-overview')->with('success', 'Gap deleted.');
