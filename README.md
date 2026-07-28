@@ -238,11 +238,29 @@ to ever reach MySQL:
   * * * * * cd /path/to/reporting && php artisan schedule:run >> /dev/null 2>&1
   ```
   On Windows (this dev setup), a Scheduled Task named
-  `PenPlusReportingScheduler` runs `php artisan schedule:run` every minute —
-  check it with `Get-ScheduledTask -TaskName PenPlusReportingScheduler` /
-  `Get-ScheduledTaskInfo` in PowerShell, or via Task Scheduler → Task
-  Scheduler Library. Remove it with
-  `Unregister-ScheduledTask -TaskName PenPlusReportingScheduler`.
+  `PenPlusReportingScheduler` runs `C:\xampp\php\php.exe artisan schedule:run`
+  every minute. This is an OS-level trigger: Windows Task Scheduler invokes
+  `php.exe` directly on a clock, independent of whether Apache/XAMPP is
+  serving requests, a browser has the app open, or `php artisan serve` is
+  running. Once the task is enabled it keeps syncing in the background
+  indefinitely, on its own, until it's disabled or removed.
+
+  PowerShell commands to manage it:
+  ```powershell
+  # Check whether it's enabled and see the last/next run
+  Get-ScheduledTask -TaskName PenPlusReportingScheduler | Select-Object TaskName, State
+  Get-ScheduledTaskInfo -TaskName PenPlusReportingScheduler
+
+  # Pause it (keeps the task, stops it firing) — current state on this dev machine
+  Disable-ScheduledTask -TaskName PenPlusReportingScheduler
+
+  # Resume it
+  Enable-ScheduledTask -TaskName PenPlusReportingScheduler
+
+  # Remove it entirely
+  Unregister-ScheduledTask -TaskName PenPlusReportingScheduler
+  ```
+  You can also inspect/toggle it via Task Scheduler → Task Scheduler Library.
 - **On demand** — an admin can trigger a sync immediately from the Filament
   panel at **`/admin/couchdb-sync`** ("CouchDB Sync" page, admin-only), which
   shows each logical database's last-synced time and a "Sync Now" /

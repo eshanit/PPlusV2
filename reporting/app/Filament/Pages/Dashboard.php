@@ -2,12 +2,8 @@
 
 namespace App\Filament\Pages;
 
-use App\Filament\Widgets\ActiveJourneysWidget;
-use App\Filament\Widgets\CompetencyByDistrictWidget;
-use App\Filament\Widgets\CompetencyRateWidget;
-use App\Filament\Widgets\OpenGapsWidget;
-use App\Filament\Widgets\SessionsByToolWidget;
-use App\Filament\Widgets\TotalMenteesWidget;
+use App\Filament\Widgets\RecentSyncFailuresWidget;
+use App\Filament\Widgets\SyncHealthOverview;
 use Filament\Pages\Dashboard as BaseDashboard;
 
 class Dashboard extends BaseDashboard
@@ -21,20 +17,13 @@ class Dashboard extends BaseDashboard
     public function getWidgets(): array
     {
         return [
-            TotalMenteesWidget::class,
-            ActiveJourneysWidget::class,
-            CompetencyRateWidget::class,
-            OpenGapsWidget::class,
-            SessionsByToolWidget::class,
-            CompetencyByDistrictWidget::class,
+            SyncHealthOverview::class,
+            RecentSyncFailuresWidget::class,
         ];
     }
 
     public function getColumns(): int|string|array
     {
-        return [
-            'md' => 2,
-            'lg' => 4,
-        ];
+        return 1;
     }
 }

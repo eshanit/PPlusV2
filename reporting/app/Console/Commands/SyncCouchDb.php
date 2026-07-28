@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\SyncFailure;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -145,6 +146,11 @@ class SyncCouchDb extends Command
                 } catch (Throwable $e) {
                     $errors++;
                     Log::error("sync:couchdb [{$dbName}] doc {$doc['_id']}: {$e->getMessage()}");
+                    SyncFailure::create([
+                        'db_name' => $dbName,
+                        'doc_id' => $doc['_id'],
+                        'message' => $e->getMessage(),
+                    ]);
                     $this->warn("  Error on doc {$doc['_id']}: {$e->getMessage()}");
                 }
             }
@@ -180,6 +186,11 @@ class SyncCouchDb extends Command
                 'db' => $dbName,
                 'status' => $response->status(),
                 'body' => $response->body(),
+            ]);
+            SyncFailure::create([
+                'db_name' => $dbName,
+                'doc_id' => null,
+                'message' => "Failed to fetch changes (HTTP {$response->status()})",
             ]);
 
             return null;
