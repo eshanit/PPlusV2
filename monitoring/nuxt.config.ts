@@ -30,6 +30,11 @@ export default defineNuxtConfig({
       // CouchDB URL including credentials, e.g. http://admin:pass@localhost:5984
       // Set NUXT_PUBLIC_COUCHDB_URL in .env to override
       couchdbUrl: process.env.NUXT_PUBLIC_COUCHDB_URL ?? 'http://admin:1234@localhost:5984',
-    },
+    }
+  },
+   devServer: {
+    host: '0.0.0.0',
+    port: 3005
   },
 })
+
