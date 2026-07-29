@@ -456,7 +456,7 @@ class SyncCouchDb extends Command
         $keys = [
             'report:dashboard:summary',
             'report:dashboard:tool_progress',
-            'report:dashboard:district_progress',
+            'report:dashboard:facility_progress',
             'report:dashboard:recent_completions',
             'report:dashboard:active_journeys',
             'report:dashboard:gap_summary',
@@ -472,7 +472,10 @@ class SyncCouchDb extends Command
 
             foreach ($userIds as $userId) {
                 foreach ($districtIds as $districtId) {
-                    Cache::forget("{$key}:user{$userId}:district{$districtId}");
+                    // Matches ReportingDashboardController::cacheKey()'s `?? 'none'` fallback —
+                    // a raw null here would interpolate to an empty string and never match.
+                    $districtKey = $districtId ?? 'none';
+                    Cache::forget("{$key}:user{$userId}:district{$districtKey}");
                 }
             }
         }
