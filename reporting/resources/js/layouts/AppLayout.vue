@@ -43,15 +43,15 @@ const sections = computed(() => {
                 { href: '/journey-status', label: 'Journey Status', icon: Target },
                 { href: '/tool-analysis', label: 'Tool Analysis', icon: BarChart2 },
                 { href: '/tool-score-distribution', label: 'Score Distribution', icon: PieChart },
-                { href: '/hot-spots', label: 'Hot Spots', icon: Flame },
-                { href: '/low-score-watchlist', label: 'Low-Score Watchlist', icon: Activity },
+                { href: '/hot-spots', label: 'Hot Spots', icon: Flame, pro: true },
+                { href: '/low-score-watchlist', label: 'Low-Score Watchlist', icon: Activity, pro: true },
                 { href: '/gap-overview', label: 'Gap Overview', icon: ClipboardList },
             ],
         },
         {
             label: 'Safety',
             items: [
-                { href: '/high-risk-alerts', label: 'High-Risk Alerts', icon: ShieldAlert },
+                { href: '/high-risk-alerts', label: 'High-Risk Alerts', icon: ShieldAlert, pro: true },
             ],
         },
         {
@@ -59,7 +59,7 @@ const sections = computed(() => {
             items: [
                 { href: '/needs-attention', label: 'Needs Attention', icon: Clock },
                 { href: '/score-trajectory', label: 'Score Trajectory', icon: TrendingUp },
-                { href: '/time-to-competence', label: 'Time to Competence', icon: Gauge },
+                { href: '/time-to-competence', label: 'Time to Competence', icon: Gauge, pro: true },
                 { href: '/cohort-progress', label: 'Cohort Progress', icon: BarChart3 },
             ],
         },
@@ -75,7 +75,7 @@ const sections = computed(() => {
         s.push({
             label: 'Admin',
             items: [
-                { href: '/gaps', label: 'Gap Manager', icon: Settings },
+                { href: '/gaps', label: 'Gap Manager', icon: Settings, pro: true },
             ],
         });
     }
@@ -124,6 +124,7 @@ function logout() {
                         v-for="item in section.items"
                         :key="item.href"
                         :href="item.href"
+                        :title="item.label"
                         @click="closeMobile"
                         :class="[
                             'flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors',
@@ -133,7 +134,13 @@ function logout() {
                         ]"
                     >
                         <component :is="item.icon" class="size-4 shrink-0" />
-                        {{ item.label }}
+                        <span class="flex-1 truncate">{{ item.label }}</span>
+                        <span
+                            v-if="item.pro"
+                            class="shrink-0 rounded-full bg-orange-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-orange-700"
+                        >
+                            Pro
+                        </span>
                     </Link>
                 </div>
             </nav>
