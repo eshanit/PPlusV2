@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'url'      => env('COUCHDB_URL', 'http://localhost:5984'),
+    'url'      => env('COUCHDB_URL', 'http://penplus-monitoring.solidarmed.net:5984'),
     'user'     => env('COUCHDB_USER', ''),
     'password' => env('COUCHDB_PASSWORD', ''),
 
