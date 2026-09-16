@@ -19,12 +19,19 @@ class JourneyStatusController extends Controller
     public function __invoke(Request $request): Response
     {
         $query = JourneySummary::query()
+            // Pull in the round of the latest session so the list can show
+            // "Round N" alongside the last-session date, same as elsewhere.
+            // v_sessions_numbered also has tool_id/district_id/facility_id
+            // (from evaluation_sessions), so every filter below must stay
+            // qualified with the v_journey_summary. prefix post-join.
+            ->leftJoin('v_sessions_numbered as vsn', 'vsn.id', '=', 'v_journey_summary.latest_session_id')
             ->whereRaw(...$this->scope->scope('v_journey_summary'))
-            ->when($request->tool_id, fn ($q) => $q->where('tool_id', $request->tool_id))
-            ->when($request->district_id, fn ($q) => $q->where('district_id', $request->district_id))
-            ->when($request->facility_id, fn ($q) => $q->where('facility_id', $request->facility_id))
-            ->when($request->status, fn ($q) => $q->where('competency_status', $request->status))
-            ->orderBy('latest_session_date', 'desc');
+            ->when($request->tool_id, fn ($q) => $q->where('v_journey_summary.tool_id', $request->tool_id))
+            ->when($request->district_id, fn ($q) => $q->where('v_journey_summary.district_id', $request->district_id))
+            ->when($request->facility_id, fn ($q) => $q->where('v_journey_summary.facility_id', $request->facility_id))
+            ->when($request->status, fn ($q) => $q->where('v_journey_summary.competency_status', $request->status))
+            ->orderBy('v_journey_summary.latest_session_date', 'desc')
+            ->select(['v_journey_summary.*', 'vsn.day_round_number']);
 
         $paginator = $query->paginate(25)->withQueryString();
         $journeys = $paginator->map(fn (JourneySummary $j): array => [
@@ -40,6 +47,7 @@ class JourneyStatusController extends Controller
             'sessionsToBasic' => $j->sessions_to_basic_competence,
             'daysToBasic' => $j->days_to_basic_competence,
             'latestSessionDate' => $j->latest_session_date?->toDateString(),
+            'latestSessionRound' => $j->day_round_number !== null ? (int) $j->day_round_number : null,
             'openGaps' => $j->open_gaps,
         ]);
 

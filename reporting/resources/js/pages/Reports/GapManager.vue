@@ -95,7 +95,10 @@ const goToEdit = (id) => {
                                 <td class="px-4 py-3 font-mono text-xs">{{ gap.id.slice(0, 8) }}...</td>
                                 <td class="px-4 py-3">{{ gap.mentee }}</td>
                                 <td class="px-4 py-3 text-muted-foreground">{{ gap.tool }}</td>
-                                <td class="px-4 py-3 text-muted-foreground">{{ gap.identifiedAt }}</td>
+                                <td class="px-4 py-3 text-muted-foreground">
+                                    {{ gap.identifiedAt }}
+                                    <span v-if="gap.sessionRound != null" class="text-xs">(Round {{ gap.sessionRound }})</span>
+                                </td>
                                 <td class="px-4 py-3">
                                     <Badge :variant="gap.isResolved ? 'success' : 'warning'">
                                         {{ gap.isResolved ? 'Resolved' : 'Open' }}

@@ -40,6 +40,7 @@ class GapListController extends Controller
             'mentee' => trim("{$gap->mentee?->firstname} {$gap->mentee?->lastname}"),
             'tool' => $gap->tool?->label,
             'identifiedAt' => $gap->identified_at?->toDateString(),
+            'sessionRound' => $gap->session_round,
             'description' => $gap->description,
             'domains' => $gap->domains ?? [],
             'supervisionLevel' => $gap->supervision_level,

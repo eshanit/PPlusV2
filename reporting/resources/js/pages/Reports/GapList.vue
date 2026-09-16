@@ -104,6 +104,7 @@ const domainConfig = {
                         >
                             <td class="px-4 py-3 text-sm tabular-nums text-muted-foreground whitespace-nowrap">
                                 {{ gap.identifiedAt }}
+                                <span v-if="gap.sessionRound != null" class="text-xs">(Round {{ gap.sessionRound }})</span>
                             </td>
                             <td class="px-4 py-3 font-medium whitespace-nowrap">{{ gap.mentee }}</td>
                             <td v-if="!tool" class="px-4 py-3 text-sm text-muted-foreground whitespace-nowrap">

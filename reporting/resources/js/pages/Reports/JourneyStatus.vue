@@ -144,7 +144,10 @@ const scoreColor = (score) => {
                             <td class="hidden px-4 py-3 text-right tabular-nums text-muted-foreground xl:table-cell">
                                 {{ j.daysToBasic != null ? j.daysToBasic + 'd' : '—' }}
                             </td>
-                            <td class="px-4 py-3 text-right text-muted-foreground">{{ j.latestSessionDate ?? '—' }}</td>
+                            <td class="px-4 py-3 text-right text-muted-foreground">
+                                {{ j.latestSessionDate ?? '—' }}
+                                <span v-if="j.latestSessionRound != null" class="text-xs">(Round {{ j.latestSessionRound }})</span>
+                            </td>
                             <td class="px-4 py-3 text-right">
                                 <div v-if="j.openGaps > 0" class="group relative inline-block">
                                     <Link

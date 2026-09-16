@@ -34,11 +34,13 @@ class JourneyHeatmapController extends Controller
             abort(404);
         }
 
-        // Sessions ordered by session number
+        // Sessions ordered by session number. eval_date, session_number is the
+        // primary sort key, so same-day sessions are always contiguous here —
+        // the frontend groups them into day columns without re-sorting.
         $sessions = DB::table('v_sessions_numbered as vsn')
             ->where('vsn.evaluation_group_id', $groupId)
             ->orderBy('vsn.session_number')
-            ->get(['vsn.id', 'vsn.session_number', 'vsn.eval_date']);
+            ->get(['vsn.id', 'vsn.session_number', 'vsn.eval_date', 'vsn.day_round_number', 'vsn.day_round_count']);
 
         $sessionIds = $sessions->pluck('id');
 
@@ -70,6 +72,9 @@ class JourneyHeatmapController extends Controller
             ])
             ->get();
 
+        // avgScore is intentionally not computed here — the frontend lets the
+        // user toggle sessions in/out of the comparison, so the average is
+        // recalculated client-side from these raw cells instead.
         $rows = $items->map(function (object $item) use ($sessions, $scoreMap): array {
             $itemScores = $scoreMap[$item->id] ?? [];
 
@@ -81,11 +86,6 @@ class JourneyHeatmapController extends Controller
                 return ['present' => true, 'score' => $itemScores[$s->id]];
             })->all();
 
-            $scored = array_filter($cells, fn ($c) => $c['present'] && $c['score'] !== null);
-            $avgScore = count($scored) > 0
-                ? round(array_sum(array_column($scored, 'score')) / count($scored), 2)
-                : null;
-
             return [
                 'id' => $item->id,
                 'number' => $item->number,
@@ -94,7 +94,6 @@ class JourneyHeatmapController extends Controller
                 'isCritical' => (bool) $item->is_critical,
                 'category' => $item->category,
                 'cells' => $cells,
-                'avgScore' => $avgScore,
             ];
         })->all();
 
@@ -104,8 +103,11 @@ class JourneyHeatmapController extends Controller
                 'id' => $s->id,
                 'number' => (int) $s->session_number,
                 'date' => $s->eval_date,
+                'dayRoundNumber' => (int) $s->day_round_number,
+                'dayRoundCount' => (int) $s->day_round_count,
             ])->all(),
             'rows' => $rows,
+            'dayProgress' => $this->queries->getDayProgress($groupId),
         ]);
     }
 }

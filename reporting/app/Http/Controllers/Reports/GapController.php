@@ -95,6 +95,7 @@ class GapController extends Controller
                 'mentee' => "{$g->mentee?->firstname} {$g->mentee?->lastname}",
                 'tool' => $g->tool?->label,
                 'identifiedAt' => $g->identified_at?->toDateString(),
+                'sessionRound' => $g->session_round,
                 'resolvedAt' => $g->resolved_at?->toDateString(),
                 'isResolved' => $g->resolved_at !== null,
             ]);
