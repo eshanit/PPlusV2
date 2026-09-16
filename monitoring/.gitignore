@@ -13,6 +13,19 @@ node_modules
 .env.*
 !.env.example
 
-# Capacitor
-android
-ios
+# Android native project (committed; these are just its build artifacts)
+android/local.properties
+android/.gradle
+android/captures
+android/.externalNativeBuild
+android/.cxx
+android/*.iml
+android/app/build
+android/app/release
+android/build
+
+# iOS native project (committed; these are just its build artifacts)
+ios/App/Pods
+ios/App/build
+ios/App/App.xcworkspace
+ios/.build

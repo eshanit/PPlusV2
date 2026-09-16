@@ -185,6 +185,45 @@ onKeyStroke('ArrowLeft', (e) => { e.preventDefault(); prev() })
 
 const isValid = computed(() => phase.value !== null && !!evalDateStr.value)
 
+// Unsaved-changes guard — covers in-app link clicks, the browser/webview
+// back-forward stack (popstate), and the Android hardware back button
+// (backButton.client.ts triggers window.history.back(), which router
+// guards intercept the same way).
+const hasUnsavedChanges = computed(() => {
+  if (phase.value !== null) return true
+  if (notes.value.trim()) return true
+  return allItems.value.some((item) => {
+    const score = currentScores.value[item.slug]
+    if (score !== null) return true
+    const itemNote = item.type === 'counselling' ? counsellingNotes[item.slug] : itemNotes[item.slug]
+    return !!itemNote?.trim()
+  })
+})
+
+const allowNavigation = ref(false)
+const showLeaveConfirm = ref(false)
+let leaveResolver: ((value: boolean) => void) | null = null
+
+function confirmLeave(): Promise<boolean> {
+  showLeaveConfirm.value = true
+  return new Promise((resolve) => { leaveResolver = resolve })
+}
+
+function resolveLeave(result: boolean) {
+  showLeaveConfirm.value = false
+  leaveResolver?.(result)
+  leaveResolver = null
+}
+
+onBeforeRouteLeave(() => {
+  if (allowNavigation.value) {
+    allowNavigation.value = false
+    return true
+  }
+  if (!hasUnsavedChanges.value) return true
+  return confirmLeave()
+})
+
 async function save() {
   if (!isValid.value || !mentee.value || !tool.value || !userStore.currentUser) return
   saving.value = true
@@ -221,6 +260,7 @@ async function save() {
     })
 
     toast.add({ title: 'Session saved', color: 'success', icon: 'i-heroicons-check-circle' })
+    allowNavigation.value = true
     router.push(`/mentees/${mentee.value.id}`)
   } catch (err) {
     toast.add({ title: 'Save failed', description: String(err), color: 'error', icon: 'i-heroicons-x-circle' })
@@ -265,6 +305,7 @@ function viewEvaluation() {
   }
 
   sessionStorage.setItem('penplus_preview', JSON.stringify(previewData))
+  allowNavigation.value = true
   router.push('/sessions/preview')
 }
 </script>
@@ -369,7 +410,22 @@ function viewEvaluation() {
         </UButton>
       </div>
 
-   
+
     </div>
+
+    <!-- Unsaved-changes confirmation -->
+    <UModal v-model:open="showLeaveConfirm" title="Discard this session?">
+      <template #body>
+        <p class="text-sm text-gray-700 dark:text-gray-300">
+          You have scores or notes entered that haven't been saved. Leaving now will discard them.
+        </p>
+      </template>
+      <template #footer>
+        <div class="flex gap-2 justify-end">
+          <UButton variant="ghost" color="neutral" @click="resolveLeave(false)">Keep Editing</UButton>
+          <UButton color="error" @click="resolveLeave(true)">Discard</UButton>
+        </div>
+      </template>
+    </UModal>
   </div>
 </template>

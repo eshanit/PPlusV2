@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The CouchDB sync server (NUXT_PUBLIC_COUCHDB_URL, see .env) is plain HTTP,
+  not HTTPS, so Android's default cleartext block must be relaxed for its
+  host. Add any other CouchDB hosts used in the field here.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">penplus-monitoring.solidarmed.net</domain>
+        <domain includeSubdomains="false">10.0.2.2</domain>
+        <domain includeSubdomains="false">localhost</domain>
+    </domain-config>
+</network-security-config>
