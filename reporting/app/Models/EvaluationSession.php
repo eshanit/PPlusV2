@@ -24,6 +24,7 @@ class EvaluationSession extends Model
         'facility_id',
         'district_id',
         'phase',
+        'day_round',
         'notes',
         'couchdb_rev',
         'synced_at',

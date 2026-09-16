@@ -24,6 +24,12 @@ export interface IGapEntry {
 
   identifiedAt: number    // Unix timestamp (ms) when the gap was noted
 
+  // Round-of-day of the most recent session in the journey at the time this
+  // gap was logged. Gaps stay journey-scoped (no session _id link) — this is
+  // just a lightweight annotation, so it's optional for gaps logged before
+  // this field existed or for journeys with no sessions yet.
+  sessionRound?: number
+
   description: string     // Free-text description of the specific gap
 
   // Multiple domains can apply to a single gap

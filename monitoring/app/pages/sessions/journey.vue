@@ -4,7 +4,9 @@ import { useGapStore } from '~/stores/gapStore'
 import { useUserStore } from '~/stores/userStore'
 import { getToolBySlug } from '~/data/evaluationItemData'
 import { useCompetency } from '~/composables/useCompetency'
+import { calculateAverage } from '~/composables/useSessionCalculations'
 import type { IGapEntry } from '~/interfaces/IGapEntry'
+import type { ISession } from '~/interfaces/ISession'
 import JourneySummaryCard from '~/components/journey/SummaryCard.vue'
 import JourneySessionCard from '~/components/journey/SessionCard.vue'
 import GapCard from '~/components/gap/GapCard.vue'
@@ -30,9 +32,102 @@ const evaluationGroupId = computed(() =>
 
 const sessions = computed(() => {
   if (!evaluationGroupId.value) return []
+  // Same-day sessions share an evalDate, so break ties by round (highest
+  // round = most recent that day) — sessions[0] is relied on below (and by
+  // the Summary Card) as "the latest session".
   return sessionStore.sessions
     .filter(s => s.evaluationGroupId === evaluationGroupId.value)
-    .sort((a, b) => b.evalDate - a.evalDate)
+    .sort((a, b) =>
+      b.evalDate - a.evalDate ||
+      (b.roundOfDay ?? 0) - (a.roundOfDay ?? 0) ||
+      b.createdAt - a.createdAt
+    )
+})
+
+// Groups sessions into calendar-day clusters ("rounds"), newest day first.
+// Surfaces the within-day delta (first round -> last round of that day) and the
+// day-to-day delta (last round of the previous day -> first round of this day).
+interface DaySessionEntry {
+  session: ISession
+  sessionNumber: number
+  roundNumber: number
+}
+
+interface DayGroup {
+  dayKeyStr: string
+  date: string
+  entries: DaySessionEntry[]
+  roundsCount: number
+  firstRoundAvg: number | null
+  lastRoundAvg: number | null
+  intraDayDelta: number | null
+  dayOverDayDelta: number | null
+  prevDate: string | null
+}
+
+function avgForSession(session: ISession): number | null {
+  const toolScores = session.itemScores?.filter(s => !s.itemSlug.startsWith('counselling')) ?? []
+  const scored = toolScores.filter(s => s.menteeScore !== null)
+  if (scored.length === 0) return null
+  return Number(calculateAverage(toolScores))
+}
+
+const dayGroups = computed((): DayGroup[] => {
+  const groups: DayGroup[] = []
+  const total = sessions.value.length
+
+  sessions.value.forEach((session, index) => {
+    const key = sessionStore.dayKey(session.evalDate)
+    let group = groups.find(g => g.dayKeyStr === key)
+    if (!group) {
+      group = {
+        dayKeyStr: key,
+        date: formatDate(session.evalDate),
+        entries: [],
+        roundsCount: 0,
+        firstRoundAvg: null,
+        lastRoundAvg: null,
+        intraDayDelta: null,
+        dayOverDayDelta: null,
+        prevDate: null,
+      }
+      groups.push(group)
+    }
+    group.entries.push({ session, sessionNumber: total - index, roundNumber: 0 })
+  })
+
+  for (const group of groups) {
+    // Order rounds by the evaluator's explicit choice (roundOfDay) — sessions
+    // are sometimes typed up later from paper notes, out of chronological
+    // order, so createdAt is only a fallback for older entries that predate
+    // that field. Then redisplay newest-first to match the overall ordering.
+    group.entries.sort((a, b) =>
+      sessionStore.roundSortKey(a.session) - sessionStore.roundSortKey(b.session) || a.session.createdAt - b.session.createdAt,
+    )
+    group.entries.forEach((entry, i) => { entry.roundNumber = entry.session.roundOfDay ?? i + 1 })
+    group.roundsCount = group.entries.length
+
+    const firstEntry = group.entries[0]
+    const lastEntry = group.entries[group.entries.length - 1]
+    group.firstRoundAvg = firstEntry ? avgForSession(firstEntry.session) : null
+    group.lastRoundAvg = lastEntry ? avgForSession(lastEntry.session) : null
+    if (group.roundsCount > 1 && group.firstRoundAvg !== null && group.lastRoundAvg !== null) {
+      group.intraDayDelta = Math.round((group.lastRoundAvg - group.firstRoundAvg) * 10) / 10
+    }
+
+    group.entries.sort((a, b) => b.roundNumber - a.roundNumber)
+  }
+
+  for (let i = 0; i < groups.length; i++) {
+    const group = groups[i]!
+    const prevGroup = groups[i + 1] // next in array = chronologically earlier day
+    if (prevGroup && group.firstRoundAvg !== null && prevGroup.lastRoundAvg !== null) {
+      group.dayOverDayDelta = Math.round((group.firstRoundAvg - prevGroup.lastRoundAvg) * 10) / 10
+      group.prevDate = prevGroup.date
+    }
+  }
+
+  return groups
 })
 
 const { status: competencyStatus, isBasicCompetent } = useCompetency(
@@ -174,22 +269,50 @@ async function confirmResolve() {
       </div>
 
       <!-- Sessions List -->
-      <div v-if="sessions.length > 0" class="space-y-3">
+      <div v-if="sessions.length > 0" class="space-y-4">
         <h2 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
           Sessions (sorted by date)
         </h2>
 
-        <div
-          v-for="(session, index) in sessions"
-          :key="session._id"
-          class="cursor-pointer"
-          @click="router.push(`/sessions/session?sessionId=${session._id}&menteeId=${menteeId}&toolSlug=${toolSlug}`)"
-        >
-          <JourneySessionCard
-            :session-number="sessions.length - index"
-            :date="formatDate(session.evalDate) ?? 'N/A'"
-            :phase="session.phase ?? 'unknown'"
-          />
+        <div v-for="group in dayGroups" :key="group.dayKeyStr" class="space-y-2">
+          <!-- Day-to-day delta vs. the previous day's last round -->
+          <div
+            v-if="group.dayOverDayDelta !== null"
+            class="flex items-center gap-1.5 text-xs px-1"
+            :class="group.dayOverDayDelta >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'"
+          >
+            <UIcon
+              :name="group.dayOverDayDelta >= 0 ? 'i-heroicons-arrow-trending-up' : 'i-heroicons-arrow-trending-down'"
+              class="size-3.5"
+            />
+            <span>{{ group.dayOverDayDelta >= 0 ? '+' : '' }}{{ group.dayOverDayDelta }} avg vs last round on {{ group.prevDate }}</span>
+          </div>
+
+          <!-- Date header, shown only for multi-round days -->
+          <div v-if="group.roundsCount > 1" class="flex items-center justify-between px-1">
+            <p class="text-xs font-medium text-gray-600 dark:text-gray-300">{{ group.date }} · {{ group.roundsCount }} rounds</p>
+            <p
+              v-if="group.intraDayDelta !== null"
+              class="text-xs font-medium"
+              :class="group.intraDayDelta >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'"
+            >
+              {{ group.intraDayDelta >= 0 ? '+' : '' }}{{ group.intraDayDelta }} avg within day
+            </p>
+          </div>
+
+          <div
+            v-for="entry in group.entries"
+            :key="entry.session._id"
+            class="cursor-pointer"
+            @click="router.push(`/sessions/session?sessionId=${entry.session._id}&menteeId=${menteeId}&toolSlug=${toolSlug}`)"
+          >
+            <JourneySessionCard
+              :session-number="entry.sessionNumber"
+              :date="formatDate(entry.session.evalDate) ?? 'N/A'"
+              :phase="entry.session.phase ?? 'unknown'"
+              :round-label="group.roundsCount > 1 ? `Round ${entry.roundNumber}` : undefined"
+            />
+          </div>
         </div>
       </div>
 
@@ -247,6 +370,7 @@ async function confirmResolve() {
       :mentee-id="menteeId"
       :evaluator-id="userStore.currentUser.id"
       :tool-slug="toolSlug"
+      :session-round="sessions.length > 0 ? sessionStore.roundNumber(sessions[0]!) : undefined"
     />
 
     <!-- Resolve modal -->

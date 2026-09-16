@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { format } from 'date-fns'
 import { useDb } from '~/composables/useDb'
 import type { ISession } from '~/interfaces/ISession'
 
@@ -54,16 +55,73 @@ export const useSessionStore = defineStore('sessions', () => {
     sessions.value = sessions.value.filter(s => s._id !== id)
   }
 
-  // Sessions for a specific mentee+tool journey, ordered by evalDate then createdAt.
+  // Sessions for a specific mentee+tool journey, ordered by evalDate, then by
+  // round within same-day ties (roundOfDay, since paper notes are sometimes
+  // typed up later out of order), then createdAt as a final tiebreak.
   // The index within this array + 1 is the session number.
   function sessionsForGroup(evaluationGroupId: string): ISession[] {
     return sessions.value
       .filter(s => s.evaluationGroupId === evaluationGroupId)
-      .sort((a, b) => a.evalDate - b.evalDate || a.createdAt - b.createdAt)
+      .sort((a, b) => a.evalDate - b.evalDate || roundSortKey(a) - roundSortKey(b) || a.createdAt - b.createdAt)
   }
 
   function sessionNumber(session: ISession): number {
     return sessionsForGroup(session.evaluationGroupId).findIndex(s => s._id === session._id) + 1
+  }
+
+  // Calendar-day key for grouping same-day sessions into "rounds".
+  // evalDate is always written at a fixed time-of-day for the picked date, so a
+  // plain formatted-date comparison is sufficient (see sessions/new.vue).
+  function dayKey(evalDate: number): string {
+    return format(new Date(evalDate), 'yyyy-MM-dd')
+  }
+
+  // Ordering key for same-day rounds: prefer the evaluator's explicit choice
+  // (roundOfDay) since sessions are sometimes typed up later from paper notes,
+  // out of chronological order. Sessions saved before that field existed sort
+  // after any explicitly-numbered round, by createdAt among themselves.
+  function roundSortKey(session: ISession): number {
+    return session.roundOfDay ?? Number.POSITIVE_INFINITY
+  }
+
+  // Sessions sharing the same evaluationGroupId AND calendar day as `session`,
+  // ordered by round.
+  function sessionsForDay(evaluationGroupId: string, evalDate: number): ISession[] {
+    const key = dayKey(evalDate)
+    return sessionsForGroup(evaluationGroupId)
+      .filter(s => dayKey(s.evalDate) === key)
+      .sort((a, b) => roundSortKey(a) - roundSortKey(b) || a.createdAt - b.createdAt)
+  }
+
+  // Display round number: the evaluator's explicit choice, or (for older data
+  // saved before that field existed) the entry's position among same-day sessions.
+  function roundNumber(session: ISession): number {
+    if (session.roundOfDay != null) return session.roundOfDay
+    return sessionsForDay(session.evaluationGroupId, session.evalDate)
+      .findIndex(s => s._id === session._id) + 1
+  }
+
+  function roundsForDay(evaluationGroupId: string, evalDate: number): number {
+    return sessionsForDay(evaluationGroupId, evalDate).length
+  }
+
+  // Round numbers already recorded for this mentee+tool on this calendar day.
+  function takenRoundsForDay(evaluationGroupId: string, evalDate: number): Set<number> {
+    const taken = new Set<number>()
+    sessionsForDay(evaluationGroupId, evalDate).forEach((s, i) => {
+      taken.add(s.roundOfDay ?? i + 1)
+    })
+    return taken
+  }
+
+  // Smallest round number not yet recorded for this day — the sensible default
+  // when starting a new session: it fills gaps left by out-of-order paper
+  // transcription before it ever suggests a brand-new round.
+  function nextOpenRound(evaluationGroupId: string, evalDate: number): number {
+    const taken = takenRoundsForDay(evaluationGroupId, evalDate)
+    let round = 1
+    while (taken.has(round)) round++
+    return round
   }
 
   // Get the latest score for a specific item from previous sessions
@@ -108,6 +166,13 @@ export const useSessionStore = defineStore('sessions', () => {
     remove,
     sessionsForGroup,
     sessionNumber,
+    dayKey,
+    roundSortKey,
+    sessionsForDay,
+    roundNumber,
+    roundsForDay,
+    takenRoundsForDay,
+    nextOpenRound,
     getLatestScore,
     getSessionCount,
   }

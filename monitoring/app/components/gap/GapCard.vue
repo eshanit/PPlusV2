@@ -64,7 +64,10 @@ function formatDate(ts: number | undefined): string {
 
     <!-- Meta -->
     <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-      <span>Identified {{ formatDate(gap.identifiedAt) }}</span>
+      <span>
+        Identified {{ formatDate(gap.identifiedAt) }}
+        <template v-if="gap.sessionRound != null">· Round {{ gap.sessionRound }}</template>
+      </span>
       <UButton
         v-if="!gap.resolvedAt"
         size="xs"

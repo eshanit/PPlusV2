@@ -8,6 +8,7 @@ import type { MentorshipPhase } from '~/interfaces/ISession'
 import type { IEvalItem } from '~/interfaces/IEvalItem'
 import SessionItemCard from '~/components/session/ItemCard.vue'
 import SessionProgressBar from '~/components/session/ProgressBar.vue'
+import SessionRoundSelector, { type RoundOption } from '~/components/session/RoundSelector.vue'
 
 definePageMeta({
   middleware: [(to) => {
@@ -52,6 +53,46 @@ const phase = ref<MentorshipPhase | null>(null)
 const evalDateStr = ref(format(new Date(), 'yyyy-MM-dd'))
 const notes = ref('')
 const saving = ref(false)
+
+const evalDateForRounds = computed(() => new Date(evalDateStr.value + 'T12:00:00').getTime())
+
+// Rounds already recorded for the picked date, before this new one is saved.
+const roundsRecordedToday = computed(() => {
+  if (!evaluationGroupId.value) return 0
+  return sessionStore.roundsForDay(evaluationGroupId.value, evalDateForRounds.value)
+})
+
+// Round options for the picked date: every round already recorded (disabled,
+// to prevent accidental duplicates) plus open slots to pick ahead. Always
+// offers at least MIN_ROUND_OPTIONS slots — even on a brand-new day with
+// nothing recorded yet — so a mentor typing up paper notes out of order can
+// mark their very first app entry as "Round 3" without having to enter
+// rounds 1 and 2 first.
+const MIN_ROUND_OPTIONS = 5
+
+const roundOptions = computed((): RoundOption[] => {
+  const taken = evaluationGroupId.value
+    ? sessionStore.takenRoundsForDay(evaluationGroupId.value, evalDateForRounds.value)
+    : new Set<number>()
+  const highestTaken = taken.size > 0 ? Math.max(...taken) : 0
+  const total = Math.max(highestTaken + 1, MIN_ROUND_OPTIONS)
+  return Array.from({ length: total }, (_, i) => i + 1).map(value => ({
+    value,
+    disabled: taken.has(value),
+  }))
+})
+
+const roundOfDay = ref<number | undefined>(undefined)
+
+// Default to the smallest open round whenever the date (or existing same-day
+// sessions) changes — fills gaps left by out-of-order paper transcription
+// before ever suggesting a brand-new round.
+watch(roundOptions, (options) => {
+  if (roundOfDay.value != null && options.some(o => o.value === roundOfDay.value && !o.disabled)) {
+    return
+  }
+  roundOfDay.value = options.find(o => !o.disabled)?.value
+}, { immediate: true })
 
 const currentIndex = ref(0)
 
@@ -183,7 +224,7 @@ function goToItem(index: number) {
 onKeyStroke('ArrowRight', (e) => { e.preventDefault(); next() })
 onKeyStroke('ArrowLeft', (e) => { e.preventDefault(); prev() })
 
-const isValid = computed(() => phase.value !== null && !!evalDateStr.value)
+const isValid = computed(() => phase.value !== null && !!evalDateStr.value && roundOfDay.value != null)
 
 // Unsaved-changes guard — covers in-app link clicks, the browser/webview
 // back-forward stack (popstate), and the Android hardware back button
@@ -225,7 +266,7 @@ onBeforeRouteLeave(() => {
 })
 
 async function save() {
-  if (!isValid.value || !mentee.value || !tool.value || !userStore.currentUser) return
+  if (!isValid.value || !mentee.value || !tool.value || !userStore.currentUser || roundOfDay.value == null) return
   saving.value = true
   try {
     const now = Date.now()
@@ -240,6 +281,7 @@ async function save() {
       evaluator: userStore.currentUser,
       toolSlug: tool.value.slug,
       evalDate,
+      roundOfDay: roundOfDay.value,
       facilityId: mentee.value.facilityId ?? '',
       districtId: mentee.value.districtId ?? '',
       itemScores: tool.value.items.map(item => ({
@@ -335,7 +377,14 @@ function viewEvaluation() {
     <div v-if="totalPreviousSessions > 0" class="bg-orange-50 dark:bg-orange-900/20 border-b border-orange-200 dark:border-orange-800 px-4 py-2">
       <div class="flex items-center gap-2 text-orange-700 dark:text-orange-300">
         <UIcon name="i-heroicons-information-circle" class="w-4 h-4" />
-        <p class="text-sm">Session {{ totalPreviousSessions + 1 }} — Previous scores shown below</p>
+        <p class="text-sm">
+          <template v-if="roundsRecordedToday > 0">
+            Round {{ roundOfDay }} for this date · Session {{ totalPreviousSessions + 1 }} overall — Previous scores shown below
+          </template>
+          <template v-else>
+            Session {{ totalPreviousSessions + 1 }} — Previous scores shown below
+          </template>
+        </p>
       </div>
     </div>
 
@@ -348,6 +397,8 @@ function viewEvaluation() {
         </label>
         <UInput type="date" v-model="evalDateStr" class="max-w-xs" />
       </section>
+
+      <SessionRoundSelector v-model="roundOfDay" :options="roundOptions" />
 
       <!-- Current Item Card -->
       <SessionItemCard

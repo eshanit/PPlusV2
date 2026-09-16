@@ -24,6 +24,12 @@ const currentTitle = computed(() => props.items[props.currentIndex]?.title ?? ''
 const isFirst = computed(() => props.currentIndex === 0)
 const isLast = computed(() => props.currentIndex === total.value - 1)
 
+// Some item titles (e.g. epilepsy's) are too long for this compact bar to
+// show in full — let the mentor tap to reveal the whole title, and collapse
+// it again whenever they move to a different item.
+const titleExpanded = ref(false)
+watch(() => props.currentIndex, () => { titleExpanded.value = false })
+
 function getScore(slug: string): number | null {
   return props.scores[slug] ?? null
 }
@@ -42,9 +48,16 @@ function getScore(slug: string): number | null {
         <UIcon name="i-heroicons-chevron-left" class="w-4 h-4" />
       </UButton>
       
-      <div class="text-center">
+      <div class="text-center min-w-0 flex-1 px-1">
         <p class="text-xs font-medium text-gray-900 dark:text-white">{{ progress }}</p>
-        <p class="text-xs text-gray-500 truncate max-w-[200px]">{{ currentTitle }}</p>
+        <button
+          type="button"
+          class="text-xs text-gray-500 dark:text-gray-400 mx-auto"
+          :class="titleExpanded ? 'whitespace-normal' : 'truncate max-w-[200px]'"
+          @click="titleExpanded = !titleExpanded"
+        >
+          {{ currentTitle }}
+        </button>
       </div>
       
       <UButton

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Reports;
 
 use App\Http\Controllers\Controller;
+use App\Services\ReportQueryService;
 use App\Services\ReportScopeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -11,7 +12,10 @@ use Inertia\Response;
 
 class JourneySessionsController extends Controller
 {
-    public function __construct(private readonly ReportScopeService $scope) {}
+    public function __construct(
+        private readonly ReportScopeService $scope,
+        private readonly ReportQueryService $queryService,
+    ) {}
 
     public function __invoke(Request $request): Response
     {
@@ -54,6 +58,8 @@ class JourneySessionsController extends Controller
             ->get([
                 'sn.id as session_id',
                 'sn.session_number',
+                'sn.day_round_number',
+                'sn.day_round_count',
                 'sn.eval_date',
                 'sn.phase',
                 'sa.avg_mentee_score',
@@ -63,6 +69,8 @@ class JourneySessionsController extends Controller
             ->map(fn (object $s): array => [
                 'sessionId' => $s->session_id,
                 'sessionNumber' => (int) $s->session_number,
+                'dayRoundNumber' => (int) $s->day_round_number,
+                'dayRoundCount' => (int) $s->day_round_count,
                 'date' => $s->eval_date,
                 'phase' => $s->phase,
                 'avgScore' => $s->avg_mentee_score !== null ? round((float) $s->avg_mentee_score, 2) : null,
@@ -70,6 +78,8 @@ class JourneySessionsController extends Controller
                 'naItems' => $s->na_items !== null ? (int) $s->na_items : null,
             ])
             ->all();
+
+        $dayProgress = $this->queryService->getDayProgress($groupId);
 
         return Inertia::render('Reports/JourneySessions', [
             'journey' => [
@@ -88,6 +98,7 @@ class JourneySessionsController extends Controller
                 'resolvedGaps' => (int) $journey->resolved_gaps,
             ],
             'sessions' => $sessions,
+            'dayProgress' => $dayProgress,
         ]);
     }
 }

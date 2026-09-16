@@ -4,13 +4,26 @@ import Card from '../../components/ui/Card.vue';
 import TableLink from '../../components/ui/TableLink.vue';
 import AppLayout from '../../layouts/AppLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
-import { ArrowLeft, ChevronRight, MapPin } from 'lucide-vue-next';
+import { computed } from 'vue';
+import { ArrowLeft, ChevronRight, MapPin, TrendingDown, TrendingUp } from 'lucide-vue-next';
 
 defineOptions({ layout: AppLayout });
 
 const props = defineProps({
     journey: { type: Object, required: true },
     sessions: { type: Array, default: () => [] },
+    dayProgress: { type: Array, default: () => [] },
+});
+
+// Day-to-day delta, keyed by eval_date, for the separator row shown above the
+// first round of each day (compares this day's first round to the previous
+// day's last round).
+const dayOverDayByDate = computed(() => {
+    const map = new Map();
+    for (const d of props.dayProgress) {
+        map.set(d.date, d);
+    }
+    return map;
 });
 
 const statusVariant = (status) =>
@@ -125,45 +138,67 @@ const isCompetencySession = (sessionNumber) =>
                                 No sessions found for this journey.
                             </td>
                         </tr>
-                        <tr
-                            v-for="s in sessions"
-                            :key="s.sessionId"
-                            class="border-t transition-colors hover:bg-muted/30"
-                            :class="isCompetencySession(s.sessionNumber) ? 'bg-emerald-50' : ''"
-                        >
-                            <td class="px-4 py-3">
-                                <div class="flex items-center gap-2">
-                                    <span class="font-mono text-xs font-medium text-muted-foreground">{{ s.sessionNumber }}</span>
-                                    <span
-                                        v-if="isCompetencySession(s.sessionNumber)"
-                                        class="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700"
-                                    >
-                                        Competent
+                        <template v-for="s in sessions" :key="s.sessionId">
+                            <!-- Day-to-day delta separator, shown above the first round of a day (once there's a previous day to compare) -->
+                            <tr v-if="s.dayRoundNumber === 1 && dayOverDayByDate.get(s.date)?.dayOverDayDelta != null" class="border-t bg-muted/20">
+                                <td colspan="7" class="px-4 py-1.5 text-xs text-muted-foreground">
+                                    <span class="inline-flex items-center gap-1.5">
+                                        <component
+                                            :is="dayOverDayByDate.get(s.date).dayOverDayDelta >= 0 ? TrendingUp : TrendingDown"
+                                            class="size-3.5"
+                                            :class="dayOverDayByDate.get(s.date).dayOverDayDelta >= 0 ? 'text-emerald-600' : 'text-red-600'"
+                                        />
+                                        <span :class="dayOverDayByDate.get(s.date).dayOverDayDelta >= 0 ? 'text-emerald-600' : 'text-red-600'" class="font-medium">
+                                            {{ dayOverDayByDate.get(s.date).dayOverDayDelta >= 0 ? '+' : '' }}{{ dayOverDayByDate.get(s.date).dayOverDayDelta }} avg
+                                        </span>
+                                        vs last round on {{ dayOverDayByDate.get(s.date).prevDate }}
                                     </span>
-                                </div>
-                            </td>
-                            <td class="px-4 py-3 tabular-nums">{{ s.date }}</td>
-                            <td class="px-4 py-3 text-muted-foreground">{{ phaseLabel(s.phase) }}</td>
-                            <td class="px-4 py-3 text-right tabular-nums">
-                                <span :class="scoreColor(s.avgScore)">
-                                    {{ s.avgScore != null ? s.avgScore.toFixed(2) : '—' }}
-                                </span>
-                            </td>
-                            <td class="px-4 py-3 text-right tabular-nums text-muted-foreground">
-                                {{ s.scoredItems ?? '—' }}
-                            </td>
-                            <td class="px-4 py-3 text-right tabular-nums text-muted-foreground">
-                                {{ s.naItems ?? '—' }}
-                            </td>
-                            <td class="px-4 py-3 text-right">
-                                <TableLink
-                                    :href="`/sessions/${s.sessionId}`"
-                                    tooltip="View the full session report"
-                                >
-                                    View report →
-                                </TableLink>
-                            </td>
-                        </tr>
+                                </td>
+                            </tr>
+                            <tr
+                                class="border-t transition-colors hover:bg-muted/30"
+                                :class="isCompetencySession(s.sessionNumber) ? 'bg-emerald-50' : ''"
+                            >
+                                <td class="px-4 py-3">
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-mono text-xs font-medium text-muted-foreground">{{ s.sessionNumber }}</span>
+                                        <span
+                                            v-if="s.dayRoundCount > 1"
+                                            class="rounded-full bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold text-sky-700"
+                                        >
+                                            Round {{ s.dayRoundNumber }}/{{ s.dayRoundCount }}
+                                        </span>
+                                        <span
+                                            v-if="isCompetencySession(s.sessionNumber)"
+                                            class="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700"
+                                        >
+                                            Competent
+                                        </span>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3 tabular-nums">{{ s.date }}</td>
+                                <td class="px-4 py-3 text-muted-foreground">{{ phaseLabel(s.phase) }}</td>
+                                <td class="px-4 py-3 text-right tabular-nums">
+                                    <span :class="scoreColor(s.avgScore)">
+                                        {{ s.avgScore != null ? s.avgScore.toFixed(2) : '—' }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 text-right tabular-nums text-muted-foreground">
+                                    {{ s.scoredItems ?? '—' }}
+                                </td>
+                                <td class="px-4 py-3 text-right tabular-nums text-muted-foreground">
+                                    {{ s.naItems ?? '—' }}
+                                </td>
+                                <td class="px-4 py-3 text-right">
+                                    <TableLink
+                                        :href="`/sessions/${s.sessionId}`"
+                                        tooltip="View the full session report"
+                                    >
+                                        View report →
+                                    </TableLink>
+                                </td>
+                            </tr>
+                        </template>
                     </tbody>
                 </table>
             </div>

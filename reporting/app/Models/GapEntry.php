@@ -20,6 +20,7 @@ class GapEntry extends Model
         'evaluator_id',
         'tool_id',
         'identified_at',
+        'session_round',
         'description',
         'domains',
         'covered_in_mentorship',

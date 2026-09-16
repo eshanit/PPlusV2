@@ -36,6 +36,13 @@ export interface ISession {
   // Explicitly selected by the evaluator at the time of recording
   phase: MentorshipPhase | null
 
+  // Explicit round-of-day (1-based) chosen by the evaluator at entry time.
+  // Sessions are sometimes recorded on paper first and typed up later, out of
+  // chronological order, so entry order (createdAt) can't be trusted to reflect
+  // the true same-day round order — this is the source of truth for it instead.
+  // Optional only because sessions saved before this field existed lack it.
+  roundOfDay?: number
+
   notes?: string
 
   syncStatus: SyncStatus

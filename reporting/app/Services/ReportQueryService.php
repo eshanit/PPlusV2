@@ -36,6 +36,34 @@ class ReportQueryService
             ->all();
     }
 
+    public function getDayProgress(string $groupId): array
+    {
+        return DB::table('v_day_progress')
+            ->where('evaluation_group_id', $groupId)
+            ->orderBy('eval_date')
+            ->get([
+                'eval_date',
+                'rounds_that_day',
+                'day_avg_score',
+                'first_round_avg',
+                'last_round_avg',
+                'intra_day_delta',
+                'prev_eval_date',
+                'day_over_day_delta',
+            ])
+            ->map(fn (object $d): array => [
+                'date' => $d->eval_date,
+                'roundsThatDay' => (int) $d->rounds_that_day,
+                'dayAvgScore' => $d->day_avg_score !== null ? round((float) $d->day_avg_score, 2) : null,
+                'firstRoundAvg' => $d->first_round_avg !== null ? round((float) $d->first_round_avg, 2) : null,
+                'lastRoundAvg' => $d->last_round_avg !== null ? round((float) $d->last_round_avg, 2) : null,
+                'intraDayDelta' => $d->intra_day_delta !== null ? round((float) $d->intra_day_delta, 2) : null,
+                'prevDate' => $d->prev_eval_date,
+                'dayOverDayDelta' => $d->day_over_day_delta !== null ? round((float) $d->day_over_day_delta, 2) : null,
+            ])
+            ->all();
+    }
+
     public function getCohortProgress(?int $toolId = null, ?string $districtId = null): array
     {
         return DB::table('v_sessions_numbered as sn')

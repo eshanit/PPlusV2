@@ -151,7 +151,10 @@ const chartOptions = computed(() => {
                 <!-- Identified at -->
                 <div>
                     <p class="mb-1 text-xs font-medium uppercase text-muted-foreground">Identified</p>
-                    <p class="text-sm tabular-nums">{{ gap.identifiedAt }}</p>
+                    <p class="text-sm tabular-nums">
+                        {{ gap.identifiedAt }}
+                        <span v-if="gap.sessionRound != null" class="text-muted-foreground">· Round {{ gap.sessionRound }}</span>
+                    </p>
                 </div>
 
                 <!-- Supervision level -->

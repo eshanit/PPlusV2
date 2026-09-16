@@ -7,6 +7,7 @@ const props = defineProps<{
   menteeId: string
   evaluatorId: string
   toolSlug: string
+  sessionRound?: number
 }>()
 
 const emit = defineEmits<{
@@ -79,6 +80,7 @@ async function save() {
       evaluatorId: props.evaluatorId,
       toolSlug: props.toolSlug,
       identifiedAt: now,
+      sessionRound: props.sessionRound,
       description: description.value.trim(),
       domains: [...selectedDomains.value],
       coveredInMentorship: coveredChoice.value === 'yes' ? true : coveredChoice.value === 'no' ? false : null,

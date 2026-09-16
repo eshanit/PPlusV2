@@ -99,6 +99,7 @@ class GapReportController extends Controller
             'gap' => [
                 'id' => $gap->id,
                 'identifiedAt' => $gap->identified_at->toDateString(),
+                'sessionRound' => $gap->session_round,
                 'description' => $gap->description,
                 'domains' => $gap->domains ?? [],
                 'coveredInMentorship' => $gap->covered_in_mentorship,

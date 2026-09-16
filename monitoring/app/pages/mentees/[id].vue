@@ -49,7 +49,7 @@
                 <p class="font-medium text-gray-900 dark:text-white">{{ journey.toolLabel }}</p>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                   {{ journey.sessionCount }} session{{ journey.sessionCount !== 1 ? 's' : '' }}
-                  · Last: {{ formatDate(journey.lastSessionDate) }}
+                  · Last: {{ formatDate(journey.lastSessionDate) }} (Round {{ journey.lastSessionRound }})
                 </p>
               </div>
               <div class="flex flex-col items-end gap-1.5 shrink-0">
@@ -168,6 +168,7 @@ interface Journey {
   toolLabel: string
   sessionCount: number
   lastSessionDate: number
+  lastSessionRound: number
   latestPhase: MentorshipPhase | null
   openGaps: number
   competencyStatus: CompetencyStatus
@@ -186,7 +187,13 @@ const journeys = computed((): Journey[] => {
   }
 
   return Array.from(groups.entries()).map(([groupId, sessions]) => {
-    const sorted = [...sessions].sort((a, b) => b.evalDate - a.evalDate)
+    // Same-day sessions share an evalDate, so break ties by round (highest
+    // round = most recent that day), then createdAt for any remaining ties.
+    const sorted = [...sessions].sort((a, b) =>
+      b.evalDate - a.evalDate ||
+      (b.roundOfDay ?? 0) - (a.roundOfDay ?? 0) ||
+      b.createdAt - a.createdAt
+    )
     const toolSlug = sessions[0]!.toolSlug
     const tool = evaluationTools.find(t => t.slug === toolSlug)
     const openGaps = gapStore.gaps.filter(
@@ -201,6 +208,7 @@ const journeys = computed((): Journey[] => {
       toolLabel: tool?.label ?? toolSlug,
       sessionCount: sessions.length,
       lastSessionDate: sorted[0]!.evalDate,
+      lastSessionRound: sessionStore.roundNumber(sorted[0]!),
       latestPhase: sorted[0]!.phase,
       openGaps,
       competencyStatus,
