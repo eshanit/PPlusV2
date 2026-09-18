@@ -121,6 +121,10 @@ readonly class JourneySummaryData
             'district' => $this->getDistrict(),
             'status' => $this->getStatus(),
             'totalSessions' => $this->getTotalSessions(),
+            'openGaps' => $this->getOpenGaps(),
+            'resolvedGaps' => $this->getResolvedGaps(),
+            'basicCompetentAt' => $this->getBasicCompetentAt(),
+            'sessionsToBasicCompetence' => $this->getSessionsToBasicCompetence(),
         ];
     }
 }

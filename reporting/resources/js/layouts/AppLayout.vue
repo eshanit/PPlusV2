@@ -99,7 +99,7 @@ function logout() {
 
 <template>
     <div class="flex min-h-screen">
-        <aside class="fixed inset-y-0 left-0 z-50 flex w-56 flex-col border-r bg-card lg:static">
+        <aside class="fixed inset-y-0 left-0 z-50 flex w-56 flex-col border-r bg-card lg:static print:hidden">
             <div class="flex h-14 items-center justify-between gap-2 border-b px-4">
                 <div class="flex items-center gap-2">
                     <div class="rounded-md bg-primary p-1.5 text-primary-foreground">
@@ -168,12 +168,12 @@ function logout() {
 
         <div
             v-if="mobileOpen"
-            class="fixed inset-0 z-40 bg-black/50 lg:hidden"
+            class="fixed inset-0 z-40 bg-black/50 lg:hidden print:hidden"
             @click="closeMobile"
         />
 
         <div class="flex flex-1 flex-col">
-            <header class="flex h-14 items-center gap-4 border-b bg-card px-4 lg:hidden">
+            <header class="flex h-14 items-center gap-4 border-b bg-card px-4 lg:hidden print:hidden">
                 <button @click="mobileOpen = true" class="text-muted-foreground">
                     <ChevronRight class="size-5" />
                 </button>

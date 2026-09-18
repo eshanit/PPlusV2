@@ -64,6 +64,21 @@ class ReportQueryService
             ->all();
     }
 
+    public function getGaps(string $groupId): array
+    {
+        return DB::table('gap_entries')
+            ->where('evaluation_group_id', $groupId)
+            ->orderBy('identified_at')
+            ->get(['identified_at', 'domains', 'supervision_level', 'resolved_at'])
+            ->map(fn (object $g): array => [
+                'identifiedAt' => $g->identified_at,
+                'domains' => json_decode((string) $g->domains, true) ?? [],
+                'supervisionLevel' => $g->supervision_level,
+                'isResolved' => $g->resolved_at !== null,
+            ])
+            ->all();
+    }
+
     public function getCohortProgress(?int $toolId = null, ?string $districtId = null): array
     {
         return DB::table('v_sessions_numbered as sn')

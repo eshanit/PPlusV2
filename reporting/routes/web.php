@@ -14,6 +14,7 @@ use App\Http\Controllers\Reports\HotSpotsController;
 use App\Http\Controllers\Reports\ItemAnalysisController;
 use App\Http\Controllers\Reports\JourneyGapsController;
 use App\Http\Controllers\Reports\JourneyHeatmapController;
+use App\Http\Controllers\Reports\JourneyHeatmapPdfController;
 use App\Http\Controllers\Reports\JourneySessionsController;
 use App\Http\Controllers\Reports\JourneyStatusController;
 use App\Http\Controllers\Reports\LowScoreWatchlistController;
@@ -49,6 +50,7 @@ Route::middleware('reporting.auth')->group(function () {
 
     Route::get('/hot-spots', HotSpotsController::class)->name('reports.hot-spots');
     Route::get('/journey-heatmap', JourneyHeatmapController::class)->name('reports.journey-heatmap');
+    Route::get('/journey-heatmap/pdf', JourneyHeatmapPdfController::class)->name('reports.journey-heatmap.pdf');
     Route::get('/high-risk-alerts', HighRiskAlertsController::class)->name('reports.high-risk-alerts');
 
     Route::get('/sessions/{session}', SessionReportController::class)->name('reports.session');

@@ -25,6 +25,8 @@ class JourneyHeatmapController extends Controller
                 'sessions' => [],
                 'rows' => [],
                 'categories' => [],
+                'openGapDomainCounts' => [],
+                'latestSupervisionLevel' => null,
             ]);
         }
 
@@ -40,7 +42,7 @@ class JourneyHeatmapController extends Controller
         $sessions = DB::table('v_sessions_numbered as vsn')
             ->where('vsn.evaluation_group_id', $groupId)
             ->orderBy('vsn.session_number')
-            ->get(['vsn.id', 'vsn.session_number', 'vsn.eval_date', 'vsn.day_round_number', 'vsn.day_round_count']);
+            ->get(['vsn.id', 'vsn.session_number', 'vsn.eval_date', 'vsn.day_round_number', 'vsn.day_round_count', 'vsn.phase']);
 
         $sessionIds = $sessions->pluck('id');
 
@@ -97,6 +99,28 @@ class JourneyHeatmapController extends Controller
             ];
         })->all();
 
+        $gaps = $this->queries->getGaps($groupId);
+
+        // Open-gap domains (knowledge, critical reasoning, clinical skills,
+        // communication, attitude) — a gap can carry more than one domain, so
+        // each is counted separately rather than one-per-gap.
+        $openGapDomainCounts = [];
+        foreach ($gaps as $gap) {
+            if ($gap['isResolved']) {
+                continue;
+            }
+            foreach ($gap['domains'] as $domain) {
+                $openGapDomainCounts[$domain] = ($openGapDomainCounts[$domain] ?? 0) + 1;
+            }
+        }
+
+        // Most recently logged "what level of supervision does this provider
+        // require" recommendation, per the tool's gap follow-up section.
+        $latestSupervisionLevel = collect($gaps)
+            ->filter(fn (array $g): bool => $g['supervisionLevel'] !== null)
+            ->sortByDesc('identifiedAt')
+            ->first()['supervisionLevel'] ?? null;
+
         return Inertia::render('Reports/JourneyHeatmap', [
             'journey' => $journey->toArrayForHeatmap(),
             'sessions' => $sessions->map(fn (object $s): array => [
@@ -105,9 +129,12 @@ class JourneyHeatmapController extends Controller
                 'date' => $s->eval_date,
                 'dayRoundNumber' => (int) $s->day_round_number,
                 'dayRoundCount' => (int) $s->day_round_count,
+                'phase' => $s->phase,
             ])->all(),
             'rows' => $rows,
             'dayProgress' => $this->queries->getDayProgress($groupId),
+            'openGapDomainCounts' => $openGapDomainCounts,
+            'latestSupervisionLevel' => $latestSupervisionLevel,
         ]);
     }
 }
