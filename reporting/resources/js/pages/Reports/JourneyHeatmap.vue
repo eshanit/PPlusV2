@@ -763,6 +763,13 @@ function avgScoreClass(score) {
                     <span class="inline-block size-4 rounded ring-2 ring-inset ring-red-500" />
                     Regressed vs. prior round
                 </span>
+                <span
+                    class="flex items-center gap-1"
+                    title="Advanced (grey) competency — not required for Basic Competent status, only for Fully Competent. Still scored and reported, just not part of the 70% phase-advancement threshold."
+                >
+                    <Badge variant="outline" class="text-[9px]">Adv</Badge>
+                    Advanced competency
+                </span>
             </div>
 
             <!-- Heatmap table -->
@@ -862,6 +869,7 @@ function avgScoreClass(score) {
                                                 v-if="row.isAdvanced"
                                                 variant="outline"
                                                 class="ml-auto shrink-0 text-[9px]"
+                                                title="Advanced (grey) competency — not required for Basic Competent status, only for Fully Competent. Still scored and reported, just not part of the 70% phase-advancement threshold."
                                             >
                                                 Adv
                                             </Badge>

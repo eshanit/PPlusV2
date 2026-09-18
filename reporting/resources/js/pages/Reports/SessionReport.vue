@@ -4,7 +4,7 @@ import Badge from '../../components/ui/Badge.vue';
 import Card from '../../components/ui/Card.vue';
 import AppLayout from '../../layouts/AppLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
-import { ArrowLeft, ChevronDown, ChevronRight, FileText, MapPin, Printer } from 'lucide-vue-next';
+import { AlertTriangle, ArrowLeft, Award, ChevronDown, ChevronRight, FileText, MapPin, Printer, TrendingDown, TrendingUp } from 'lucide-vue-next';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 
 defineOptions({ layout: AppLayout });
@@ -15,6 +15,9 @@ const props = defineProps({
     counsellingItems: { type: Array, default: () => [] },
     distribution: { type: Object, default: () => ({}) },
     stats: { type: Object, default: () => ({}) },
+    prevSession: { type: Object, default: null },
+    openGaps: { type: Number, default: 0 },
+    latestSupervisionLevel: { type: String, default: null },
     trajectory: { type: Array, default: () => [] },
     journeyStatus: { type: Object, default: null },
 });
@@ -108,6 +111,119 @@ const deltaColor = (delta) => {
     return 'text-muted-foreground';
 };
 
+// "Prev"/Δ compare to whichever session has session_number - 1, which counts
+// same-day rounds too — so "prev" can mean an earlier pass in this same
+// visit, not a separate day's visit. Those read very differently for an M&E
+// officer, so label which one it actually is rather than just saying "prev".
+const prevComparisonLabel = computed(() => {
+    if (!props.prevSession) return null;
+    return props.prevSession.sameDay
+        ? `vs Round ${props.prevSession.dayRoundNumber} (earlier today)`
+        : `vs visit on ${props.prevSession.date}`;
+});
+
+const prevComparisonShort = computed(() => {
+    if (!props.prevSession) return 'Prev';
+    return props.prevSession.sameDay ? `R${props.prevSession.dayRoundNumber}` : 'Prev';
+});
+
+const SUPERVISION_LABELS = {
+    intensive_mentorship: 'Intensive Mentorship',
+    ongoing_mentorship: 'Ongoing Mentorship',
+    independent_practice: 'Independent Practice',
+};
+const supervisionLabel = (level) => SUPERVISION_LABELS[level] ?? level ?? '—';
+
+// Exact wording from the PEN-Plus Mentorship Tool's scoring rubric (mentee
+// row) — shown as score badge tooltips, matching the journey heatmap.
+const SCORE_RUBRIC = {
+    1: 'Does not demonstrate competency',
+    2: 'Demonstrates basic competency',
+    3: 'Demonstrates satisfactory competency',
+    4: 'Demonstrates advanced competency',
+    5: 'Demonstrates exceptional competency',
+};
+const scoreTooltip = (score) => (score == null ? 'N/A — the competency cannot be evaluated' : SCORE_RUBRIC[score]);
+
+// Per the tool's phase-graduation rule, only basic (non-advanced)
+// competencies count toward the 70% threshold — explained on hover since a
+// percentage alone doesn't say why the bar moves between phases.
+const phaseTargetTooltip = computed(() => {
+    const target = props.stats.target;
+    if (target == null) return null;
+    return (
+        `Per the PEN-Plus Mentorship Tool, basic (non-advanced) competencies need to score ${target}+ during the ` +
+        `${phaseLabel(props.session.phase)} phase (3+ for Initial Intensive, 4+ for Ongoing/Supervision). ` +
+        `${props.stats.competencyGap} of ${props.stats.basicScoredCount} basic items scored in this session are below that bar.`
+    );
+});
+
+// ── change since last round/visit ───────────────────────────────────────────
+// Combines the two item sets (tool + counselling) since both already carry a
+// delta vs whichever session came before — same source data the item table
+// shows, just summarised so a regression or improvement doesn't require
+// scanning every row.
+const changeSinceLast = computed(() => {
+    const all = [...props.items, ...props.counsellingItems].filter((i) => i.delta != null);
+    const regressed = all.filter((i) => i.delta < 0).sort((a, b) => a.delta - b.delta);
+    const improved = all.filter((i) => i.delta > 0).sort((a, b) => b.delta - a.delta);
+    return { regressed, improved, evaluatedCount: all.length };
+});
+
+// ── session insights ─────────────────────────────────────────────────────────
+// One-line takeaway before anything else: how this specific visit went, and
+// which way it's trending. Same score bands already used to colour the "At
+// Phase Target" tile, so the wording and the colour on screen always agree.
+const sessionVerdict = computed(() => {
+    const pct = props.stats.pctAtCompetency ?? 0;
+    const band = pct >= 80
+        ? { text: 'Strong session', color: 'text-emerald-600' }
+        : pct >= 50
+            ? { text: 'Mixed session', color: 'text-amber-600' }
+            : { text: 'Weak session', color: 'text-red-600' };
+
+    const target = props.stats.target ?? 4;
+    const detail = `${pct}% of basic items scoring ${target}+`;
+
+    const trendDelta = props.stats.vsPrevSession;
+    let trend = null;
+    if (trendDelta != null && prevComparisonLabel.value) {
+        if (trendDelta > 0) trend = `improving ${prevComparisonLabel.value}`;
+        else if (trendDelta < 0) trend = `declining ${prevComparisonLabel.value}`;
+        else trend = `unchanged ${prevComparisonLabel.value}`;
+    }
+
+    return { ...band, detail, trend };
+});
+
+// Where this visit sits among every scored session in the journey — flags an
+// unusually good or bad visit that the raw number alone might not stand out.
+const sessionRank = computed(() => {
+    const scored = props.trajectory.filter((s) => s.avgScore != null);
+    const current = scored.find((s) => s.isCurrent);
+    if (!current || scored.length < 2) return null;
+
+    const sorted = [...scored].sort((a, b) => b.avgScore - a.avgScore);
+    const rank = sorted.findIndex((s) => s.sessionId === current.sessionId) + 1;
+
+    return { rank, total: scored.length, isBest: rank === 1, isWorst: rank === scored.length };
+});
+
+const ordinal = (n) => {
+    const s = ['th', 'st', 'nd', 'rd'];
+    const v = n % 100;
+    return `${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]}`;
+};
+
+// Critical (high-risk) items scored 1-2 this session — a gap on a routine
+// item and a gap on a critical one carry very different urgency.
+const criticalGaps = computed(() => props.items.filter((i) => i.isCritical && i.score != null && i.score <= 2));
+
+// Items scored 5 (exceptional) this visit — balance against the gaps above.
+const sessionStrengths = computed(() =>
+    [...props.items, ...props.counsellingItems].filter((i) => i.score === 5),
+);
+
 // ── distribution bar ─────────────────────────────────────────────────────────
 const totalItems = computed(() => props.items.length);
 
@@ -137,13 +253,19 @@ const trajectorySeries = computed(() => [
     },
 ]);
 
+// Round-aware category label — only multi-round days get a "(Rn)" suffix, so
+// journeys with one visit per day keep the plain "Session N" look. Annotation
+// x-values below must be built from this same function, not a separate
+// string, since ApexChart matches annotations to categories by exact text.
+const categoryLabel = (s) => (s.dayRoundCount > 1 ? `Session ${s.session} (R${s.dayRoundNumber})` : `Session ${s.session}`);
+
 const currentSessionAnnotation = computed(() => {
     const current = props.trajectory.find((s) => s.isCurrent);
     if (!current) return {};
     return {
         xaxis: [
             {
-                x: `Session ${current.session}`,
+                x: categoryLabel(current),
                 borderColor: '#6366f1',
                 label: {
                     text: 'This Session',
@@ -155,12 +277,13 @@ const currentSessionAnnotation = computed(() => {
 });
 
 const basicCompetencyAnnotation = computed(() => {
-    if (!props.journeyStatus?.sessionsToBasic) return {};
+    const target = props.trajectory.find((s) => s.session === props.journeyStatus?.sessionsToBasic);
+    if (!target) return currentSessionAnnotation.value;
     return {
         xaxis: [
             ...(currentSessionAnnotation.value.xaxis ?? []),
             {
-                x: `Session ${props.journeyStatus.sessionsToBasic}`,
+                x: categoryLabel(target),
                 borderColor: '#22c55e',
                 label: {
                     text: 'Basic Competent',
@@ -173,7 +296,7 @@ const basicCompetencyAnnotation = computed(() => {
 
 const trajectoryOptions = computed(() => ({
     xaxis: {
-        categories: props.trajectory.map((s) => `Session ${s.session}`),
+        categories: props.trajectory.map(categoryLabel),
         title: { text: 'Session' },
     },
     yaxis: { min: 1, max: 5, tickAmount: 4, title: { text: 'Avg Score' } },
@@ -206,7 +329,10 @@ const trajectoryOptions = computed(() => ({
                     Back to journey
                 </Link>
                 <ChevronRight class="size-3 opacity-50" />
-                <span class="text-foreground">Session {{ session.sessionNumber }}</span>
+                <span class="text-foreground">
+                    Session {{ session.sessionNumber }}
+                    <template v-if="session.dayRoundCount > 1">(Round {{ session.dayRoundNumber }} of {{ session.dayRoundCount }})</template>
+                </span>
             </div>
             <button
                 type="button"
@@ -222,7 +348,10 @@ const trajectoryOptions = computed(() => ({
         <div class="hidden print:block">
             <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">PEN-Plus · Session Report</p>
             <h1 class="text-2xl font-bold">{{ session.menteeName }}</h1>
-            <p class="text-sm text-muted-foreground">{{ session.toolLabel }} · {{ session.date }} · Session {{ session.sessionNumber }} of {{ session.totalSessions }}</p>
+            <p class="text-sm text-muted-foreground">
+                {{ session.toolLabel }} · {{ session.date }} · Session {{ session.sessionNumber }} of {{ session.totalSessions }}
+                <template v-if="session.dayRoundCount > 1">· Round {{ session.dayRoundNumber }} of {{ session.dayRoundCount }} today</template>
+            </p>
         </div>
 
         <!-- Session header -->
@@ -235,6 +364,10 @@ const trajectoryOptions = computed(() => ({
                         <Badge :variant="statusVariant(journeyCompetencyStatus)">
                             {{ statusLabel(journeyCompetencyStatus) }}
                         </Badge>
+                        <Badge v-if="latestSupervisionLevel" variant="outline">
+                            {{ supervisionLabel(latestSupervisionLevel) }} recommended
+                        </Badge>
+                        <Badge v-if="openGaps > 0" variant="warning">{{ openGaps }} open gap{{ openGaps !== 1 ? 's' : '' }}</Badge>
                     </div>
                     <p class="text-sm font-medium text-muted-foreground">{{ session.toolLabel }}</p>
                     <div class="flex flex-wrap gap-x-4 gap-y-1 pt-1 text-xs text-muted-foreground">
@@ -253,11 +386,69 @@ const trajectoryOptions = computed(() => ({
                         <span class="text-lg font-normal text-muted-foreground">/{{ session.totalSessions }}</span>
                     </p>
                     <p class="text-xs text-muted-foreground">session in journey</p>
+                    <Badge v-if="session.dayRoundCount > 1" variant="outline" class="mt-1">
+                        Round {{ session.dayRoundNumber }} of {{ session.dayRoundCount }} today
+                    </Badge>
                 </div>
             </div>
 
             <div v-if="session.notes" class="mt-3 rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
                 <span class="font-medium text-foreground">Notes:</span> {{ session.notes }}
+            </div>
+        </Card>
+
+        <!-- Insights -->
+        <Card class="space-y-3 p-4">
+            <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                <p class="flex items-baseline gap-2">
+                    <span :class="['text-base font-semibold', sessionVerdict.color]">{{ sessionVerdict.text }}</span>
+                    <span class="text-xs text-muted-foreground">{{ sessionVerdict.detail }}</span>
+                </p>
+                <p v-if="sessionVerdict.trend" class="flex items-center gap-1 text-xs text-muted-foreground">
+                    <component :is="stats.vsPrevSession > 0 ? TrendingUp : TrendingDown" class="size-3.5" />
+                    {{ sessionVerdict.trend }}
+                </p>
+            </div>
+
+            <p v-if="sessionRank" class="text-xs text-muted-foreground">
+                <template v-if="sessionRank.isBest">Best-scoring session so far in this journey</template>
+                <template v-else-if="sessionRank.isWorst">Lowest-scoring session so far in this journey — worth a closer look</template>
+                <template v-else>{{ ordinal(sessionRank.rank) }} of {{ sessionRank.total }} scored sessions in this journey, by average</template>
+            </p>
+
+            <div v-if="criticalGaps.length || sessionStrengths.length" class="grid gap-3 sm:grid-cols-2">
+                <div v-if="criticalGaps.length" class="rounded-lg border border-orange-200 bg-orange-50/50 p-3">
+                    <p class="mb-2 flex items-center gap-1.5 text-xs font-semibold text-orange-700">
+                        <AlertTriangle class="size-3.5" />
+                        Critical items scoring low
+                    </p>
+                    <ul class="space-y-1 text-xs">
+                        <li v-for="i in criticalGaps" :key="i.itemId" class="flex items-center justify-between gap-2">
+                            <span class="truncate">
+                                <span class="font-mono text-[10px] text-muted-foreground">{{ i.number }}</span>
+                                {{ i.title }}
+                            </span>
+                            <span class="shrink-0 font-semibold text-red-600">{{ i.score }}</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div v-if="sessionStrengths.length" class="rounded-lg border p-3">
+                    <p class="mb-2 flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
+                        <Award class="size-3.5" />
+                        Exceptional this session
+                    </p>
+                    <ul class="space-y-1 text-xs">
+                        <li v-for="i in sessionStrengths.slice(0, 5)" :key="i.itemId" class="flex items-center justify-between gap-2">
+                            <span class="truncate">
+                                <span class="font-mono text-[10px] text-muted-foreground">{{ i.number }}</span>
+                                {{ i.title }}
+                            </span>
+                            <span class="shrink-0 font-semibold text-emerald-600">5</span>
+                        </li>
+                        <li v-if="sessionStrengths.length > 5" class="text-muted-foreground">+{{ sessionStrengths.length - 5 }} more</li>
+                    </ul>
+                </div>
             </div>
         </Card>
 
@@ -312,8 +503,8 @@ const trajectoryOptions = computed(() => ({
                         <p :class="['text-2xl font-bold tabular-nums', scoreColor(stats.mean)]">
                             {{ stats.mean != null ? stats.mean.toFixed(2) : '—' }}
                         </p>
-                        <p v-if="stats.vsPrevSession != null" :class="['text-xs', deltaColor(stats.vsPrevSession)]">
-                            {{ deltaLabel(stats.vsPrevSession) }} vs prev session
+                        <p v-if="stats.vsPrevSession != null" :class="['text-xs', deltaColor(stats.vsPrevSession)]" :title="prevComparisonLabel">
+                            {{ deltaLabel(stats.vsPrevSession) }} {{ prevComparisonLabel }}
                         </p>
                         <p v-else class="text-xs text-muted-foreground/60">first session</p>
                     </div>
@@ -332,25 +523,71 @@ const trajectoryOptions = computed(() => ({
                         </p>
                     </div>
 
-                    <div class="rounded-lg bg-muted/50 p-3">
-                        <p class="text-xs text-muted-foreground">At Competency (≥4)</p>
+                    <div class="rounded-lg bg-muted/50 p-3" :title="phaseTargetTooltip">
+                        <p class="text-xs text-muted-foreground">At Phase Target (≥{{ stats.target ?? 4 }})</p>
                         <p :class="['text-2xl font-bold tabular-nums', stats.pctAtCompetency >= 80 ? 'text-emerald-600' : stats.pctAtCompetency >= 50 ? 'text-amber-600' : 'text-red-600']">
                             {{ stats.pctAtCompetency }}%
                         </p>
+                        <p class="text-xs text-muted-foreground/60">basic items, {{ phaseLabel(session.phase) }} phase</p>
                     </div>
 
-                    <div class="col-span-2 rounded-lg bg-muted/50 p-3">
+                    <div class="col-span-2 rounded-lg bg-muted/50 p-3" :title="phaseTargetTooltip">
                         <p class="text-xs text-muted-foreground">Competency Gap</p>
                         <p class="text-lg font-semibold text-foreground">
                             <span :class="stats.competencyGap > 0 ? 'text-red-600' : 'text-emerald-600'">
                                 {{ stats.competencyGap }}
                             </span>
-                            <span class="text-sm font-normal text-muted-foreground"> item{{ stats.competencyGap !== 1 ? 's' : '' }} below competency threshold</span>
+                            <span class="text-sm font-normal text-muted-foreground">
+                                of {{ stats.basicScoredCount }} basic item{{ stats.basicScoredCount !== 1 ? 's' : '' }} below the ≥{{ stats.target ?? 4 }} phase target
+                            </span>
                         </p>
                     </div>
                 </div>
             </Card>
         </div>
+
+        <!-- Change since last round/visit -->
+        <Card v-if="prevSession" class="p-4">
+            <h2 class="mb-1 text-sm font-semibold">Change {{ prevComparisonLabel }}</h2>
+            <p class="mb-3 text-xs text-muted-foreground">
+                {{ changeSinceLast.regressed.length }} regressed, {{ changeSinceLast.improved.length }} improved, of
+                {{ changeSinceLast.evaluatedCount }} items scored both times.
+            </p>
+            <div class="grid gap-3 sm:grid-cols-2">
+                <div class="rounded-lg border p-3">
+                    <p class="mb-2 flex items-center gap-1 text-xs font-semibold text-red-700">Regressed</p>
+                    <ul v-if="changeSinceLast.regressed.length" class="space-y-1 text-xs">
+                        <li v-for="i in changeSinceLast.regressed.slice(0, 5)" :key="i.itemId" class="flex items-center justify-between gap-2">
+                            <span class="truncate">
+                                <span class="font-mono text-[10px] text-muted-foreground">{{ i.number }}</span>
+                                {{ i.title }}
+                            </span>
+                            <span class="shrink-0 font-semibold text-red-600">{{ i.prevScore }} → {{ i.score }}</span>
+                        </li>
+                        <li v-if="changeSinceLast.regressed.length > 5" class="text-muted-foreground">
+                            +{{ changeSinceLast.regressed.length - 5 }} more
+                        </li>
+                    </ul>
+                    <p v-else class="text-xs text-muted-foreground">No items dropped.</p>
+                </div>
+                <div class="rounded-lg border p-3">
+                    <p class="mb-2 flex items-center gap-1 text-xs font-semibold text-emerald-700">Improved</p>
+                    <ul v-if="changeSinceLast.improved.length" class="space-y-1 text-xs">
+                        <li v-for="i in changeSinceLast.improved.slice(0, 5)" :key="i.itemId" class="flex items-center justify-between gap-2">
+                            <span class="truncate">
+                                <span class="font-mono text-[10px] text-muted-foreground">{{ i.number }}</span>
+                                {{ i.title }}
+                            </span>
+                            <span class="shrink-0 font-semibold text-emerald-600">{{ i.prevScore }} → {{ i.score }}</span>
+                        </li>
+                        <li v-if="changeSinceLast.improved.length > 5" class="text-muted-foreground">
+                            +{{ changeSinceLast.improved.length - 5 }} more
+                        </li>
+                    </ul>
+                    <p v-else class="text-xs text-muted-foreground">No items improved.</p>
+                </div>
+            </div>
+        </Card>
 
         <!-- Items by score (accordion) -->
         <Card>
@@ -390,6 +627,7 @@ const trajectoryOptions = computed(() => ({
                                 <span
                                     v-if="item.isAdvanced"
                                     class="shrink-0 rounded-full bg-purple-100 px-1.5 py-0.5 text-[10px] font-medium text-purple-700"
+                                    title="Advanced (grey) competency — not required for Basic Competent status, only for Fully Competent. Still scored and reported, just not part of the 70% phase-advancement threshold."
                                 >
                                     Advanced
                                 </span>
@@ -407,6 +645,9 @@ const trajectoryOptions = computed(() => ({
         <Card class="page-break-before">
             <div class="border-b px-4 py-3">
                 <h2 class="text-base font-semibold">All Items — {{ session.toolLabel }}</h2>
+                <p v-if="prevComparisonLabel" class="mt-0.5 text-xs text-muted-foreground">
+                    Prev / Δ columns compare {{ prevComparisonLabel }}
+                </p>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-sm">
@@ -415,7 +656,7 @@ const trajectoryOptions = computed(() => ({
                             <th class="px-4 py-3 font-medium">#</th>
                             <th class="px-4 py-3 font-medium">Item</th>
                             <th class="px-3 py-3 font-medium text-center">Score</th>
-                            <th class="px-3 py-3 font-medium text-center">Prev</th>
+                            <th class="px-3 py-3 font-medium text-center" :title="prevComparisonLabel">{{ prevComparisonShort }}</th>
                             <th class="px-3 py-3 font-medium text-center">Δ</th>
                             <th class="hidden px-3 py-3 font-medium sm:table-cell"></th>
                         </tr>
@@ -438,10 +679,11 @@ const trajectoryOptions = computed(() => ({
                                 <span
                                     v-if="item.score != null"
                                     :class="[scoreBg(item.score), 'inline-flex size-7 items-center justify-center rounded-full text-xs font-bold']"
+                                    :title="scoreTooltip(item.score)"
                                 >
                                     {{ item.score }}
                                 </span>
-                                <span v-else class="text-xs text-muted-foreground/50">—</span>
+                                <span v-else class="text-xs text-muted-foreground/50" title="N/A — the competency cannot be evaluated">—</span>
                             </td>
                             <td class="px-3 py-2.5 text-center">
                                 <span v-if="item.prevScore != null" class="text-xs text-muted-foreground tabular-nums">
@@ -458,6 +700,7 @@ const trajectoryOptions = computed(() => ({
                                 <span
                                     v-if="item.isAdvanced"
                                     class="rounded-full bg-purple-100 px-1.5 py-0.5 text-[10px] font-medium text-purple-700"
+                                    title="Advanced (grey) competency — not required for Basic Competent status, only for Fully Competent. Still scored and reported, just not part of the 70% phase-advancement threshold."
                                 >
                                     Advanced
                                 </span>
@@ -480,7 +723,7 @@ const trajectoryOptions = computed(() => ({
                             <th class="px-4 py-3 font-medium">#</th>
                             <th class="px-4 py-3 font-medium">Item</th>
                             <th class="px-3 py-3 font-medium text-center">Score</th>
-                            <th class="px-3 py-3 font-medium text-center">Prev</th>
+                            <th class="px-3 py-3 font-medium text-center" :title="prevComparisonLabel">{{ prevComparisonShort }}</th>
                             <th class="px-3 py-3 font-medium text-center">Δ</th>
                         </tr>
                     </thead>
@@ -499,10 +742,11 @@ const trajectoryOptions = computed(() => ({
                                 <span
                                     v-if="item.score != null"
                                     :class="[scoreBg(item.score), 'inline-flex size-7 items-center justify-center rounded-full text-xs font-bold']"
+                                    :title="scoreTooltip(item.score)"
                                 >
                                     {{ item.score }}
                                 </span>
-                                <span v-else class="text-xs text-muted-foreground/50">—</span>
+                                <span v-else class="text-xs text-muted-foreground/50" title="N/A — the competency cannot be evaluated">—</span>
                             </td>
                             <td class="px-3 py-2.5 text-center">
                                 <span v-if="item.prevScore != null" class="text-xs text-muted-foreground tabular-nums">

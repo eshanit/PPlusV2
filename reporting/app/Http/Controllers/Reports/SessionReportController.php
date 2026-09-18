@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Reports;
 
 use App\Http\Controllers\Controller;
+use App\Services\ReportQueryService;
 use App\Services\ReportScopeService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -11,7 +12,15 @@ use Inertia\Response;
 
 class SessionReportController extends Controller
 {
-    public function __construct(private readonly ReportScopeService $scope) {}
+    // Mirrors the PEN-Plus Mentorship Tool's own phase-graduation rule (also
+    // used by the journey heatmap's "Phase progress" tile): Initial Intensive
+    // requires basic competencies at 3+, Ongoing/Supervision at 4+.
+    private const PHASE_TARGET_SCORE = ['initial_intensive' => 3];
+
+    public function __construct(
+        private readonly ReportScopeService $scope,
+        private readonly ReportQueryService $queries,
+    ) {}
 
     public function __invoke(string $session): Response
     {
@@ -40,6 +49,8 @@ class SessionReportController extends Controller
                 'districts.name as district_name',
                 'facilities.name as facility_name',
                 'sn.session_number',
+                'sn.day_round_number',
+                'sn.day_round_count',
             ])
             ->first();
 
@@ -69,7 +80,7 @@ class SessionReportController extends Controller
             ->where('sis.session_id', $session)
             ->where('ei.tool_id', $sessionRow->tool_id)
             ->orderBy('ei.sort_order')
-            ->get(['ei.id as item_id', 'ei.number', 'ei.title', 'ei.is_advanced', 'sis.mentee_score']);
+            ->get(['ei.id as item_id', 'ei.number', 'ei.title', 'ei.is_advanced', 'ei.is_critical', 'sis.mentee_score']);
 
         $counsellingScores = DB::table('session_item_scores as sis')
             ->join('evaluation_items as ei', 'ei.id', '=', 'sis.item_id')
@@ -78,10 +89,22 @@ class SessionReportController extends Controller
             ->orderBy('ei.sort_order')
             ->get(['ei.id as item_id', 'ei.number', 'ei.title', 'sis.mentee_score']);
 
-        $prevSessionId = DB::table('v_sessions_numbered')
+        $prevSession = DB::table('v_sessions_numbered')
             ->where('evaluation_group_id', $sessionRow->evaluation_group_id)
             ->where('session_number', $sessionRow->session_number - 1)
-            ->value('id');
+            ->select(['id', 'eval_date', 'day_round_number'])
+            ->first();
+
+        $prevSessionId = $prevSession?->id;
+
+        // Same-day rounds share an eval_date — "prev" then means an earlier
+        // pass through the tool in the *same visit*, not a separate day's
+        // visit, and the two read very differently for an M&E officer.
+        $prevSessionInfo = $prevSession ? [
+            'date' => $prevSession->eval_date,
+            'sameDay' => $prevSession->eval_date === $sessionRow->eval_date,
+            'dayRoundNumber' => (int) $prevSession->day_round_number,
+        ] : null;
 
         $prevToolScores = $prevSessionId
             ? DB::table('session_item_scores')->where('session_id', $prevSessionId)->pluck('mentee_score', 'item_id')->all()
@@ -101,6 +124,7 @@ class SessionReportController extends Controller
             'number' => $r->number,
             'title' => $r->title,
             'isAdvanced' => (bool) $r->is_advanced,
+            'isCritical' => (bool) $r->is_critical,
             'score' => $r->mentee_score !== null ? (int) $r->mentee_score : null,
             'prevScore' => isset($prevToolScores[$r->item_id]) ? (int) $prevToolScores[$r->item_id] : null,
             'delta' => ($r->mentee_score !== null && isset($prevToolScores[$r->item_id]))
@@ -113,6 +137,7 @@ class SessionReportController extends Controller
             'number' => $r->number,
             'title' => $r->title,
             'isAdvanced' => false,
+            'isCritical' => false,
             'score' => $r->mentee_score !== null ? (int) $r->mentee_score : null,
             'prevScore' => isset($prevCounsellingScores[$r->item_id]) ? (int) $prevCounsellingScores[$r->item_id] : null,
             'delta' => ($r->mentee_score !== null && isset($prevCounsellingScores[$r->item_id]))
@@ -132,7 +157,15 @@ class SessionReportController extends Controller
             5 => $itemsCollection->where('score', 5)->count(),
         ];
 
-        $stats = $this->computeStats($scored, $itemsCollection);
+        $phaseTarget = self::PHASE_TARGET_SCORE[$sessionRow->phase] ?? 4;
+        $stats = $this->computeStats($scored, $itemsCollection, $phaseTarget);
+
+        $gaps = $this->queries->getGaps($sessionRow->evaluation_group_id);
+        $openGaps = collect($gaps)->reject(fn (array $g): bool => $g['isResolved'])->count();
+        $latestSupervisionLevel = collect($gaps)
+            ->filter(fn (array $g): bool => $g['supervisionLevel'] !== null)
+            ->sortByDesc('identifiedAt')
+            ->first()['supervisionLevel'] ?? null;
 
         if ($prevSessionId) {
             $prevMean = DB::table('v_session_averages')->where('session_id', $prevSessionId)->value('avg_mentee_score');
@@ -145,11 +178,13 @@ class SessionReportController extends Controller
             ->leftJoin('v_session_averages as sa', 'sa.session_id', '=', 'sn.id')
             ->where('sn.evaluation_group_id', $sessionRow->evaluation_group_id)
             ->orderBy('sn.session_number')
-            ->get(['sn.id as session_id', 'sn.session_number', 'sn.eval_date', 'sa.avg_mentee_score'])
+            ->get(['sn.id as session_id', 'sn.session_number', 'sn.eval_date', 'sn.day_round_number', 'sn.day_round_count', 'sa.avg_mentee_score'])
             ->map(fn (object $s): array => [
                 'sessionId' => $s->session_id,
                 'session' => (int) $s->session_number,
                 'date' => $s->eval_date,
+                'dayRoundNumber' => (int) $s->day_round_number,
+                'dayRoundCount' => (int) $s->day_round_count,
                 'avgScore' => $s->avg_mentee_score !== null ? round((float) $s->avg_mentee_score, 2) : null,
                 'isCurrent' => $s->session_id === $session,
             ])
@@ -170,11 +205,16 @@ class SessionReportController extends Controller
                 'facility' => $sessionRow->facility_name,
                 'sessionNumber' => (int) $sessionRow->session_number,
                 'totalSessions' => $totalSessions,
+                'dayRoundNumber' => (int) $sessionRow->day_round_number,
+                'dayRoundCount' => (int) $sessionRow->day_round_count,
             ],
             'items' => $items,
             'counsellingItems' => $counsellingItems,
             'distribution' => $distribution,
             'stats' => $stats,
+            'prevSession' => $prevSessionInfo,
+            'openGaps' => $openGaps,
+            'latestSupervisionLevel' => $latestSupervisionLevel,
             'trajectory' => $trajectory,
             'journeyStatus' => $journeyStatus ? [
                 'basicCompetent' => (bool) $journeyStatus->basic_competent,
@@ -187,19 +227,28 @@ class SessionReportController extends Controller
     }
 
     /**
-     * @param  Collection<int, int>  $scored  sorted scored values
+     * @param  Collection<int, int>  $scored  sorted scored values (all items, incl. advanced — mean/median/mode
+     *                                        describe the whole session, not just the phase-graduation rule)
      * @param  Collection<int, array<string, mixed>>  $allItems  full items collection
+     * @param  int  $target  score a basic competency must reach for the mentee's current phase — 3 for Initial
+     *                       Intensive, 4 for Ongoing/Supervision, per the tool's own phase-graduation rule
      * @return array<string, float|int|string|null>
      */
-    private function computeStats(Collection $scored, Collection $allItems): array
+    private function computeStats(Collection $scored, Collection $allItems, int $target): array
     {
+        $basicScored = $allItems->filter(fn ($i) => ! $i['isAdvanced'] && $i['score'] !== null);
+        $atTarget = $basicScored->filter(fn ($i) => $i['score'] >= $target)->count();
+        $pct = $basicScored->count() > 0 ? round(($atTarget / $basicScored->count()) * 100, 1) : 0.0;
+
         if ($scored->isEmpty()) {
             return [
                 'mean' => null,
                 'median' => null,
                 'mode' => null,
-                'pctAtCompetency' => 0.0,
-                'competencyGap' => $allItems->count(),
+                'target' => $target,
+                'pctAtCompetency' => $pct,
+                'competencyGap' => $basicScored->count() - $atTarget,
+                'basicScoredCount' => $basicScored->count(),
                 'vsPrevSession' => null,
             ];
         }
@@ -216,16 +265,14 @@ class SessionReportController extends Controller
         $maxFreq = $freq->first();
         $mode = $freq->filter(fn ($f) => $f === $maxFreq)->keys()->implode(', ');
 
-        $atCompetency = $allItems->filter(fn ($i) => $i['score'] !== null && $i['score'] >= 4)->count();
-        $belowCompetency = $allItems->filter(fn ($i) => $i['score'] !== null && $i['score'] < 4)->count();
-        $pct = $count > 0 ? round(($atCompetency / $count) * 100, 1) : 0.0;
-
         return [
             'mean' => $mean,
             'median' => $median,
             'mode' => $mode,
+            'target' => $target,
             'pctAtCompetency' => $pct,
-            'competencyGap' => $belowCompetency,
+            'competencyGap' => $basicScored->count() - $atTarget,
+            'basicScoredCount' => $basicScored->count(),
             'vsPrevSession' => null,
         ];
     }
