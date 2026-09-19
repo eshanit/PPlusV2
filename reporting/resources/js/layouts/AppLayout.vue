@@ -19,6 +19,7 @@ import {
     Target,
     TrendingUp,
     UserCheck,
+    Users,
     X,
 } from 'lucide-vue-next';
 import { ref, computed } from 'vue';
@@ -44,6 +45,7 @@ const sections = computed(() => {
                 { href: '/tool-analysis', label: 'Tool Analysis', icon: BarChart2 },
                 { href: '/tool-score-distribution', label: 'Score Distribution', icon: PieChart },
                 { href: '/hot-spots', label: 'Hot Spots', icon: Flame, pro: true },
+                { href: '/struggling-mentees', label: 'Struggling Mentees', icon: Users },
                 { href: '/low-score-watchlist', label: 'Low-Score Watchlist', icon: Activity, pro: true },
                 { href: '/gap-overview', label: 'Gap Overview', icon: ClipboardList },
             ],

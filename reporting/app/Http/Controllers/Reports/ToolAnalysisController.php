@@ -52,6 +52,11 @@ class ToolAnalysisController extends Controller
                 ->selectRaw('ROUND(AVG(sis.mentee_score), 2) as avg_score')
                 ->selectRaw('SUM(CASE WHEN sis.mentee_score >= 4 THEN 1 ELSE 0 END) as count_competent')
                 ->selectRaw('COUNT(sis.id) - COUNT(sis.mentee_score) as count_na')
+                ->selectRaw('SUM(CASE WHEN sis.mentee_score = 1 THEN 1 ELSE 0 END) as count_1')
+                ->selectRaw('SUM(CASE WHEN sis.mentee_score = 2 THEN 1 ELSE 0 END) as count_2')
+                ->selectRaw('SUM(CASE WHEN sis.mentee_score = 3 THEN 1 ELSE 0 END) as count_3')
+                ->selectRaw('SUM(CASE WHEN sis.mentee_score = 4 THEN 1 ELSE 0 END) as count_4')
+                ->selectRaw('SUM(CASE WHEN sis.mentee_score = 5 THEN 1 ELSE 0 END) as count_5')
                 ->groupBy('ei.id', 'ei.slug', 'ei.number', 'ei.title', 'ei.is_advanced', 'ei.sort_order', 'tc.name', 'tc.sort_order')
                 ->orderBy('tc.sort_order')
                 ->orderBy('ei.sort_order')
@@ -71,15 +76,36 @@ class ToolAnalysisController extends Controller
                 'pctCompetent' => (int) $row->times_scored > 0
                     ? round(((int) $row->count_competent / (int) $row->times_scored) * 100, 1)
                     : null,
+                // Raw score breakdown — the average alone hides whether
+                // a low score is a tight cluster or a wide, bimodal spread.
+                'scoreCounts' => [
+                    1 => (int) $row->count_1,
+                    2 => (int) $row->count_2,
+                    3 => (int) $row->count_3,
+                    4 => (int) $row->count_4,
+                    5 => (int) $row->count_5,
+                ],
             ])->all();
 
             $scored = collect($items)->filter(fn ($i) => $i['avgScore'] !== null);
 
+            // Advanced (grey) items aren't required for competency, so
+            // "% at competency" is basic-only — matching basic_competent,
+            // the phase-advancement rule, and the same fix already made on
+            // Score Distribution. Advanced performance is reported
+            // separately rather than dropped.
+            $basicScored = $scored->filter(fn ($i) => ! $i['isAdvanced']);
+            $advancedScored = $scored->filter(fn ($i) => $i['isAdvanced']);
+
             $summary = [
                 'avgScore' => $scored->isNotEmpty() ? round($scored->avg('avgScore'), 2) : null,
-                'pctAtCompetency' => $scored->isNotEmpty()
-                    ? round(($scored->filter(fn ($i) => $i['avgScore'] >= 4.0)->count() / $scored->count()) * 100, 1)
+                'pctAtCompetency' => $basicScored->isNotEmpty()
+                    ? round(($basicScored->filter(fn ($i) => $i['avgScore'] >= 4.0)->count() / $basicScored->count()) * 100, 1)
                     : null,
+                'pctAdvancedAtCompetency' => $advancedScored->isNotEmpty()
+                    ? round(($advancedScored->filter(fn ($i) => $i['avgScore'] >= 4.0)->count() / $advancedScored->count()) * 100, 1)
+                    : null,
+                'advancedScoredCount' => $advancedScored->count(),
                 'itemsBelowThreshold' => $scored->filter(fn ($i) => $i['avgScore'] < 3.0)->count(),
                 'totalItems' => count($items),
                 'scoredItems' => $scored->count(),

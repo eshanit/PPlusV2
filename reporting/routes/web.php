@@ -21,6 +21,7 @@ use App\Http\Controllers\Reports\LowScoreWatchlistController;
 use App\Http\Controllers\Reports\NeedsAttentionController;
 use App\Http\Controllers\Reports\ScoreTrajectoryController;
 use App\Http\Controllers\Reports\SessionReportController;
+use App\Http\Controllers\Reports\StrugglingMenteesController;
 use App\Http\Controllers\Reports\TimeToCompetenceController;
 use App\Http\Controllers\Reports\ToolAnalysisController;
 use App\Http\Controllers\Reports\ToolScoreDistributionController;
@@ -49,6 +50,7 @@ Route::middleware('reporting.auth')->group(function () {
     Route::get('/tool-analysis/items/{id}', ItemAnalysisController::class)->name('reports.item-analysis');
 
     Route::get('/hot-spots', HotSpotsController::class)->name('reports.hot-spots');
+    Route::get('/struggling-mentees', StrugglingMenteesController::class)->name('reports.struggling-mentees');
     Route::get('/journey-heatmap', JourneyHeatmapController::class)->name('reports.journey-heatmap');
     Route::get('/journey-heatmap/pdf', JourneyHeatmapPdfController::class)->name('reports.journey-heatmap.pdf');
     Route::get('/high-risk-alerts', HighRiskAlertsController::class)->name('reports.high-risk-alerts');

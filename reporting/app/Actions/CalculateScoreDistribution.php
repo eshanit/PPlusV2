@@ -5,8 +5,8 @@ namespace App\Actions;
 class CalculateScoreDistribution
 {
     /**
-     * @param  iterable<object{count_1: int, count_2: int, count_3: int, count_4: int, count_5: int, total: int, avg_score: ?float}>  $rows
-     * @return array<int, array{toolId: int, toolLabel: string, toolSlug: string, count1: int, count2: int, count3: int, count4: int, count5: int, total: int, avgScore: ?float, pct1: float, pct2: float, pct3: float, pct4: float, pct5: float}>
+     * @param  iterable<object{count_1: int, count_2: int, count_3: int, count_4: int, count_5: int, total: int, avg_score: ?float, basic_total: int, basic_at_goal: int, advanced_total: int, advanced_at_goal: int}>  $rows
+     * @return array<int, array{toolId: int, toolLabel: string, toolSlug: string, count1: int, count2: int, count3: int, count4: int, count5: int, total: int, avgScore: ?float, pct1: float, pct2: float, pct3: float, pct4: float, pct5: float, basicTotal: int, pctBasicGoal: float, advancedTotal: int, pctAdvancedGoal: float}>
      */
     public function run(iterable $rows): array
     {
@@ -28,6 +28,14 @@ class CalculateScoreDistribution
             'pct3' => $this->calculatePercentage((int) $row->count_3, (int) $row->total),
             'pct4' => $this->calculatePercentage((int) $row->count_4, (int) $row->total),
             'pct5' => $this->calculatePercentage((int) $row->count_5, (int) $row->total),
+            // "% Goal" is basic-only, matching basic_competent and the phase-
+            // advancement rule elsewhere in the app — advanced items aren't
+            // required for competency. Advanced performance is still
+            // reported, just kept as its own separate figure.
+            'basicTotal' => (int) $row->basic_total,
+            'pctBasicGoal' => $this->calculatePercentage((int) $row->basic_at_goal, (int) $row->basic_total),
+            'advancedTotal' => (int) $row->advanced_total,
+            'pctAdvancedGoal' => $this->calculatePercentage((int) $row->advanced_at_goal, (int) $row->advanced_total),
         ])->all();
     }
 

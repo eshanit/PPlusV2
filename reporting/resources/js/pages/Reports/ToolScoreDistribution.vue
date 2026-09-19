@@ -45,6 +45,7 @@ function overallMax(row) {
                 <h1 class="text-2xl font-semibold tracking-normal">Score Distribution by Tool</h1>
                 <p class="mt-1 text-sm text-muted-foreground">
                     How scores 1–5 are distributed per mentorship tool — colour intensity reflects volume.
+                    "% Goal" covers basic competencies only; advanced (grey) items are reported separately.
                 </p>
             </div>
             <BarChart2 class="size-8 text-primary" />
@@ -87,7 +88,12 @@ function overallMax(row) {
                             >
                                 {{ label }}
                             </th>
-                            <th class="px-4 py-3 text-center font-medium">% Goal (4–5)</th>
+                            <th
+                                class="px-4 py-3 text-center font-medium"
+                                title="Basic (non-advanced) competencies scoring 4-5 — advanced/grey items aren't required for competency, so they're excluded here and reported separately."
+                            >
+                                % Goal (Basic, 4–5)
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
@@ -130,16 +136,26 @@ function overallMax(row) {
                                 </div>
                             </td>
                             <td class="px-4 py-3">
-                                <div class="flex items-center justify-center gap-2">
-                                    <div class="h-2 w-20 rounded-full bg-muted">
-                                        <div
-                                            class="h-2 rounded-full bg-emerald-500 transition-all"
-                                            :style="{ width: pctBarWidth(row.pct4 + row.pct5) }"
-                                        />
+                                <div class="flex flex-col items-center gap-1">
+                                    <div class="flex items-center justify-center gap-2">
+                                        <div class="h-2 w-20 rounded-full bg-muted">
+                                            <div
+                                                class="h-2 rounded-full bg-emerald-500 transition-all"
+                                                :style="{ width: pctBarWidth(row.pctBasicGoal) }"
+                                            />
+                                        </div>
+                                        <span class="w-14 text-right tabular-nums font-medium text-emerald-600">
+                                            {{ row.pctBasicGoal.toFixed(1) }}%
+                                        </span>
                                     </div>
-                                    <span class="w-14 text-right tabular-nums font-medium text-emerald-600">
-                                        {{ (row.pct4 + row.pct5).toFixed(1) }}%
-                                    </span>
+                                    <Link
+                                        v-if="row.advancedTotal > 0"
+                                        :href="`/tool-analysis?tool_id=${row.toolId}&level=advanced`"
+                                        class="text-[10px] text-muted-foreground underline decoration-dotted hover:text-foreground"
+                                        :title="`${row.advancedTotal} advanced item responses scored — click to view the advanced items`"
+                                    >
+                                        Advanced: {{ row.pctAdvancedGoal.toFixed(1) }}%
+                                    </Link>
                                 </div>
                             </td>
                         </tr>

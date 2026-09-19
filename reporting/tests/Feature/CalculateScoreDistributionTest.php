@@ -12,10 +12,10 @@ class CalculateScoreDistributionTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->action = new CalculateScoreDistribution();
+        $this->action = new CalculateScoreDistribution;
     }
 
-    public function test_runCalculatesPercentagesCorrectly(): void
+    public function test_run_calculates_percentages_correctly(): void
     {
         $rows = [
             (object) [
@@ -29,6 +29,10 @@ class CalculateScoreDistributionTest extends TestCase
                 'count_5' => 15,
                 'total' => 100,
                 'avg_score' => 3.25,
+                'basic_total' => 80,
+                'basic_at_goal' => 32,
+                'advanced_total' => 20,
+                'advanced_at_goal' => 8,
             ],
         ];
 
@@ -42,9 +46,13 @@ class CalculateScoreDistributionTest extends TestCase
         $this->assertSame(25.0, $result[0]['pct4']);
         $this->assertSame(15.0, $result[0]['pct5']);
         $this->assertSame(100, $result[0]['total']);
+        $this->assertSame(80, $result[0]['basicTotal']);
+        $this->assertSame(40.0, $result[0]['pctBasicGoal']);
+        $this->assertSame(20, $result[0]['advancedTotal']);
+        $this->assertSame(40.0, $result[0]['pctAdvancedGoal']);
     }
 
-    public function test_runHandlesZeroTotal(): void
+    public function test_run_handles_zero_total(): void
     {
         $rows = [
             (object) [
@@ -58,6 +66,10 @@ class CalculateScoreDistributionTest extends TestCase
                 'count_5' => 0,
                 'total' => 0,
                 'avg_score' => null,
+                'basic_total' => 0,
+                'basic_at_goal' => 0,
+                'advanced_total' => 0,
+                'advanced_at_goal' => 0,
             ],
         ];
 
@@ -66,9 +78,11 @@ class CalculateScoreDistributionTest extends TestCase
         $this->assertSame(0.0, $result[0]['pct1']);
         $this->assertSame(0.0, $result[0]['pct5']);
         $this->assertNull($result[0]['avgScore']);
+        $this->assertSame(0.0, $result[0]['pctBasicGoal']);
+        $this->assertSame(0.0, $result[0]['pctAdvancedGoal']);
     }
 
-    public function test_calculateTotalsSumsCorrectly(): void
+    public function test_calculate_totals_sums_correctly(): void
     {
         $tools = [
             ['total' => 100, 'toolId' => 1],
@@ -82,7 +96,7 @@ class CalculateScoreDistributionTest extends TestCase
         $this->assertSame(3, $result['totalItems']);
     }
 
-    public function test_calculatePercentageWithRounding(): void
+    public function test_calculate_percentage_with_rounding(): void
     {
         $reflection = new \ReflectionClass($this->action);
         $method = $reflection->getMethod('calculatePercentage');

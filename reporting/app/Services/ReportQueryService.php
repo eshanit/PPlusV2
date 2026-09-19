@@ -153,6 +153,14 @@ class ReportQueryService
             ->selectRaw('COUNT(CASE WHEN sis.mentee_score = 5 THEN 1 END) as count_5')
             ->selectRaw('COUNT(*) as total')
             ->selectRaw('ROUND(AVG(sis.mentee_score), 2) as avg_score')
+            // Advanced (grey) items aren't required for competency, so "% at
+            // goal" needs to be computed separately for basic vs. advanced —
+            // blending them would make tools with more advanced items look
+            // worse for reasons unrelated to mentee performance.
+            ->selectRaw('COUNT(CASE WHEN ei.is_advanced = 0 THEN 1 END) as basic_total')
+            ->selectRaw('COUNT(CASE WHEN ei.is_advanced = 0 AND sis.mentee_score >= 4 THEN 1 END) as basic_at_goal')
+            ->selectRaw('COUNT(CASE WHEN ei.is_advanced = 1 THEN 1 END) as advanced_total')
+            ->selectRaw('COUNT(CASE WHEN ei.is_advanced = 1 AND sis.mentee_score >= 4 THEN 1 END) as advanced_at_goal')
             ->groupBy('t.id', 't.label', 't.slug')
             ->orderBy('t.sort_order')
             ->get()
