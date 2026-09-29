@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { format } from 'date-fns'
 import { useSessionStore } from '~/stores/sessionStore'
 import { useUserStore } from '~/stores/userStore'
 import { getToolBySlug, counsellingTool } from '~/data/evaluationItemData'
@@ -36,6 +37,8 @@ interface PreviewData {
   items: PreviewItem[]
   phase: MentorshipPhase | null
   evalDate: string
+  roundOfDay?: number
+  reopenReason?: string
   notes: string
 }
 
@@ -134,6 +137,8 @@ async function saveSession() {
       evaluator: userStore.currentUser,
       toolSlug: tool.slug,
       evalDate,
+      roundOfDay: pData.roundOfDay,
+      reopenReason: pData.reopenReason,
       facilityId: mentee.facilityId ?? '',
       districtId: mentee.districtId ?? '',
       itemScores: toolItems.map(item => ({
@@ -210,7 +215,21 @@ function goBack() {
   router.back()
 }
 
-const isValid = computed(() => !!phase.value && !!evalDateStr.value)
+// Same rule as the session form: a reopening session can't be backdated before
+// the session it corrects, or its lower scores wouldn't count as the latest.
+const latestJourneyDateStr = computed(() => {
+  const p = previewData.value
+  if (!p?.reopenReason) return undefined
+  const groupId = `${p.menteeId}::${p.toolSlug}`
+  const dates = sessionStore.sessions.filter(s => s.evaluationGroupId === groupId).map(s => s.evalDate)
+  return dates.length ? format(new Date(Math.max(...dates)), 'yyyy-MM-dd') : undefined
+})
+
+const dateBeforeReopenedJourney = computed(() =>
+  !!latestJourneyDateStr.value && !!evalDateStr.value && evalDateStr.value < latestJourneyDateStr.value
+)
+
+const isValid = computed(() => !!phase.value && !!evalDateStr.value && !dateBeforeReopenedJourney.value)
 </script>
 
 <template>
@@ -246,6 +265,18 @@ const isValid = computed(() => !!phase.value && !!evalDateStr.value)
     </div>
 
     <div v-if="previewData" class="max-w-2xl mx-auto px-4 py-4 space-y-6">
+      <!-- Reopened journey -->
+      <div
+        v-if="previewData.reopenReason"
+        class="flex items-start gap-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 px-3 py-2.5 text-amber-800 dark:text-amber-300"
+      >
+        <UIcon name="i-heroicons-lock-open" class="w-4 h-4 mt-0.5 shrink-0" />
+        <div class="text-sm">
+          <p class="font-medium">This session reopens a closed journey.</p>
+          <p class="text-xs mt-0.5 opacity-80">Reason: {{ previewData.reopenReason }}</p>
+        </div>
+      </div>
+
       <!-- Summary Stats -->
       <div class="grid grid-cols-3 gap-3">
         <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-center">
@@ -281,7 +312,10 @@ const isValid = computed(() => !!phase.value && !!evalDateStr.value)
             <label class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-1">
               Evaluation Date
             </label>
-            <UInput type="date" v-model="evalDateStr" class="w-full" />
+            <UInput type="date" v-model="evalDateStr" :min="latestJourneyDateStr" class="w-full" />
+            <p v-if="dateBeforeReopenedJourney" class="text-xs text-red-500 mt-1">
+              Can't be before {{ latestJourneyDateStr }}.
+            </p>
           </div>
           <div>
             <label class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-1">

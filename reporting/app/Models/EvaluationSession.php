@@ -26,6 +26,7 @@ class EvaluationSession extends Model
         'phase',
         'day_round',
         'notes',
+        'reopen_reason',
         'couchdb_rev',
         'synced_at',
         'created_at',

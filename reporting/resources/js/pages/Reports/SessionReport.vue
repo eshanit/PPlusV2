@@ -392,6 +392,14 @@ const trajectoryOptions = computed(() => ({
                 </div>
             </div>
 
+            <div
+                v-if="session.reopenReason"
+                class="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"
+                title="Competency recorded before this session no longer counts — it's measured again from here."
+            >
+                <span class="font-medium">Journey reopened by the mentor:</span> {{ session.reopenReason }}
+            </div>
+
             <div v-if="session.notes" class="mt-3 rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
                 <span class="font-medium text-foreground">Notes:</span> {{ session.notes }}
             </div>

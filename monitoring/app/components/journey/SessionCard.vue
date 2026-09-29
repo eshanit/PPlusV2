@@ -4,6 +4,7 @@ interface Props {
   date: string
   phase: string
   roundLabel?: string
+  reopenReason?: string
 }
 
 const props = defineProps<Props>()
@@ -28,6 +29,13 @@ function getPhaseColor(phase: string): BadgeColor {
             class="text-[10px] font-semibold uppercase tracking-wide text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 rounded-full px-1.5 py-0.5"
           >
             {{ roundLabel }}
+          </span>
+          <span
+            v-if="reopenReason"
+            class="text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/30 rounded-full px-1.5 py-0.5"
+            :title="`Reopened: ${reopenReason}`"
+          >
+            Reopened
           </span>
         </p>
         <p class="text-xs text-gray-500 dark:text-gray-400">

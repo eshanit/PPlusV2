@@ -261,8 +261,8 @@ async function confirmResolve() {
           >
             {{
               competencyStatus === 'fully_competent'
-                ? 'All items (including advanced) scored 4 or 5. This journey is complete.'
-                : 'All core items scored 4 or 5. No further sessions can be added for this tool.'
+                ? 'All items (including advanced) scored 4 or 5. This journey is complete. If a score was given in error, reopen it from the mentee page.'
+                : 'All core items scored 4 or 5. This journey is closed. If a score was given in error, reopen it from the mentee page.'
             }}
           </p>
         </div>
@@ -311,6 +311,7 @@ async function confirmResolve() {
               :date="formatDate(entry.session.evalDate) ?? 'N/A'"
               :phase="entry.session.phase ?? 'unknown'"
               :round-label="group.roundsCount > 1 ? `Round ${entry.roundNumber}` : undefined"
+              :reopen-reason="entry.session.reopenReason"
             />
           </div>
         </div>

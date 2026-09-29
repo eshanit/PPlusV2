@@ -43,6 +43,12 @@ export interface ISession {
   // Optional only because sessions saved before this field existed lack it.
   roundOfDay?: number
 
+  // Set only on a session recorded after the mentor reopened a journey that had
+  // already reached competency (e.g. a score of 4/5 was given in error). Holds
+  // the mentor's reason. Reporting treats competency reached before the latest
+  // reopened session as void.
+  reopenReason?: string
+
   notes?: string
 
   syncStatus: SyncStatus

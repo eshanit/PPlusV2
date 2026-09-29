@@ -4,6 +4,7 @@ import { onKeyStroke } from '@vueuse/core'
 import { useUserStore } from '~/stores/userStore'
 import { useSessionStore } from '~/stores/sessionStore'
 import { getToolBySlug, counsellingTool } from '~/data/evaluationItemData'
+import { getCompetencyStatus } from '~/composables/useCompetency'
 import type { MentorshipPhase } from '~/interfaces/ISession'
 import type { IEvalItem } from '~/interfaces/IEvalItem'
 import SessionItemCard from '~/components/session/ItemCard.vue'
@@ -47,6 +48,40 @@ const evaluationGroupId = computed(() => {
 
 const totalPreviousSessions = computed(() => {
   return sessionStore.getSessionCount(evaluationGroupId.value)
+})
+
+// ── Reopening a closed journey ─────────────────────────────────────────────
+// Set by the "Reopen journey" dialog on the mentee page. A closed journey can't
+// take a new session without one — this guards direct links too.
+const reopenReason = computed(() => {
+  const r = route.query.reopenReason
+  return typeof r === 'string' && r.trim() ? r.trim() : undefined
+})
+
+const journeySessions = computed(() =>
+  sessionStore.sessions.filter(s => s.evaluationGroupId === evaluationGroupId.value)
+)
+
+const journeyClosed = computed(() => {
+  const status = getCompetencyStatus(journeySessions.value, tool.value)
+  return status === 'basic_competent' || status === 'fully_competent'
+})
+
+if (journeyClosed.value && !reopenReason.value) {
+  toast.add({
+    title: 'Journey closed',
+    description: 'This mentee has reached competency on this tool. Reopen the journey from the mentee page to add a session.',
+    color: 'warning',
+    icon: 'i-heroicons-lock-closed',
+  })
+  await navigateTo(menteeId.value ? `/mentees/${menteeId.value}` : '/')
+}
+
+// The corrective session must come after the session it corrects — competency
+// uses each item's latest score, so a backdated session couldn't override it.
+const latestJourneyDateStr = computed(() => {
+  if (!reopenReason.value || journeySessions.value.length === 0) return undefined
+  return format(new Date(Math.max(...journeySessions.value.map(s => s.evalDate))), 'yyyy-MM-dd')
 })
 
 const phase = ref<MentorshipPhase | null>(null)
@@ -224,7 +259,13 @@ function goToItem(index: number) {
 onKeyStroke('ArrowRight', (e) => { e.preventDefault(); next() })
 onKeyStroke('ArrowLeft', (e) => { e.preventDefault(); prev() })
 
-const isValid = computed(() => phase.value !== null && !!evalDateStr.value && roundOfDay.value != null)
+const dateBeforeReopenedJourney = computed(() =>
+  !!latestJourneyDateStr.value && evalDateStr.value < latestJourneyDateStr.value
+)
+
+const isValid = computed(() =>
+  phase.value !== null && !!evalDateStr.value && roundOfDay.value != null && !dateBeforeReopenedJourney.value
+)
 
 // Unsaved-changes guard — covers in-app link clicks, the browser/webview
 // back-forward stack (popstate), and the Android hardware back button
@@ -295,6 +336,7 @@ async function save() {
         notes: counsellingNotes[item.slug]?.trim() || undefined,
       })),
       phase: phase.value,
+      reopenReason: reopenReason.value,
       notes: notes.value.trim() || undefined,
       syncStatus: 'pending',
       createdAt: now,
@@ -343,6 +385,8 @@ function viewEvaluation() {
     items: allItemsData,
     phase: phase.value,
     evalDate: evalDateStr.value,
+    roundOfDay: roundOfDay.value,
+    reopenReason: reopenReason.value,
     notes: notes.value,
   }
 
@@ -388,6 +432,17 @@ function viewEvaluation() {
       </div>
     </div>
 
+    <!-- Reopened journey -->
+    <div v-if="reopenReason" class="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800 px-4 py-2.5">
+      <div class="flex items-start gap-2 text-amber-800 dark:text-amber-300">
+        <UIcon name="i-heroicons-lock-open" class="w-4 h-4 mt-0.5 shrink-0" />
+        <div class="text-sm">
+          <p class="font-medium">Reopened journey — re-score the items that were scored in error.</p>
+          <p class="text-xs mt-0.5 opacity-80">Reason: {{ reopenReason }}</p>
+        </div>
+      </div>
+    </div>
+
     <div class="space-y-6 py-5">
       <SessionPhaseSelector v-model="phase" />
 
@@ -395,7 +450,10 @@ function viewEvaluation() {
         <label class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-2">
           Evaluation Date <span class="text-red-500">*</span>
         </label>
-        <UInput type="date" v-model="evalDateStr" class="max-w-xs" />
+        <UInput type="date" v-model="evalDateStr" :min="latestJourneyDateStr" class="max-w-xs" />
+        <p v-if="dateBeforeReopenedJourney" class="text-xs text-red-500 mt-1.5">
+          A reopening session can't be dated before the journey's last session ({{ latestJourneyDateStr }}).
+        </p>
       </section>
 
       <SessionRoundSelector v-model="roundOfDay" :options="roundOptions" />

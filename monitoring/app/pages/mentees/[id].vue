@@ -102,7 +102,7 @@
             <button
               class="w-full flex items-center justify-between px-4 py-3.5 transition-colors text-left"
               :class="journeys.find(j => j.toolSlug === tool.slug)?.isClosed
-                ? 'opacity-50 cursor-not-allowed'
+                ? 'opacity-70 hover:bg-gray-50 dark:hover:bg-gray-800/50'
                 : 'hover:bg-primary-50 dark:hover:bg-primary-900/20'"
               @click="startSession(tool.slug)"
             >
@@ -110,7 +110,7 @@
                 <p class="font-medium text-gray-900 dark:text-white text-sm">{{ tool.label }}</p>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                   <template v-if="journeys.find(j => j.toolSlug === tool.slug)?.isClosed">
-                    Competency reached — journey closed
+                    Competency reached — journey closed · tap to reopen
                   </template>
                   <template v-else>
                     {{ tool.items.length }} items
@@ -131,6 +131,57 @@
             </button>
           </li>
         </ul>
+      </template>
+    </UModal>
+
+    <!-- Reopen closed journey -->
+    <UModal
+      v-model:open="showReopen"
+      title="Reopen journey"
+      :description="reopenTarget ? `${reopenTarget.toolLabel} — ${menteeName}` : ''"
+    >
+      <template #body>
+        <div class="space-y-3">
+          <p class="text-sm text-gray-600 dark:text-gray-300">
+            This journey closed because every basic competency reached 4 or 5. Reopen it only if
+            one or more of those scores was given in error and the mentee needs more sessions.
+          </p>
+          <p class="text-sm text-gray-600 dark:text-gray-300">
+            In the next session, <strong>re-score the items that were scored incorrectly</strong>.
+            If every basic item still scores 4 or 5, the journey will close again.
+          </p>
+          <div>
+            <label class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-1.5">
+              Reason <span class="text-red-500">*</span>
+            </label>
+            <UTextarea
+              v-model="reopenReason"
+              :rows="3"
+              autoresize
+              class="w-full"
+              placeholder="e.g. D12 and D14 were scored 4 by mistake — mentee still needs support with metformin titration"
+            />
+            <p
+              v-if="reopenReason.trim().length > 0 && reopenReason.trim().length < MIN_REOPEN_REASON"
+              class="text-xs text-red-500 mt-1"
+            >
+              Please give a little more detail.
+            </p>
+          </div>
+        </div>
+      </template>
+      <template #footer>
+        <div class="flex justify-end gap-2 w-full">
+          <UButton variant="ghost" color="neutral" @click="showReopen = false">Cancel</UButton>
+          <UButton
+            color="warning"
+            icon="i-heroicons-lock-open"
+            :disabled="reopenReason.trim().length < MIN_REOPEN_REASON"
+            @click="confirmReopen"
+          >
+            Reopen &amp; start session
+          </UButton>
+        </div>
       </template>
     </UModal>
   </div>
@@ -243,16 +294,30 @@ function phaseColor(phase: MentorshipPhase | null): 'info' | 'success' | 'warnin
 
 function startSession(toolSlug: string) {
   const journey = journeys.value.find(j => j.toolSlug === toolSlug)
+  showToolPicker.value = false
   if (journey?.isClosed) {
-    toast.add({
-      title: 'Journey closed',
-      description: `${journey.toolLabel}: this mentee has reached basic competency. No further sessions can be added.`,
-      color: 'warning',
-      icon: 'i-heroicons-lock-closed',
-    })
+    reopenTarget.value = journey
+    reopenReason.value = ''
+    showReopen.value = true
     return
   }
-  showToolPicker.value = false
   router.push(`/sessions/new?menteeId=${menteeId.value}&toolSlug=${toolSlug}`)
+}
+
+// A closed journey can only be reopened with a reason — it's recorded on the
+// next session so reports can show why competency was withdrawn.
+const showReopen = ref(false)
+const reopenTarget = ref<Journey | null>(null)
+const reopenReason = ref('')
+const MIN_REOPEN_REASON = 10
+
+function confirmReopen() {
+  const reason = reopenReason.value.trim()
+  if (!reopenTarget.value || reason.length < MIN_REOPEN_REASON) return
+  showReopen.value = false
+  router.push({
+    path: '/sessions/new',
+    query: { menteeId: menteeId.value, toolSlug: reopenTarget.value.toolSlug, reopenReason: reason },
+  })
 }
 </script>

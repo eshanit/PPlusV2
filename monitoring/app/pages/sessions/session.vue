@@ -117,6 +117,18 @@ function phaseLabel(phase: string | null | undefined): string {
         color-class="bg-orange-50 dark:bg-orange-900/20 border-orange-100 dark:border-orange-800"
       />
 
+      <!-- Reopened journey -->
+      <div
+        v-if="session.reopenReason"
+        class="flex items-start gap-2 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4 text-amber-800 dark:text-amber-300"
+      >
+        <UIcon name="i-heroicons-lock-open" class="w-4 h-4 mt-0.5 shrink-0" />
+        <div class="text-sm">
+          <p class="font-medium">This session reopened a closed journey</p>
+          <p class="text-xs mt-0.5 opacity-80">Reason: {{ session.reopenReason }}</p>
+        </div>
+      </div>
+
       <!-- Session Notes -->
       <div v-if="session.notes" class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-4">
         <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
