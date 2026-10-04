@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Reports;
 
 use App\Http\Controllers\Controller;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -15,12 +17,14 @@ class ExportsController extends Controller
         'journey' => 'Journey Status',
         'gaps' => 'Gap Overview',
         'evaluator' => 'Evaluator Activity',
+        'mentee-scores-csv' => 'Mentee Scores (CSV)',
+        'mentee-scores' => 'Mentee Scores (Excel)',
     ];
 
     public function index(): Response
     {
         $files = collect(Storage::disk('local')->files('exports'))
-            ->filter(fn ($path) => str_ends_with($path, '.csv'))
+            ->filter(fn ($path) => in_array(pathinfo($path, PATHINFO_EXTENSION), ['csv', 'xlsx'], true))
             ->sortByDesc(fn ($path) => Storage::disk('local')->lastModified($path))
             ->map(fn ($path) => $this->parseFile($path))
             ->values()
@@ -35,6 +39,32 @@ class ExportsController extends Controller
         ]);
     }
 
+    public function generate(): RedirectResponse
+    {
+        $exitCode = Artisan::call('export:reports', ['--all' => true]);
+
+        if ($exitCode !== 0) {
+            return back()->withErrors([
+                'generation' => 'Report generation failed. Check the application logs and export storage permissions.',
+            ]);
+        }
+
+        return redirect()->route('reports.exports')->with('success', 'Reports generated successfully.');
+    }
+
+    public function generateMenteeScoresCsv(): RedirectResponse
+    {
+        $exitCode = Artisan::call('export:reports', ['type' => 'mentee-scores-csv']);
+
+        if ($exitCode !== 0) {
+            return back()->withErrors([
+                'generation' => 'Mentee scores CSV generation failed. Check the application logs and export storage permissions.',
+            ]);
+        }
+
+        return redirect()->route('reports.exports')->with('success', 'Mentee scores CSV generated successfully.');
+    }
+
     public function download(string $path): StreamedResponse
     {
         $decoded = base64_decode($path);
@@ -45,9 +75,13 @@ class ExportsController extends Controller
         }
 
         $filename = basename($decoded);
+        $contentType = match (strtolower(pathinfo($filename, PATHINFO_EXTENSION))) {
+            'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            default => 'text/csv',
+        };
 
         return Storage::disk('local')->download($safePath, $filename, [
-            'Content-Type' => 'text/csv',
+            'Content-Type' => $contentType,
         ]);
     }
 

@@ -58,6 +58,9 @@ Route::middleware('reporting.auth')->group(function () {
     Route::get('/sessions/{session}', SessionReportController::class)->name('reports.session');
 
     Route::get('/exports', [ExportsController::class, 'index'])->name('reports.exports');
+    Route::post('/exports/generate', [ExportsController::class, 'generate'])->name('reports.exports.generate');
+    Route::post('/exports/generate-mentee-scores-csv', [ExportsController::class, 'generateMenteeScoresCsv'])
+        ->name('reports.exports.generate-mentee-scores-csv');
     Route::get('/exports/{path}', [ExportsController::class, 'download'])
         ->where('path', '.+')
         ->name('reports.exports.download');

@@ -73,7 +73,27 @@ readonly class JourneySummaryData
 
     public function getBasicCompetentAt(): ?int
     {
-        return $this->source?->basic_competent_at;
+        $value = $this->source?->basic_competent_at;
+
+        if ($value === null) {
+            return null;
+        }
+
+        if (is_int($value)) {
+            return $value;
+        }
+
+        if (! is_string($value)) {
+            throw new \UnexpectedValueException('Expected basic_competent_at to be a date string or Unix timestamp.');
+        }
+
+        $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $value, new \DateTimeZone('UTC'));
+
+        if (! $date || $date->format('Y-m-d') !== $value) {
+            throw new \UnexpectedValueException("Invalid basic_competent_at date [{$value}].");
+        }
+
+        return $date->getTimestamp();
     }
 
     public function getSessionsToBasicCompetence(): ?int

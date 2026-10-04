@@ -69,6 +69,24 @@ class JourneySummaryDataTest extends TestCase
         $this->assertSame(0, $dto->getTotalSessions());
     }
 
+    public function test_getBasicCompetentAtConvertsDatabaseDateToUnixTimestamp(): void
+    {
+        $source = $this->makeSource();
+        $source->basic_competent_at = '2023-11-14';
+        $dto = new JourneySummaryData($source);
+
+        $this->assertSame(1699920000, $dto->getBasicCompetentAt());
+    }
+
+    public function test_getBasicCompetentAtReturnsNullWhenMissing(): void
+    {
+        $source = $this->makeSource();
+        $source->basic_competent_at = null;
+        $dto = new JourneySummaryData($source);
+
+        $this->assertNull($dto->getBasicCompetentAt());
+    }
+
     public function test_toArrayForTrajectoryReturnsCorrectShape(): void
     {
         $dto = new JourneySummaryData($this->makeSource());

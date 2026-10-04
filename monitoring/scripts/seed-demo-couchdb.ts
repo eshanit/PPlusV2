@@ -1,11 +1,10 @@
-// Seeds ~50 realistic session docs (plus mentees, evaluators, gaps) directly into
-// CouchDB so both the monitoring app and reporting/Filament show demo data after
-// the next `php artisan sync:couchdb`. Everything is tagged `demo: true` and lives
-// under a dedicated "Demo District" / "Demo Facility" so it can be cleanly removed
-// with clear-demo-couchdb.ts before real client data starts flowing in.
+// Seeds deterministic synthetic reporting data into a development CouchDB.
+// The docs are tagged `demo: true` so clear-demo-couchdb.ts can remove them.
 //
-// Run from the monitoring/ directory:
-//   COUCHDB_URL=... COUCHDB_USER=... COUCHDB_PASSWORD=... pnpm dlx tsx scripts/seed-demo-couchdb.ts
+// Run from monitoring/:
+//   pnpm dlx tsx scripts/seed-demo-couchdb.ts
+// Remote CouchDB targets require ALLOW_REMOTE_DEMO_SEED=1.
+import { createHash } from 'node:crypto'
 import { counsellingTool, evaluationTools } from '../app/data/evaluationItemData'
 
 const COUCHDB_URL = process.env.COUCHDB_URL ?? 'http://localhost:5984'
@@ -15,279 +14,524 @@ const DB_SESSIONS = process.env.COUCHDB_DB_SESSIONS ?? 'penplus_sessions'
 const DB_GAPS = process.env.COUCHDB_DB_GAPS ?? 'penplus_gaps'
 const DB_USERS = process.env.COUCHDB_DB_USERS ?? 'penplus_users'
 const DB_DISTRICTS = process.env.COUCHDB_DB_DISTRICTS ?? 'penplus_districts'
+const SEED_DATE = process.env.DEMO_SEED_DATE ?? '2026-10-04'
 
-const DEMO_DISTRICT_ID = 'demo-district'
-const DEMO_DISTRICT_NAME = 'Demo District'
-const DEMO_FACILITY_NAME = 'Demo Facility'
-
-const now = Date.now()
+const MENTEE_COUNT = 100
+const EVALUATOR_COUNT = 15
+const JOURNEYS_PER_MENTEE = 4
+const DISTRICT_COUNT = 6
+const FACILITIES_PER_DISTRICT = 4
+const BULK_SIZE = 100
+const LOOKUP_SIZE = 400
 const DAY = 24 * 60 * 60 * 1000
+const HOUR = 60 * 60 * 1000
+const DEMO_DATASET = 'reporting-v2'
+
+type CouchDoc = Record<string, unknown> & {
+  _id: string
+  _rev?: string
+  demo?: boolean
+}
+
+type JourneyOutcome = 'in_progress' | 'basic_competent' | 'fully_competent' | 'reopened'
+
+interface DemoLocation {
+  id: string
+  name: string
+  facilities: Array<{ name: string }>
+}
+
+function stableInt(seed: string, max: number): number {
+  const digest = createHash('sha256').update(seed).digest()
+  return digest.readUInt32BE(0) % max
+}
+
+function stableId(seed: string): string {
+  const hash = createHash('sha256').update(`penplus-demo-v2:${seed}`).digest('hex').slice(0, 32)
+  const variant = ((Number.parseInt(hash[16]!, 16) & 0x3) | 0x8).toString(16)
+
+  return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-5${hash.slice(13, 16)}-${variant}${hash.slice(17, 20)}-${hash.slice(20)}`
+}
+
+function score(seed: string, min: number, max: number): number {
+  return min + stableInt(seed, max - min + 1)
+}
 
 function authHeader(): string {
-  return 'Basic ' + Buffer.from(`${COUCHDB_USER}:${COUCHDB_PASSWORD}`).toString('base64')
+  return `Basic ${Buffer.from(`${COUCHDB_USER}:${COUCHDB_PASSWORD}`).toString('base64')}`
 }
 
-async function bulkDocs(dbName: string, docs: Record<string, unknown>[]): Promise<void> {
+function couchDbBaseUrl(): URL {
+  const url = new URL(COUCHDB_URL)
+  const isLocal = ['localhost', '127.0.0.1', '::1'].includes(url.hostname)
+
+  if (!isLocal && process.env.ALLOW_REMOTE_DEMO_SEED !== '1') {
+    throw new Error('Refusing to seed a remote CouchDB. Set ALLOW_REMOTE_DEMO_SEED=1 only for an approved test server.')
+  }
+
+  return url
+}
+
+async function getExistingDocs(dbName: string, ids: string[]): Promise<Map<string, CouchDoc>> {
+  const existing = new Map<string, CouchDoc>()
+  const base = couchDbBaseUrl().toString().replace(/\/$/, '')
+
+  for (let offset = 0; offset < ids.length; offset += LOOKUP_SIZE) {
+    const res = await fetch(`${base}/${dbName}/_all_docs?include_docs=true`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: authHeader(),
+      },
+      body: JSON.stringify({ keys: ids.slice(offset, offset + LOOKUP_SIZE) }),
+    })
+
+    if (!res.ok) {
+      throw new Error(`Failed to check existing documents in ${dbName}: ${res.status} ${await res.text()}`)
+    }
+
+    const body = await res.json() as {
+      rows: Array<{ doc?: CouchDoc }>
+    }
+
+    for (const row of body.rows) {
+      if (row.doc) existing.set(row.doc._id, row.doc)
+    }
+  }
+
+  return existing
+}
+
+async function bulkUpsert(dbName: string, docs: CouchDoc[]): Promise<void> {
   if (docs.length === 0) return
 
-  const res = await fetch(`${COUCHDB_URL.replace(/\/$/, '')}/${dbName}/_bulk_docs`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: authHeader() },
-    body: JSON.stringify({ docs }),
+  const base = couchDbBaseUrl().toString().replace(/\/$/, '')
+  const existing = await getExistingDocs(dbName, docs.map(doc => doc._id))
+
+  for (const [id, doc] of existing) {
+    if (doc.demo !== true) {
+      throw new Error(`Refusing to overwrite non-demo document ${id} in ${dbName}.`)
+    }
+  }
+
+  const updatedDocs = docs.map((doc) => {
+    const previous = existing.get(doc._id)
+    return previous ? { ...doc, _rev: previous._rev } : doc
   })
 
-  if (!res.ok) {
-    throw new Error(`_bulk_docs failed for ${dbName}: ${res.status} ${await res.text()}`)
+  let written = 0
+  for (let offset = 0; offset < updatedDocs.length; offset += BULK_SIZE) {
+    const batch = updatedDocs.slice(offset, offset + BULK_SIZE)
+    const res = await fetch(`${base}/${dbName}/_bulk_docs`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: authHeader(),
+      },
+      body: JSON.stringify({ docs: batch }),
+    })
+
+    if (!res.ok) {
+      throw new Error(`_bulk_docs failed for ${dbName}: ${res.status} ${await res.text()}`)
+    }
+
+    const results = await res.json() as Array<{ id: string, error?: string, reason?: string }>
+    const errors = results.filter(result => result.error)
+
+    if (errors.length > 0) {
+      const summary = errors.slice(0, 5).map(result => `${result.id}: ${result.error} (${result.reason ?? 'no reason'})`)
+      throw new Error(`${errors.length} document(s) failed in ${dbName}: ${summary.join('; ')}`)
+    }
+
+    written += batch.length
   }
 
-  const results = await res.json() as Array<{ id: string, error?: string, reason?: string }>
-  const errors = results.filter(r => r.error)
+  console.log(`  ${dbName}: upserted ${written} demo document(s)`)
+}
 
-  if (errors.length > 0) {
-    console.error(`  ${errors.length} error(s) in ${dbName}:`, errors.slice(0, 5))
+function buildLocations(): DemoLocation[] {
+  return Array.from({ length: DISTRICT_COUNT }, (_, districtIndex) => {
+    const districtName = `Demo District ${String(districtIndex + 1).padStart(2, '0')}`
+
+    return {
+      id: stableId(`district:${districtIndex + 1}`),
+      name: districtName,
+      facilities: Array.from({ length: FACILITIES_PER_DISTRICT }, (_, facilityIndex) => {
+        const facilityName = `${districtName} Facility ${String(facilityIndex + 1).padStart(2, '0')}`
+
+        return { name: facilityName }
+      }),
+    }
+  })
+}
+
+function buildUsers(locations: DemoLocation[], now: number): { mentees: CouchDoc[], evaluators: CouchDoc[] } {
+  const professions = ['Nurse', 'Clinical Officer', 'Medical Officer', 'Midwife', 'Pharmacist']
+  const evaluators = Array.from({ length: EVALUATOR_COUNT }, (_, index) => {
+    const location = locations[index % locations.length]!
+    const facility = location.facilities[index % location.facilities.length]!
+    const number = String(index + 1).padStart(2, '0')
+
+    return {
+      _id: stableId(`evaluator:${index + 1}`),
+      type: 'user',
+      firstname: 'Demo',
+      lastname: `Mentor ${number}`,
+      username: `demo_mentor_${number}`,
+      profession: 'Clinical Mentor',
+      facility: facility.name,
+      district: location.name,
+      syncStatus: 'synced',
+      syncedAt: now,
+      createdAt: now,
+      updatedAt: now,
+      demo: true,
+      demoDataset: DEMO_DATASET,
+    }
+  })
+
+  const mentees = Array.from({ length: MENTEE_COUNT }, (_, index) => {
+    const location = locations[Math.floor(index / (MENTEE_COUNT / locations.length))]!
+    const facility = location.facilities[index % location.facilities.length]!
+    const number = String(index + 1).padStart(3, '0')
+
+    return {
+      _id: stableId(`mentee:${index + 1}`),
+      type: 'user',
+      firstname: 'Demo',
+      lastname: `Mentee ${number}`,
+      username: `demo_mentee_${number}`,
+      profession: professions[index % professions.length]!,
+      facility: facility.name,
+      district: location.name,
+      syncStatus: 'synced',
+      syncedAt: now,
+      createdAt: now,
+      updatedAt: now,
+      demo: true,
+      demoDataset: DEMO_DATASET,
+    }
+  })
+
+  return { mentees, evaluators }
+}
+
+function getOutcome(journeyNumber: number, hasAdvancedItems: boolean): JourneyOutcome {
+  if (journeyNumber % 12 === 11) return 'reopened'
+
+  const outcome = journeyNumber % 6
+  if (outcome === 0 || outcome === 1) return 'in_progress'
+  if ((outcome === 2 || outcome === 5) && hasAdvancedItems) return 'basic_competent'
+  return 'fully_competent'
+}
+
+function getItemScore(
+  item: (typeof evaluationTools)[number]['items'][number],
+  reopenedLowItemSlug: string,
+  sessionIndex: number,
+  competencyIndex: number,
+  outcome: JourneyOutcome,
+  terminalOutcome: 'basic_competent' | 'fully_competent',
+  journeyNumber: number,
+  toolSlug: string,
+): number | null {
+  const isCompetencySession = sessionIndex === competencyIndex && outcome !== 'in_progress'
+  const isReopenedSession = outcome === 'reopened' && sessionIndex > competencyIndex
+
+  if (isCompetencySession) {
+    if (terminalOutcome === 'basic_competent' && item.isAdvanced) {
+      return score(`${journeyNumber}:${toolSlug}:${item.slug}:advanced`, 1, 3)
+    }
+
+    return score(`${journeyNumber}:${toolSlug}:${item.slug}:competent`, 4, 5)
   }
 
-  console.log(`  ${dbName}: inserted ${docs.length - errors.length}/${docs.length}`)
+  if (isReopenedSession) {
+    return item.slug === reopenedLowItemSlug
+      ? score(`${journeyNumber}:${toolSlug}:reopened-low`, 1, 3)
+      : score(`${journeyNumber}:${toolSlug}:${item.slug}:reopened`, 3, 5)
+  }
+
+  const drift = score(`${journeyNumber}:${toolSlug}:${item.slug}:${sessionIndex}`, 0, 2)
+  const result = Math.min(3, 1 + Math.floor((sessionIndex / Math.max(competencyIndex, 1)) * 2) + drift)
+
+  if (sessionIndex !== competencyIndex && stableInt(`${journeyNumber}:${toolSlug}:${item.slug}:${sessionIndex}:na`, 40) === 0) {
+    return null
+  }
+
+  return result
 }
 
-function randInt(min: number, max: number): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min
+function roundLayout(journeyNumber: number, sessionCount: number): number {
+  if (sessionCount < 3 || journeyNumber % 3 !== 0) return 0
+  if (sessionCount >= 4 && journeyNumber % 9 === 0) return 3
+  return 2
 }
 
-function pick<T>(arr: readonly T[]): T {
-  return arr[randInt(0, arr.length - 1)]
+function buildJourneySessions(
+  mentee: CouchDoc,
+  evaluator: CouchDoc,
+  location: DemoLocation,
+  facilityName: string,
+  tool: (typeof evaluationTools)[number],
+  journeyNumber: number,
+  menteeIndex: number,
+  journeyIndex: number,
+  anchor: number,
+): { sessions: CouchDoc[], outcome: JourneyOutcome, rounds: number } {
+  const evaluationGroupId = `${mentee._id}::${tool.slug}`
+  const sessionCount = 3 + ((menteeIndex + journeyIndex * 2) % 4)
+  const hasAdvancedItems = tool.items.some(item => item.isAdvanced)
+  const outcome = getOutcome(journeyNumber, hasAdvancedItems)
+  const terminalOutcome = outcome === 'basic_competent' || (outcome === 'reopened' && journeyNumber % 2 === 0)
+    ? 'basic_competent'
+    : 'fully_competent'
+  const competencyIndex = outcome === 'reopened' ? sessionCount - 2 : sessionCount - 1
+  const basicItems = tool.items.filter(item => !item.isAdvanced)
+  const reopenedLowItemSlug = basicItems[journeyNumber % basicItems.length]!.slug
+  const roundCount = roundLayout(journeyNumber, sessionCount)
+  const spacingDays = 14 + ((menteeIndex + journeyIndex * 3) % 8) * 7
+  const lastSessionDaysAgo = 3 + stableInt(`${evaluationGroupId}:date`, 100)
+  const lastDayIndex = sessionCount - roundCount
+  const sessions: CouchDoc[] = []
+
+  const menteeRef = {
+    id: mentee._id,
+    firstname: mentee.firstname,
+    lastname: mentee.lastname,
+    username: mentee.username,
+    profession: mentee.profession,
+    facilityId: facilityName,
+    districtId: location.name,
+  }
+  const evaluatorRef = {
+    id: evaluator._id,
+    firstname: evaluator.firstname,
+    lastname: evaluator.lastname,
+    username: evaluator.username,
+    profession: evaluator.profession,
+    facilityId: evaluator.facility,
+    districtId: evaluator.district,
+  }
+
+  for (let sessionIndex = 0; sessionIndex < sessionCount; sessionIndex++) {
+    const inRoundGroup = roundCount > 0 && sessionIndex < roundCount
+    const dayIndex = inRoundGroup ? 0 : sessionIndex - roundCount + 1
+    const evalDate = anchor - (lastSessionDaysAgo + (lastDayIndex - dayIndex) * spacingDays) * DAY
+    const roundOfDay = inRoundGroup ? sessionIndex + 1 : 1
+    const createdAt = inRoundGroup
+      ? evalDate + (roundCount - roundOfDay) * HOUR
+      : evalDate + 6 * HOUR
+    const isCompetencySession = sessionIndex === competencyIndex && outcome !== 'in_progress'
+    const isReopenedSession = outcome === 'reopened' && sessionIndex > competencyIndex
+    const itemScores = tool.items.map(item => ({
+      itemSlug: item.slug,
+      menteeScore: getItemScore(
+        item,
+        reopenedLowItemSlug,
+        sessionIndex,
+        competencyIndex,
+        outcome,
+        terminalOutcome,
+        journeyNumber,
+        tool.slug,
+      ),
+    }))
+    const counsellingScores = counsellingTool.items.map((item) => {
+      const progress = Math.min(sessionIndex / Math.max(competencyIndex, 1), 1)
+      const base = Math.min(4, 2 + Math.floor(progress * 2))
+      const menteeScore = stableInt(`${evaluationGroupId}:${sessionIndex}:${item.slug}:na`, 30) === 0 && !isCompetencySession
+        ? null
+        : Math.max(1, Math.min(5, base + score(`${evaluationGroupId}:${sessionIndex}:${item.slug}`, -1, 1)))
+
+      return { itemSlug: item.slug, menteeScore }
+    })
+    const session: CouchDoc = {
+      _id: stableId(`session:${evaluationGroupId}:${sessionIndex + 1}`),
+      type: 'session',
+      evaluationGroupId,
+      mentee: menteeRef,
+      evaluator: evaluatorRef,
+      toolSlug: tool.slug,
+      evalDate,
+      facilityId: facilityName,
+      districtId: location.name,
+      itemScores,
+      counsellingScores,
+      phase: sessionIndex === 0
+        ? 'initial_intensive'
+        : (isCompetencySession || (isReopenedSession && terminalOutcome === 'fully_competent') ? 'supervision' : 'ongoing'),
+      notes: isReopenedSession
+        ? 'Demo scenario: follow-up after a previously competent journey.'
+        : `Demo mentorship visit ${sessionIndex + 1} for ${tool.label}.`,
+      syncStatus: 'synced',
+      syncedAt: anchor,
+      createdAt,
+      updatedAt: createdAt,
+      demo: true,
+      demoDataset: DEMO_DATASET,
+    }
+
+    if (inRoundGroup || stableInt(`${evaluationGroupId}:${sessionIndex}:round`, 11) !== 0) {
+      session.roundOfDay = roundOfDay
+    }
+
+    if (isReopenedSession) {
+      session.reopenReason = 'Demo scenario: competency was recorded in error and the journey was reopened.'
+    }
+
+    sessions.push(session)
+  }
+
+  return { sessions, outcome, rounds: roundCount }
 }
 
-const MENTEE_NAMES: Array<[string, string, string]> = [
-  ['Tendai', 'Moyo', 'Nurse'],
-  ['Chipo', 'Ndlovu', 'Clinical Officer'],
-  ['Farai', 'Sibanda', 'Nurse'],
-  ['Rumbidzai', 'Chikafu', 'Medical Officer'],
-  ['Tapiwa', 'Gumbo', 'Nurse'],
-  ['Nyasha', 'Mutasa', 'Clinical Officer'],
-  ['Blessing', 'Chirwa', 'Nurse'],
-  ['Kudzai', 'Mafunga', 'Medical Officer'],
-  ['Tafadzwa', 'Marufu', 'Nurse'],
-  ['Ropafadzo', 'Zhou', 'Clinical Officer'],
-  ['Anesu', 'Chinyerere', 'Nurse'],
-  ['Simbarashe', 'Dube', 'Medical Officer'],
-]
+function buildGaps(
+  mentee: CouchDoc,
+  evaluator: CouchDoc,
+  toolSlug: string,
+  evaluationGroupId: string,
+  journeyNumber: number,
+  anchor: number,
+): CouchDoc[] {
+  if (journeyNumber % 2 !== 0 && journeyNumber % 7 !== 0) return []
 
-const EVALUATOR_NAMES: Array<[string, string]> = [
-  ['Grace', 'Mhlanga'],
-  ['Tonderai', 'Mapfumo'],
-]
+  const domains = ['knowledge', 'critical_reasoning', 'clinical_skills', 'communication', 'attitude'] as const
+  const supervisionLevels = ['intensive_mentorship', 'ongoing_mentorship', 'independent_practice'] as const
+  const resolved = journeyNumber % 3 !== 0
+  const identifiedAt = anchor - (5 + stableInt(`${evaluationGroupId}:gap-date`, 180)) * DAY
+  const domainStart = journeyNumber % domains.length
+  const selectedDomains = [
+    domains[domainStart]!,
+    domains[(domainStart + 2) % domains.length]!,
+  ]
+  const gap: CouchDoc = {
+    _id: stableId(`gap:${evaluationGroupId}`),
+    type: 'gap',
+    evaluationGroupId,
+    menteeId: mentee._id,
+    evaluatorId: evaluator._id,
+    toolSlug,
+    identifiedAt,
+    description: [
+      'Needs support interpreting clinical findings independently.',
+      'Requires practice with safe medication titration and follow-up.',
+      'Would benefit from strengthening patient communication and counselling.',
+      'Documentation and escalation decisions need further mentorship.',
+      'Needs additional supervised practice with complex cases.',
+    ][journeyNumber % 5]!,
+    domains: selectedDomains,
+    coveredInMentorship: resolved ? true : (journeyNumber % 4 === 0 ? false : null),
+    coveringLater: !resolved,
+    supervisionLevel: supervisionLevels[journeyNumber % supervisionLevels.length],
+    syncStatus: 'synced',
+    syncedAt: anchor,
+    createdAt: identifiedAt,
+    updatedAt: resolved ? anchor - stableInt(`${evaluationGroupId}:gap-resolution`, 4 * DAY) : anchor,
+    demo: true,
+    demoDataset: DEMO_DATASET,
+  }
 
-type Outcome = 'competent' | 'fully_competent' | 'in_progress'
+  if (resolved) {
+    gap.resolutionNote = 'Addressed through focused case review and observed practice.'
+    gap.resolvedAt = gap.updatedAt
+  } else {
+    gap.timeline = journeyNumber % 2 === 0 ? 'Next mentorship visit' : 'Within 2 weeks'
+  }
 
-interface Journey {
-  menteeIdx: number
-  toolSlug: string
-  sessions: number
-  outcome: Outcome
+  return [gap]
 }
-
-// 15 journeys summing to 50 sessions, spread across 12 mentees and 4 tools,
-// mixing in-progress / basic-competent / fully-competent outcomes.
-const JOURNEYS: Journey[] = [
-  { menteeIdx: 0, toolSlug: 'diabetes', sessions: 4, outcome: 'fully_competent' },
-  { menteeIdx: 1, toolSlug: 'hypertension', sessions: 3, outcome: 'competent' },
-  { menteeIdx: 2, toolSlug: 'cardiac', sessions: 5, outcome: 'fully_competent' },
-  { menteeIdx: 3, toolSlug: 'respiratory', sessions: 2, outcome: 'in_progress' },
-  { menteeIdx: 4, toolSlug: 'diabetes', sessions: 3, outcome: 'in_progress' },
-  { menteeIdx: 5, toolSlug: 'hypertension', sessions: 4, outcome: 'competent' },
-  { menteeIdx: 6, toolSlug: 'cardiac', sessions: 3, outcome: 'in_progress' },
-  { menteeIdx: 7, toolSlug: 'respiratory', sessions: 5, outcome: 'competent' },
-  { menteeIdx: 8, toolSlug: 'diabetes', sessions: 2, outcome: 'in_progress' },
-  { menteeIdx: 9, toolSlug: 'hypertension', sessions: 4, outcome: 'competent' },
-  { menteeIdx: 10, toolSlug: 'cardiac', sessions: 3, outcome: 'competent' },
-  { menteeIdx: 11, toolSlug: 'respiratory', sessions: 2, outcome: 'in_progress' },
-  { menteeIdx: 0, toolSlug: 'hypertension', sessions: 4, outcome: 'in_progress' },
-  { menteeIdx: 3, toolSlug: 'diabetes', sessions: 3, outcome: 'competent' },
-  { menteeIdx: 7, toolSlug: 'cardiac', sessions: 3, outcome: 'in_progress' },
-]
-
-const GAP_DESCRIPTIONS = [
-  'Struggles to interpret lab results independently.',
-  'Inconsistent dosage titration during follow-up visits.',
-  'Needs support explaining the treatment plan to patients in local language.',
-  'Documentation of vitals is incomplete in several visits.',
-]
-
-const GAP_DOMAINS = ['knowledge', 'clinical_skills', 'critical_reasoning', 'communication'] as const
 
 async function main(): Promise<void> {
-  console.log('Seeding demo data into', COUCHDB_URL)
+  const couchUrl = couchDbBaseUrl()
+  const dateMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(SEED_DATE)
 
-  await bulkDocs(DB_DISTRICTS, [{
-    _id: DEMO_DISTRICT_ID,
-    district: DEMO_DISTRICT_NAME,
-    facilities: [DEMO_FACILITY_NAME],
-    demo: true,
-  }])
+  if (!dateMatch) {
+    throw new Error(`Invalid DEMO_SEED_DATE [${SEED_DATE}]. Use YYYY-MM-DD.`)
+  }
 
-  const evaluators = EVALUATOR_NAMES.map(([firstname, lastname], i) => ({
-    _id: `demo-evaluator-${i + 1}`,
-    type: 'user',
-    firstname,
-    lastname,
-    username: `demo_mentor_${i + 1}`,
-    profession: 'Clinical Mentor',
-    facility: DEMO_FACILITY_NAME,
-    district: DEMO_DISTRICT_NAME,
-    syncStatus: 'synced',
-    syncedAt: now,
-    createdAt: now,
-    updatedAt: now,
+  const anchor = Date.UTC(Number(dateMatch[1]), Number(dateMatch[2]) - 1, Number(dateMatch[3]), 12)
+  const parsedDate = new Date(anchor)
+  if (parsedDate.toISOString().slice(0, 10) !== SEED_DATE) {
+    throw new Error(`Invalid DEMO_SEED_DATE [${SEED_DATE}].`)
+  }
+
+  console.log(`Seeding deterministic demo data into CouchDB at ${couchUrl.hostname}`)
+  console.log(`Dataset: ${DEMO_DATASET}; seed date: ${SEED_DATE}`)
+
+  const locations = buildLocations()
+  const { mentees, evaluators } = buildUsers(locations, anchor)
+  const districtDocs: CouchDoc[] = locations.map(location => ({
+    _id: location.id,
+    district: location.name,
+    facilities: location.facilities.map(facility => facility.name),
     demo: true,
+    demoDataset: DEMO_DATASET,
   }))
+  const facilityCount = locations.reduce((count, location) => count + location.facilities.length, 0)
+  const sessions: CouchDoc[] = []
+  const gaps: CouchDoc[] = []
+  const outcomes: Record<JourneyOutcome, number> = {
+    in_progress: 0,
+    basic_competent: 0,
+    fully_competent: 0,
+    reopened: 0,
+  }
+  let multiRoundJourneys = 0
+  let multiRoundSessions = 0
+  let nullScores = 0
+  let journeyNumber = 0
 
-  const mentees = MENTEE_NAMES.map(([firstname, lastname, profession], i) => ({
-    _id: `demo-mentee-${i + 1}`,
-    type: 'user',
-    firstname,
-    lastname,
-    username: `demo_mentee_${i + 1}`,
-    profession,
-    facility: DEMO_FACILITY_NAME,
-    district: DEMO_DISTRICT_NAME,
-    syncStatus: 'synced',
-    syncedAt: now,
-    createdAt: now,
-    updatedAt: now,
-    demo: true,
-  }))
+  for (let menteeIndex = 0; menteeIndex < mentees.length; menteeIndex++) {
+    const mentee = mentees[menteeIndex]!
+    const location = locations[Math.floor(menteeIndex / (MENTEE_COUNT / locations.length))]!
 
-  await bulkDocs(DB_USERS, [...evaluators, ...mentees])
+    for (let journeyIndex = 0; journeyIndex < JOURNEYS_PER_MENTEE; journeyIndex++) {
+      const tool = evaluationTools[(menteeIndex * JOURNEYS_PER_MENTEE + journeyIndex * 3) % evaluationTools.length]!
+      const evaluatorIndex = (menteeIndex * 7 + journeyIndex * 3) % evaluators.length
+      const evaluator = evaluators[evaluatorIndex]!
+      const facility = location.facilities[(menteeIndex + journeyIndex) % location.facilities.length]!
+      const generated = buildJourneySessions(
+        mentee,
+        evaluator,
+        location,
+        facility.name,
+        tool,
+        journeyNumber,
+        menteeIndex,
+        journeyIndex,
+        anchor,
+      )
+      const evaluationGroupId = `${mentee._id}::${tool.slug}`
 
-  const allSessions: Record<string, unknown>[] = []
-  const allGaps: Record<string, unknown>[] = []
-  let gapCount = 0
-
-  for (const journey of JOURNEYS) {
-    const mentee = mentees[journey.menteeIdx]
-    const evaluator = pick(evaluators)
-    const tool = evaluationTools.find(t => t.slug === journey.toolSlug)
-
-    if (!tool) {
-      throw new Error(`Unknown tool slug: ${journey.toolSlug}`)
-    }
-
-    const evaluationGroupId = `${mentee._id}::${tool.slug}`
-    const sessionCount = journey.sessions
-    const lastSessionDaysAgo = journey.outcome === 'in_progress' ? randInt(3, 14) : randInt(20, 70)
-    const spacingDays = 18
-
-    const menteeRef = {
-      id: mentee._id,
-      firstname: mentee.firstname,
-      lastname: mentee.lastname,
-      username: mentee.username,
-      facilityId: DEMO_FACILITY_NAME,
-      districtId: DEMO_DISTRICT_NAME,
-    }
-    const evaluatorRef = {
-      id: evaluator._id,
-      firstname: evaluator.firstname,
-      lastname: evaluator.lastname,
-      username: evaluator.username,
-      facilityId: DEMO_FACILITY_NAME,
-      districtId: DEMO_DISTRICT_NAME,
-    }
-
-    for (let i = 0; i < sessionCount; i++) {
-      const isLast = i === sessionCount - 1
-      const progress = (i + 1) / sessionCount
-      const evalDate = now - (lastSessionDaysAgo + (sessionCount - 1 - i) * spacingDays) * DAY
-
-      const itemScores = tool.items.map((item) => {
-        let score: number
-
-        if (isLast && journey.outcome !== 'in_progress') {
-          score = (item.isAdvanced && journey.outcome !== 'fully_competent')
-            ? randInt(2, 4)
-            : randInt(4, 5)
-        } else if (isLast) {
-          // in_progress: deliberately leave some items short so the journey stays open
-          score = item.isAdvanced ? randInt(1, 3) : (Math.random() < 0.25 ? randInt(2, 3) : randInt(3, 5))
-        } else {
-          const base = 2 + progress * 2.5
-          score = Math.max(1, Math.min(5, Math.round(base + randInt(-1, 1))))
-        }
-
-        return { itemSlug: item.slug, menteeScore: score }
-      })
-
-      const counsellingScores = counsellingTool.items.map((item) => {
-        const base = 3 + progress * 2
-        const score = Math.max(1, Math.min(5, Math.round(base + randInt(-1, 1))))
-        return { itemSlug: item.slug, menteeScore: score }
-      })
-
-      const phase = i === 0
-        ? 'initial_intensive'
-        : (isLast && journey.outcome !== 'in_progress' ? 'supervision' : 'ongoing')
-
-      allSessions.push({
-        _id: `session::${evaluationGroupId}::${evalDate}`,
-        type: 'session',
-        evaluationGroupId,
-        mentee: menteeRef,
-        evaluator: evaluatorRef,
-        toolSlug: tool.slug,
-        evalDate,
-        facilityId: DEMO_FACILITY_NAME,
-        districtId: DEMO_DISTRICT_NAME,
-        itemScores,
-        counsellingScores,
-        phase,
-        notes: `Mentorship session ${i + 1} for ${tool.label}.`,
-        syncStatus: 'synced',
-        syncedAt: now,
-        createdAt: evalDate,
-        updatedAt: evalDate,
-        demo: true,
-      })
-    }
-
-    if (journey.outcome !== 'fully_competent' && gapCount < 8 && Math.random() < 0.6) {
-      gapCount++
-      const resolved = Math.random() < 0.4
-      const identifiedAt = now - randInt(10, 40) * DAY
-
-      allGaps.push({
-        _id: `gap::${evaluationGroupId}::${now - gapCount}`,
-        type: 'gap',
-        evaluationGroupId,
-        menteeId: mentee._id,
-        evaluatorId: evaluator._id,
-        toolSlug: tool.slug,
-        identifiedAt,
-        description: pick(GAP_DESCRIPTIONS),
-        domains: [pick(GAP_DOMAINS)],
-        coveredInMentorship: resolved ? true : null,
-        coveringLater: !resolved,
-        timeline: resolved ? undefined : 'Next 2 mentorship visits',
-        supervisionLevel: 'ongoing_mentorship',
-        resolutionNote: resolved ? 'Addressed through targeted case review.' : undefined,
-        resolvedAt: resolved ? now - randInt(1, 9) * DAY : undefined,
-        syncStatus: 'synced',
-        syncedAt: now,
-        createdAt: identifiedAt,
-        updatedAt: now,
-        demo: true,
-      })
+      sessions.push(...generated.sessions)
+      gaps.push(...buildGaps(mentee, evaluator, tool.slug, evaluationGroupId, journeyNumber, anchor))
+      outcomes[generated.outcome]++
+      if (generated.rounds > 1) {
+        multiRoundJourneys++
+        multiRoundSessions += generated.rounds
+      }
+      nullScores += generated.sessions.reduce((count, session) => {
+        const itemScores = session.itemScores as Array<{ menteeScore: number | null }>
+        const counsellingScores = session.counsellingScores as Array<{ menteeScore: number | null }>
+        return count + [...itemScores, ...counsellingScores].filter(item => item.menteeScore === null).length
+      }, 0)
+      journeyNumber++
     }
   }
 
-  await bulkDocs(DB_SESSIONS, allSessions)
-  await bulkDocs(DB_GAPS, allGaps)
+  await bulkUpsert(DB_DISTRICTS, districtDocs)
+  await bulkUpsert(DB_USERS, [...evaluators, ...mentees])
+  await bulkUpsert(DB_SESSIONS, sessions)
+  await bulkUpsert(DB_GAPS, gaps)
 
-  console.log(`Done. ${allSessions.length} sessions, ${allGaps.length} gaps, ${mentees.length} mentees, ${evaluators.length} evaluators.`)
-  console.log('Next: run `php artisan sync:couchdb` in reporting/ to pull this into MySQL.')
+  console.log(`Done: ${districtDocs.length} districts, ${facilityCount} facilities, ${mentees.length} mentees, ${evaluators.length} mentors.`)
+  console.log(`Journeys: ${journeyNumber} (${outcomes.in_progress} in progress, ${outcomes.basic_competent} basic-only, ${outcomes.fully_competent} fully competent, ${outcomes.reopened} reopened).`)
+  console.log(`Sessions: ${sessions.length}; journeys with multiple same-day rounds: ${multiRoundJourneys}; visits in those rounds: ${multiRoundSessions}; N/A scores: ${nullScores}; gaps: ${gaps.length}.`)
+  console.log('Next: run `php artisan sync:couchdb` from reporting/ to import the data into MySQL.')
 }
 
-main().catch((err) => {
-  console.error(err)
+main().catch((error: unknown) => {
+  console.error(error)
   process.exit(1)
 })

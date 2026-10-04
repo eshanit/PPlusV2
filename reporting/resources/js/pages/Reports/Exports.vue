@@ -1,11 +1,16 @@
 <script setup>
 import Badge from '../../components/ui/Badge.vue';
 import Card from '../../components/ui/Card.vue';
+import Button from '../../components/ui/Button.vue';
 import AppLayout from '../../layouts/AppLayout.vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, useForm, usePage } from '@inertiajs/vue3';
 import { Download, FileSpreadsheet, RefreshCw } from 'lucide-vue-next';
 
 defineOptions({ layout: AppLayout });
+
+const page = usePage();
+const form = useForm({});
+const scoresCsvForm = useForm({});
 
 const props = defineProps({
     files: { type: Array, default: () => [] },
@@ -16,6 +21,14 @@ const props = defineProps({
 function downloadUrl(path) {
     return props.downloadUrlTemplate.replace('__PATH__', path);
 }
+
+function generateReports() {
+    form.post('/exports/generate');
+}
+
+function generateScoresCsv() {
+    scoresCsvForm.post('/exports/generate-mentee-scores-csv');
+}
 </script>
 
 <template>
@@ -23,11 +36,47 @@ function downloadUrl(path) {
 
     <main class="mx-auto max-w-5xl space-y-5 px-4 py-6 sm:px-6 lg:px-8">
         <div class="flex flex-col gap-1">
-            <h1 class="text-2xl font-semibold tracking-normal">Exports</h1>
-            <p class="text-sm text-muted-foreground">
-                Download generated CSV snapshots. New exports are created daily at 6am + weekly (Mondays).
-            </p>
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex flex-col gap-1">
+                    <h1 class="text-2xl font-semibold tracking-normal">Exports</h1>
+                    <p class="text-sm text-muted-foreground">
+                        Download CSV reports or an Excel workbook. Scheduled exports run daily at 6am and weekly on Mondays.
+                    </p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <Button :disabled="form.processing || scoresCsvForm.processing" @click="generateReports">
+                        <RefreshCw class="size-4" :class="{ 'animate-spin': form.processing }" />
+                        {{ form.processing ? 'Generating...' : 'Generate all reports' }}
+                    </Button>
+                    <Button
+                        variant="outline"
+                        :disabled="form.processing || scoresCsvForm.processing"
+                        @click="generateScoresCsv"
+                    >
+                        <RefreshCw class="size-4" :class="{ 'animate-spin': scoresCsvForm.processing }" />
+                        {{ scoresCsvForm.processing ? 'Generating CSV...' : 'Generate scores CSV' }}
+                    </Button>
+                </div>
+            </div>
         </div>
+
+        <div
+            v-if="page.props.flash?.success"
+            role="status"
+            class="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+        >
+            {{ page.props.flash.success }}
+        </div>
+        <div
+            v-if="form.errors.generation"
+            role="alert"
+            class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+        >
+            {{ form.errors.generation }}
+        </div>
+        <p class="text-xs text-muted-foreground">
+            Mentee Scores CSV and Excel exports list each tool competency score by session, including session number and recorded rounds. CSV is faster for large datasets; counselling scores are excluded.
+        </p>
 
         <Card>
             <div class="overflow-x-auto">
@@ -44,7 +93,7 @@ function downloadUrl(path) {
                     <tbody>
                         <tr v-if="files.length === 0">
                             <td colspan="5" class="px-4 py-10 text-center text-muted-foreground">
-                                No exports yet. Run the export command manually or wait for the next scheduled run.
+                                No exports yet. Generate reports now or wait for the next scheduled run.
                             </td>
                         </tr>
                         <tr

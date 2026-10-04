@@ -25,6 +25,9 @@ class HandleInertiaRequests extends Middleware
                     'is_district_admin' => $request->user()->isDistrictAdmin(),
                 ] : null,
             ],
+            'flash' => [
+                'success' => fn () => $request->session()->get('success'),
+            ],
         ];
     }
 }

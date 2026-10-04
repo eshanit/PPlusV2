@@ -11,6 +11,27 @@ class ToolsAndItemsSeeder extends Seeder
 {
     use WithoutModelEvents;
 
+    private const CRITICAL_SLUGS = [
+        'diabetes-D17',
+        'diabetes-D20',
+        'diabetes-D21',
+        'cardiac-C2',
+        'cardiac-C12',
+        'cardiac-C19',
+        'sickle_cell-S17',
+        'sickle_cell-S18',
+        'sickle_cell-S19',
+        'sickle_cell-S20',
+        'sickle_cell-S21',
+        'sickle_cell-S23',
+        'respiratory-R19',
+        'hypertension-H14',
+        'hypertension-H15',
+        'hypertension-H17',
+        'ckd-H11',
+        'epilepsy-E10',
+    ];
+
     /**
      * Run the database seeds.
      */
@@ -43,6 +64,7 @@ class ToolsAndItemsSeeder extends Seeder
                             'number' => $item['number'],
                             'title' => $item['title'],
                             'is_advanced' => $item['isAdvanced'],
+                            'is_critical' => in_array($item['slug'], self::CRITICAL_SLUGS, true),
                             'sort_order' => $itemIndex + 1,
                         ],
                     );
