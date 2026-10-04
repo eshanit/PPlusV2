@@ -1,6 +1,7 @@
 <script setup>
 import Badge from '../../components/ui/Badge.vue';
 import Card from '../../components/ui/Card.vue';
+import InsightsPanel from '../../components/InsightsPanel.vue';
 import AppLayout from '../../layouts/AppLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { AlertTriangle, ArrowLeft, ArrowUpRight, Award, ChevronRight, Download, Eye, Info, MapPin, Printer, TrendingDown, TrendingUp } from 'lucide-vue-next';
@@ -462,6 +463,15 @@ function avgScoreClass(score) {
     <Head :title="journey ? `Heatmap — ${journey.mentee}` : 'Journey Heatmap'" />
 
     <main class="journey-heatmap-report mx-auto max-w-full space-y-5 px-4 py-6 sm:px-6 lg:px-8 print:px-0 print:py-0">
+        <InsightsPanel
+            summary="Compares competency scores across sessions in one mentee-tool journey, including same-day rounds."
+            :points="[
+                'Columns represent visits ordered by evaluation date and round; the round ordering is important when multiple sessions occur on one day.',
+                'Cell colors and values show item-level scores over time. Blank cells mean the item was not recorded for that session; N/A is distinct from a missing score.',
+                'Basic competence requires every non-advanced item to reach 4 or 5; advanced items remain visible but do not block basic competence.',
+                'Use the dynamic insights below the journey header to identify persistent gaps and next-session priorities, then review the session record for context.',
+            ]"
+        />
 
         <!-- No group_id state -->
         <div

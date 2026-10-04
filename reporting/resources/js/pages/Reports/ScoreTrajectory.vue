@@ -1,4 +1,5 @@
 <script setup>
+import InsightsPanel from '../../components/InsightsPanel.vue';
 import ApexChart from '../../components/ui/ApexChart.vue';
 import Badge from '../../components/ui/Badge.vue';
 import Card from '../../components/ui/Card.vue';
@@ -104,6 +105,15 @@ const scoreColor = (score) => {
     <Head title="Score Trajectory" />
 
     <main class="mx-auto max-w-7xl space-y-5 px-4 py-6 sm:px-6 lg:px-8">
+        <InsightsPanel
+            summary="Tracks average scores across numbered sessions to show how recorded competency changes over time."
+            :points="[
+                'Session numbers are derived within each mentee-tool journey and ordered by evaluation date, then creation time.',
+                'Rising averages suggest improvement in recorded scores; item mix, N/A responses, and the number of journeys can affect each point.',
+                'Use the item-level or journey views to locate persistent gaps hidden by an overall average.',
+                'The score-4 threshold is an item competency target; a mean above 4 does not mean every item or mentee is competent.',
+            ]"
+        />
         <div class="flex flex-col gap-1">
             <h1 class="text-2xl font-semibold tracking-normal">Score Trajectory</h1>
             <p class="text-sm text-muted-foreground">Session-by-session average score for a single mentee journey.</p>

@@ -1,5 +1,6 @@
 <script setup>
 import Card from '../../components/ui/Card.vue';
+import InsightsPanel from '../../components/InsightsPanel.vue';
 import TableLink from '../../components/ui/TableLink.vue';
 import AppLayout from '../../layouts/AppLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
@@ -40,6 +41,15 @@ function overallMax(row) {
     <Head title="Score Distribution by Tool" />
 
     <main class="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+        <InsightsPanel
+            summary="Compares recorded score frequencies across tools to show the distribution of competency ratings."
+            :points="[
+                'The chart shows counts of scored items, not counts of mentees or journeys; a session with more assessed items contributes more observations.',
+                'N/A and missing items are not numeric ratings. Interpret score counts alongside the number of sessions and items assessed.',
+                'A concentration at 4–5 indicates stronger recorded performance; scores 1–3 identify competencies that may need further support.',
+                'Advanced competencies are reported separately because they are not required to meet basic competence.',
+            ]"
+        />
         <div class="flex items-start justify-between gap-4">
             <div>
                 <h1 class="text-2xl font-semibold tracking-normal">Score Distribution by Tool</h1>

@@ -3,6 +3,7 @@ import ApexChart from '../../components/ui/ApexChart.vue';
 import Card from '../../components/ui/Card.vue';
 import FilterBar from '../../components/FilterBar.vue';
 import MetricCard from '../../components/MetricCard.vue';
+import InsightsPanel from '../../components/InsightsPanel.vue';
 import Pagination from '../../components/ui/Pagination.vue';
 import TableLink from '../../components/ui/TableLink.vue';
 import AppLayout from '../../layouts/AppLayout.vue';
@@ -16,6 +17,7 @@ const props = defineProps({
     mentees: { type: Array, default: () => [] },
     meta: { type: Object, default: () => ({}) },
     summary: { type: Object, default: null },
+    menteeOptions: { type: Array, default: () => [] },
     tools: { type: Array, default: () => [] },
     districts: { type: Array, default: () => [] },
     facilities: { type: Array, default: () => [] },
@@ -99,6 +101,15 @@ const scoreBg = (score) => {
     <Head title="Struggling Mentees" />
 
     <main class="mx-auto max-w-7xl space-y-5 px-4 py-6 sm:px-6 lg:px-8">
+        <InsightsPanel
+            summary="Surfaces journeys with persistent low scores or slow progress so teams can target additional mentorship."
+            :points="[
+                'The list is a screening aid based on recorded journey performance; it does not diagnose a cause or label a person.',
+                'Review session counts, time since the last visit, open gaps, and item-level scores together to understand each case.',
+                'A journey may have improved recently even if its overall history still meets the report criteria; open the trajectory before prioritizing.',
+                'Use consistent filters and date ranges when comparing districts, facilities, or tools.',
+            ]"
+        />
         <div class="flex flex-col gap-1">
             <h1 class="text-2xl font-semibold tracking-normal">Struggling Mentees</h1>
             <p class="text-sm text-muted-foreground">
@@ -115,6 +126,12 @@ const scoreBg = (score) => {
                     label: 'Tool',
                     placeholder: 'All tools',
                     options: tools.map((t) => ({ value: String(t.id), label: t.label })),
+                },
+                {
+                    key: 'mentee_id',
+                    label: 'Mentee',
+                    placeholder: 'All mentees',
+                    options: menteeOptions.map((m) => ({ value: String(m.id), label: m.name })),
                 },
                 {
                     key: 'facility_id',

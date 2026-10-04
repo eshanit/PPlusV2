@@ -1,6 +1,7 @@
 <script setup>
 import ApexChart from '../../components/ui/ApexChart.vue';
 import Card from '../../components/ui/Card.vue';
+import InsightsPanel from '../../components/InsightsPanel.vue';
 import AppLayout from '../../layouts/AppLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { ArrowLeft, ChevronRight, MapPin } from 'lucide-vue-next';
@@ -90,6 +91,15 @@ const chartOptions = computed(() => {
     <Head :title="`Gap Report — ${journey.menteeName}`" />
 
     <main class="mx-auto max-w-5xl space-y-5 px-4 py-6 sm:px-6 lg:px-8">
+        <InsightsPanel
+            summary="Provides the full context for one identified gap, including its journey, domain, supervision plan, resolution, and score trajectory."
+            :points="[
+                'A gap records a development need separately from item scores; its domain and description explain the concern and planned response.',
+                'The trajectory chart provides journey-level score context and may include sessions before and after this gap was identified.',
+                'Open status means no resolution has been recorded. Confirm the resolution note and follow-up before treating the need as closed.',
+                'Use this detail to coordinate mentorship and supervision, not as a substitute for clinical judgement.',
+            ]"
+        />
 
         <!-- Breadcrumb -->
         <div class="flex items-center gap-2 text-sm text-muted-foreground">

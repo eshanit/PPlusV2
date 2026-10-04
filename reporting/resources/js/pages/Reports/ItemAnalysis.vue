@@ -1,7 +1,9 @@
 <script setup>
+import InsightsPanel from '../../components/InsightsPanel.vue';
 import ApexChart from '../../components/ui/ApexChart.vue';
 import Badge from '../../components/ui/Badge.vue';
 import Card from '../../components/ui/Card.vue';
+import FilterBar from '../../components/FilterBar.vue';
 import TableLink from '../../components/ui/TableLink.vue';
 import AppLayout from '../../layouts/AppLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
@@ -16,6 +18,8 @@ const props = defineProps({
     distribution: { type: Array, default: () => [] },
     trend: { type: Array, default: () => [] },
     journeys: { type: Array, default: () => [] },
+    menteeOptions: { type: Array, default: () => [] },
+    filters: { type: Object, default: () => ({}) },
 });
 
 // Score distribution bar chart
@@ -101,6 +105,15 @@ const scoreBg = (score) => {
     <Head :title="`Item Analysis — ${item.number}`" />
 
     <main class="mx-auto max-w-6xl space-y-5 px-4 py-6 sm:px-6 lg:px-8">
+        <InsightsPanel
+            summary="Combines the selected competency's score distribution, trend over session number, and latest score for each journey."
+            :points="[
+                'The distribution shows how often each score was recorded; the trend averages sessions only when enough journeys contribute.',
+                'The journey breakdown carries forward the latest non-null score for this item, so its date may be older than a journey’s latest session.',
+                'N/A means not assessed or not applicable and is excluded from score averages.',
+                'Use this page to decide whether the item needs broad teaching, repeated follow-up, or closer review of particular journeys.',
+            ]"
+        />
 
         <!-- Breadcrumb -->
         <div class="flex items-center gap-2 text-sm text-muted-foreground">
@@ -143,6 +156,18 @@ const scoreBg = (score) => {
                 </div>
             </div>
         </Card>
+
+        <FilterBar
+            :filters="filters"
+            :selects="[
+                {
+                    key: 'mentee_id',
+                    label: 'Mentee',
+                    placeholder: 'All mentees',
+                    options: menteeOptions.map((m) => ({ value: String(m.id), label: m.name })),
+                },
+            ]"
+        />
 
         <!-- 4 stat boxes -->
         <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

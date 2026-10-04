@@ -27,6 +27,7 @@ class JourneyStatusController extends Controller
             ->leftJoin('v_sessions_numbered as vsn', 'vsn.id', '=', 'v_journey_summary.latest_session_id')
             ->whereRaw(...$this->scope->scope('v_journey_summary'))
             ->when($request->tool_id, fn ($q) => $q->where('v_journey_summary.tool_id', $request->tool_id))
+            ->when($request->mentee_id, fn ($q) => $q->where('v_journey_summary.mentee_id', $request->mentee_id))
             ->when($request->district_id, fn ($q) => $q->where('v_journey_summary.district_id', $request->district_id))
             ->when($request->facility_id, fn ($q) => $q->where('v_journey_summary.facility_id', $request->facility_id))
             ->when($request->status, fn ($q) => $q->where('v_journey_summary.competency_status', $request->status))
@@ -75,7 +76,8 @@ class JourneyStatusController extends Controller
                 ->get(['id', 'label']),
             'districts' => $districtsQuery->get(['id', 'name']),
             'facilities' => $facilitiesQuery->get(['id', 'name']),
-            'filters' => $request->only(['tool_id', 'district_id', 'facility_id', 'status']),
+            'menteeOptions' => $this->scope->menteeOptions(),
+            'filters' => $request->only(['tool_id', 'mentee_id', 'district_id', 'facility_id', 'status']),
         ]);
     }
 }

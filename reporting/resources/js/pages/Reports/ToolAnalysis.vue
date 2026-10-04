@@ -3,6 +3,7 @@ import ApexChart from '../../components/ui/ApexChart.vue';
 import FilterBar from '../../components/FilterBar.vue';
 import Badge from '../../components/ui/Badge.vue';
 import Card from '../../components/ui/Card.vue';
+import InsightsPanel from '../../components/InsightsPanel.vue';
 import MetricCard from '../../components/MetricCard.vue';
 import TableLink from '../../components/ui/TableLink.vue';
 import AppLayout from '../../layouts/AppLayout.vue';
@@ -209,6 +210,15 @@ const metric = (value, suffix = '') =>
     <Head title="Tool Analysis" />
 
     <main class="mx-auto max-w-7xl space-y-5 px-4 py-6 sm:px-6 lg:px-8">
+        <InsightsPanel
+            summary="Summarizes the selected tool's scores, basic-item competency attainment, and strongest or weakest competencies."
+            :points="[
+                'The overall average combines scored items across sessions; repeated sessions contribute repeated observations.',
+                'Basic items at competency measures the share of scored non-advanced items at 4 or 5. Advanced items are shown separately and do not determine basic competence.',
+                'The dynamic insights below identify relative strengths and priorities from the selected data; they are descriptive, not causal.',
+                'Use the filters and item details to distinguish broad tool-level patterns from a small number of journeys.',
+            ]"
+        />
         <div class="flex flex-col gap-1">
             <h1 class="text-2xl font-semibold tracking-normal">Tool Analysis</h1>
             <p class="text-sm text-muted-foreground">Item-level scoring breakdown for a selected evaluation tool.</p>

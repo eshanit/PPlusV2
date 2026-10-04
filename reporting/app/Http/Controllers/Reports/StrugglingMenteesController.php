@@ -25,6 +25,7 @@ class StrugglingMenteesController extends Controller
         $toolId = $request->input('tool_id');
         $districtId = $request->input('district_id');
         $facilityId = $request->input('facility_id');
+        $menteeId = $request->input('mentee_id');
 
         // One row per journey (mentee+tool) — the mentee-side analog of
         // Hot Spots needs to roll these up per mentee, across every tool
@@ -35,6 +36,7 @@ class StrugglingMenteesController extends Controller
             ->when($toolId, fn ($q) => $q->where('v_journey_summary.tool_id', $toolId))
             ->when($districtId, fn ($q) => $q->where('v_journey_summary.district_id', $districtId))
             ->when($facilityId, fn ($q) => $q->where('v_journey_summary.facility_id', $facilityId))
+            ->when($menteeId, fn ($q) => $q->where('v_journey_summary.mentee_id', $menteeId))
             ->whereNotNull('v_journey_summary.latest_avg_score')
             ->get();
 
@@ -73,7 +75,8 @@ class StrugglingMenteesController extends Controller
             'tools' => Tool::where('slug', '!=', 'counselling')->orderBy('sort_order')->get(['id', 'label']),
             'districts' => $districts,
             'facilities' => $facilities,
-            'filters' => $request->only(['tool_id', 'district_id', 'facility_id']),
+            'menteeOptions' => $this->scope->menteeOptions(),
+            'filters' => $request->only(['tool_id', 'district_id', 'facility_id', 'mentee_id']),
         ]);
     }
 

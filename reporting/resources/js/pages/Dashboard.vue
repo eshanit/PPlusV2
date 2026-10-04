@@ -1,4 +1,5 @@
 <script setup>
+import InsightsPanel from '../components/InsightsPanel.vue';
 import MetricCard from '../components/MetricCard.vue';
 import Badge from '../components/ui/Badge.vue';
 import Card from '../components/ui/Card.vue';
@@ -54,6 +55,15 @@ function trimNumber(value) {
             <h1 class="text-2xl font-semibold tracking-normal">Dashboard</h1>
             <p class="text-sm text-muted-foreground">NCD Pen-Plus Mentorship Tool.</p>
         </div>
+           <InsightsPanel
+               summary="A high-level view of mentorship activity, journey progress, and unresolved follow-up needs."
+               :points="[
+                   'A journey is one mentee assessed with one disease tool; the same mentee may have multiple journeys.',
+                   'Basic competence means every non-advanced item is scored 4 or 5. Full competence also requires advanced items to reach 4 or 5.',
+                   'Use the tool and district reports to find where progress differs, then open journey-level reports to understand individual cases.',
+                   'Counts describe records synced into reporting; recently captured monitoring data may not appear until the next sync.',
+               ]"
+           />
 
         <!-- Summary metric cards -->
         <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

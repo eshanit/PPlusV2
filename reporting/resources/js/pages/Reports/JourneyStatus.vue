@@ -1,4 +1,5 @@
 <script setup>
+import InsightsPanel from '../../components/InsightsPanel.vue';
 import FilterBar from '../../components/FilterBar.vue';
 import Badge from '../../components/ui/Badge.vue';
 import Card from '../../components/ui/Card.vue';
@@ -13,6 +14,7 @@ defineOptions({ layout: AppLayout });
 const props = defineProps({
     journeys: { type: Array, default: () => [] },
     meta: { type: Object, default: null },
+    menteeOptions: { type: Array, default: () => [] },
     tools: { type: Array, default: () => [] },
     districts: { type: Array, default: () => [] },
     facilities: { type: Array, default: () => [] },
@@ -49,6 +51,15 @@ const scoreColor = (score) => {
     <Head title="Journey Status" />
 
     <main class="mx-auto max-w-7xl space-y-5 px-4 py-6 sm:px-6 lg:px-8">
+        <InsightsPanel
+            summary="Groups mentee-tool journeys by their current progress and competency status."
+            :points="[
+                'In progress means the journey has not met the basic-competence rule; basic competent means all non-advanced items score 4 or 5.',
+                'Fully competent additionally requires advanced items to reach 4 or 5, so basic and full competence are different milestones.',
+                'Journey counts are mentee-tool combinations, not unique mentees; one mentee may appear under several tools.',
+                'Use the filters and journey links to identify where targeted support is needed and confirm the underlying item scores.',
+            ]"
+        />
         <div class="flex flex-col gap-1">
             <h1 class="text-2xl font-semibold tracking-normal">Journey Status</h1>
             <p class="text-sm text-muted-foreground">One row per mentee-tool journey. Filters apply instantly.</p>
@@ -62,6 +73,12 @@ const scoreColor = (score) => {
                     label: 'Tool',
                     placeholder: 'All tools',
                     options: tools.map((t) => ({ value: String(t.id), label: t.label })),
+                },
+                {
+                    key: 'mentee_id',
+                    label: 'Mentee',
+                    placeholder: 'All mentees',
+                    options: menteeOptions.map((m) => ({ value: String(m.id), label: m.name })),
                 },
                 {
                     key: 'facility_id',

@@ -1,6 +1,7 @@
 <script setup>
 import Badge from '../../components/ui/Badge.vue';
 import Card from '../../components/ui/Card.vue';
+import InsightsPanel from '../../components/InsightsPanel.vue';
 import FilterBar from '../../components/FilterBar.vue';
 import MetricCard from '../../components/MetricCard.vue';
 import TableLink from '../../components/ui/TableLink.vue';
@@ -14,6 +15,7 @@ const props = defineProps({
     alerts: { type: Array, default: () => [] },
     summary: { type: Object, default: null },
     tools: { type: Array, default: () => [] },
+    menteeOptions: { type: Array, default: () => [] },
     districts: { type: Array, default: () => [] },
     facilities: { type: Array, default: () => [] },
     filters: { type: Object, default: () => ({}) },
@@ -38,6 +40,15 @@ const scoreBg = (score) => {
                 Mentees whose latest score on a patient-safety-critical competency is 1 or 2. These require urgent mentorship attention.
             </p>
         </div>
+        <InsightsPanel
+            summary="Lists the latest non-null score for each mentee and patient-safety-critical item when that score is 1 or 2."
+            :points="[
+                'Each alert is a mentee × critical-item pair. Earlier low scores are not shown if a later score for that item is 3 or higher.',
+                'Score 1 is the lowest rating; score 2 also signals a substantial safety-related learning need. Review the actual item and session before deciding on action.',
+                'Use the Sessions link to inspect the journey and confirm the latest assessment, context, and follow-up.',
+                'No alerts means no matching latest low scores under the selected filters; it does not mean every competency or all clinical practice is risk-free.',
+            ]"
+        />
 
         <FilterBar
             :filters="filters"
@@ -47,6 +58,12 @@ const scoreBg = (score) => {
                     label: 'Tool',
                     placeholder: 'All tools',
                     options: tools.map((t) => ({ value: String(t.id), label: t.label })),
+                },
+                {
+                    key: 'mentee_id',
+                    label: 'Mentee',
+                    placeholder: 'All mentees',
+                    options: menteeOptions.map((m) => ({ value: String(m.id), label: m.name })),
                 },
                 {
                     key: 'facility_id',

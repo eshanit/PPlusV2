@@ -28,13 +28,15 @@ class NeedsAttentionController extends Controller
     {
         $toolId = $request->input('tool_id');
         $districtId = $request->input('district_id');
+        $menteeId = $request->input('mentee_id');
 
         $base = DB::table('v_journey_summary')
             ->whereRaw(...$this->scope->scope('v_journey_summary'))
             ->where('competency_status', 'in_progress')
             ->whereRaw('DATEDIFF(CURDATE(), latest_session_date) >= 30')
             ->when($toolId, fn ($q) => $q->where('tool_id', $toolId))
-            ->when($districtId, fn ($q) => $q->where('district_id', $districtId));
+            ->when($districtId, fn ($q) => $q->where('district_id', $districtId))
+            ->when($menteeId, fn ($q) => $q->where('mentee_id', $menteeId));
 
         $paginator = (clone $base)
             ->selectRaw('
@@ -73,6 +75,9 @@ class NeedsAttentionController extends Controller
             ->whereRaw(...$this->scope->scope('v_journey_summary'))
             ->where('competency_status', 'in_progress')
             ->whereRaw('DATEDIFF(CURDATE(), latest_session_date) >= 30')
+            ->when($toolId, fn ($q) => $q->where('tool_id', $toolId))
+            ->when($districtId, fn ($q) => $q->where('district_id', $districtId))
+            ->when($menteeId, fn ($q) => $q->where('mentee_id', $menteeId))
             ->selectRaw('DATEDIFF(CURDATE(), latest_session_date) as days_stale, tool_label')
             ->get();
 
@@ -107,7 +112,8 @@ class NeedsAttentionController extends Controller
             'series' => $series,
             'tools' => $tools,
             'districts' => $this->scopedDistricts(),
-            'filters' => ['tool_id' => $toolId, 'district_id' => $districtId],
+            'menteeOptions' => $this->scope->menteeOptions(),
+            'filters' => ['tool_id' => $toolId, 'district_id' => $districtId, 'mentee_id' => $menteeId],
         ]);
     }
 }

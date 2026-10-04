@@ -2,6 +2,7 @@
 import ApexChart from '../../components/ui/ApexChart.vue';
 import FilterBar from '../../components/FilterBar.vue';
 import Card from '../../components/ui/Card.vue';
+import InsightsPanel from '../../components/InsightsPanel.vue';
 import AppLayout from '../../layouts/AppLayout.vue';
 import { Head } from '@inertiajs/vue3';
 import { computed } from 'vue';
@@ -59,6 +60,15 @@ const monthOptions = computed(() =>
             <h1 class="text-2xl font-semibold tracking-normal">Evaluator Activity</h1>
             <p class="text-sm text-muted-foreground">Session counts and average scores per evaluator.</p>
         </div>
+        <InsightsPanel
+            summary="Compares recorded mentorship activity and average session scores by evaluator."
+            :points="[
+                'Sessions counts distinct recorded visits; mentees counts distinct mentee-tool journeys supported, not unique people across all tools.',
+                'Average score summarizes scored items from sessions and is not a standalone measure of evaluator quality or case difficulty.',
+                'Use month and district filters to compare activity over the same period and operating context.',
+                'Check the number of mentees, tools, and sessions alongside averages before drawing conclusions from small samples.',
+            ]"
+        />
 
         <FilterBar
             :filters="filters"

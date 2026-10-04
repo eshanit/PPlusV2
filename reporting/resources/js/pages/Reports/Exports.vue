@@ -1,6 +1,7 @@
 <script setup>
 import Badge from '../../components/ui/Badge.vue';
 import Card from '../../components/ui/Card.vue';
+import InsightsPanel from '../../components/InsightsPanel.vue';
 import Button from '../../components/ui/Button.vue';
 import AppLayout from '../../layouts/AppLayout.vue';
 import { Head, useForm, usePage } from '@inertiajs/vue3';
@@ -35,6 +36,15 @@ function generateScoresCsv() {
     <Head title="Exports" />
 
     <main class="mx-auto max-w-5xl space-y-5 px-4 py-6 sm:px-6 lg:px-8">
+        <InsightsPanel
+            summary="Generate point-in-time report files from the data currently synchronized into reporting."
+            :points="[
+                'Generate reports now refreshes the available report outputs using the current reporting database; it does not trigger a CouchDB sync.',
+                'The mentee-scores CSV is a flat, spreadsheet-friendly extract with one row per competency item per session; it is generally faster to open and process than XLSX.',
+                'The XLSX export is convenient for Excel users but may take longer for large datasets. Both contain the same score-level information.',
+                'Exports are snapshots. Run generation again after data syncs or report definitions change to create a fresh file.',
+            ]"
+        />
         <div class="flex flex-col gap-1">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex flex-col gap-1">

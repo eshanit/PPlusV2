@@ -2,6 +2,7 @@
 import ApexChart from '../../components/ui/ApexChart.vue';
 import Badge from '../../components/ui/Badge.vue';
 import Card from '../../components/ui/Card.vue';
+import InsightsPanel from '../../components/InsightsPanel.vue';
 import FilterBar from '../../components/FilterBar.vue';
 import MetricCard from '../../components/MetricCard.vue';
 import TableLink from '../../components/ui/TableLink.vue';
@@ -111,6 +112,15 @@ const toolScoreColor = (score) => {
                 Program-wide item rankings — which competencies are consistently scoring lowest across all tools and mentees.
             </p>
         </div>
+        <InsightsPanel
+            summary="Ranks individual competencies by their average score across the selected population."
+            :points="[
+                'Lower-ranked items are potential shared training needs across mentees, rather than a list of individual mentee risk.',
+                'The chart uses scored responses; N/A responses are not numeric scores. Check the item counts and score spread before comparing averages.',
+                'Scores below 3 suggest substantial learning needs; 4 or 5 is the competency scoring threshold for an item.',
+                'Use tool, facility, and district filters to identify whether a hotspot is widespread or concentrated in a specific setting.',
+            ]"
+        />
 
         <FilterBar
             :filters="filters"

@@ -1,4 +1,5 @@
 <script setup>
+import InsightsPanel from '../../components/InsightsPanel.vue';
 import Badge from '../../components/ui/Badge.vue';
 import Card from '../../components/ui/Card.vue';
 import TableLink from '../../components/ui/TableLink.vue';
@@ -93,6 +94,16 @@ const supervisionLabel = (level) =>
                 </div>
             </div>
         </Card>
+
+        <InsightsPanel
+            summary="Shows the learning gaps recorded for this mentee-tool journey and whether follow-up is still open."
+            :points="[
+                'Gap domains describe the area of development; they complement but do not replace the scored competency items.',
+                'Open gaps need follow-up. Review the description, coverage plan, timeline, and supervision recommendation together.',
+                'Resolved status reflects a recorded resolution in the system; it should be supported by the resolution note and clinical follow-up.',
+                'Use the linked session reports to compare the gap with the mentee’s score progression.',
+            ]"
+        />
 
         <!-- Gaps table -->
         <Card>

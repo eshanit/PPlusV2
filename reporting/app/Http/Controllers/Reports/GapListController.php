@@ -29,6 +29,7 @@ class GapListController extends Controller
             ->with(['mentee:id,firstname,lastname', 'tool:id,label'])
             ->whereRaw(...$this->scope->gapScope())
             ->when($toolId, fn ($q) => $q->where('tool_id', $toolId))
+            ->when($request->mentee_id, fn ($q) => $q->where('mentee_id', $request->mentee_id))
             ->when($request->status === 'open', fn ($q) => $q->whereNull('resolved_at'))
             ->when($request->status === 'resolved', fn ($q) => $q->whereNotNull('resolved_at'))
             ->orderByDesc('identified_at')
@@ -64,7 +65,8 @@ class GapListController extends Controller
             'tools' => Tool::where('slug', '!=', 'counselling')
                 ->orderBy('sort_order')
                 ->get(['id', 'label']),
-            'filters' => $request->only(['tool_id', 'status']),
+            'menteeOptions' => $this->scope->menteeOptions(),
+            'filters' => $request->only(['tool_id', 'mentee_id', 'status']),
         ]);
     }
 }

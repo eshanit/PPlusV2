@@ -1,4 +1,5 @@
 <script setup>
+import InsightsPanel from '../../components/InsightsPanel.vue';
 import FilterBar from '../../components/FilterBar.vue';
 import Card from '../../components/ui/Card.vue';
 import Pagination from '../../components/ui/Pagination.vue';
@@ -48,6 +49,15 @@ const goalBarWidth = (pct) => `${Math.min(100, Math.max(0, pct))}%`;
     <Head title="Low-Score Watchlist" />
 
     <main class="mx-auto max-w-7xl space-y-5 px-4 py-6 sm:px-6 lg:px-8">
+        <InsightsPanel
+            summary="Highlights current low item scores that may need follow-up, using each journey's latest available assessment."
+            :points="[
+                'A low score is a prompt to review and plan support, not by itself a judgement of a mentee or a clinical outcome.',
+                'Latest available item scores may be carried forward from an earlier visit if the item was not scored in the most recent session.',
+                'Scores 1–2 indicate the strongest learning concern; score 3 indicates developing competency. N/A is excluded.',
+                'Open the journey or session details to check the date and context before deciding on follow-up.',
+            ]"
+        />
         <div class="flex flex-col gap-1">
             <h1 class="text-2xl font-semibold tracking-normal">Low-Score Watchlist</h1>
             <p class="text-sm text-muted-foreground">

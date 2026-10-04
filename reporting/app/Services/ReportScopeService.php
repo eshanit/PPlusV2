@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class ReportScopeService
 {
@@ -52,6 +53,27 @@ class ReportScopeService
             'gap_entries.evaluation_group_id IN (SELECT evaluation_group_id FROM evaluation_sessions WHERE district_id = ?)',
             [$user->district_id],
         ];
+    }
+
+    /**
+     * Returns mentees with journeys visible to the current user for report filters.
+     *
+     * @return array<int, array{id: string, name: string}>
+     */
+    public function menteeOptions(): array
+    {
+        return DB::table('v_journey_summary')
+            ->whereRaw(...$this->scope('v_journey_summary'))
+            ->select('mentee_id', 'mentee_firstname', 'mentee_lastname')
+            ->distinct()
+            ->orderBy('mentee_firstname')
+            ->orderBy('mentee_lastname')
+            ->get()
+            ->map(fn (object $mentee): array => [
+                'id' => (string) $mentee->mentee_id,
+                'name' => trim("{$mentee->mentee_firstname} {$mentee->mentee_lastname}"),
+            ])
+            ->all();
     }
 
     /**

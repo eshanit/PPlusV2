@@ -1,4 +1,5 @@
 <script setup>
+import InsightsPanel from '../../components/InsightsPanel.vue';
 import FilterBar from '../../components/FilterBar.vue';
 import Badge from '../../components/ui/Badge.vue';
 import Card from '../../components/ui/Card.vue';
@@ -15,6 +16,7 @@ const props = defineProps({
     meta: { type: Object, default: null },
     tool: { type: Object, default: null },
     tools: { type: Array, default: () => [] },
+    menteeOptions: { type: Array, default: () => [] },
     filters: { type: Object, default: () => ({}) },
 });
 
@@ -57,6 +59,14 @@ const domainConfig = {
                 Individual gap entries{{ tool ? ` for ${tool.label}` : '' }}. Click View to see the full gap report.
             </p>
         </div>
+        <InsightsPanel
+            summary="This is the record-level list behind the gap summaries."
+            :points="[
+                'Each row is one gap recorded for a mentee-tool journey; a gap can cover multiple domains.',
+                'Open means no resolution has been recorded. A planned timeline or supervision recommendation is follow-up guidance, not proof of resolution.',
+                'Filter by mentee, tool, or status to build a focused follow-up list, then open a row for its resolution history and journey context.',
+            ]"
+        />
 
         <FilterBar
             :filters="filters"
@@ -66,6 +76,12 @@ const domainConfig = {
                     label: 'Tool',
                     placeholder: 'All tools',
                     options: tools.map((t) => ({ value: String(t.id), label: t.label })),
+                },
+                {
+                    key: 'mentee_id',
+                    label: 'Mentee',
+                    placeholder: 'All mentees',
+                    options: menteeOptions.map((m) => ({ value: String(m.id), label: m.name })),
                 },
                 {
                     key: 'status',

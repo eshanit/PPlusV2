@@ -2,6 +2,7 @@
 import ApexChart from '../../components/ui/ApexChart.vue';
 import Badge from '../../components/ui/Badge.vue';
 import Card from '../../components/ui/Card.vue';
+import InsightsPanel from '../../components/InsightsPanel.vue';
 import AppLayout from '../../layouts/AppLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { AlertTriangle, ArrowLeft, Award, ChevronDown, ChevronRight, FileText, MapPin, Printer, TrendingDown, TrendingUp } from 'lucide-vue-next';
@@ -317,6 +318,15 @@ const trajectoryOptions = computed(() => ({
     <Head :title="`Session Report — ${session.menteeName}`" />
 
     <main class="mx-auto max-w-7xl space-y-5 px-4 py-6 sm:px-6 lg:px-8">
+        <InsightsPanel
+            summary="A visit-level record of scores, counselling competencies, notes, gaps, and comparison with the previous session."
+            :points="[
+                'Scores describe this session only; compare with the prior visit to see recorded changes rather than relying on one average.',
+                'Tool competencies and counselling competencies are separate sections; counselling is assessed across every tool visit.',
+                'A low or missing score should be interpreted with the session date, notes, and follow-up context.',
+                'The journey view places this visit in round-aware chronological order and shows whether basic competence has been reached.',
+            ]"
+        />
 
         <!-- Back link + print button -->
         <div class="flex items-center justify-between print:hidden">

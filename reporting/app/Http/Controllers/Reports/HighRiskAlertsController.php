@@ -32,6 +32,7 @@ class HighRiskAlertsController extends Controller
             ->when($request->tool_id, fn ($q) => $q->where('ei.tool_id', $request->tool_id))
             ->when($request->district_id, fn ($q) => $q->where('vlis.district_id', $request->district_id))
             ->when($request->facility_id, fn ($q) => $q->where('vlis.facility_id', $request->facility_id))
+            ->when($request->mentee_id, fn ($q) => $q->where('vlis.mentee_id', $request->mentee_id))
             ->select([
                 'vlis.evaluation_group_id',
                 'ei.id as item_id',
@@ -82,7 +83,8 @@ class HighRiskAlertsController extends Controller
             'summary' => $summary,
             'tools' => Tool::where('slug', '!=', 'counselling')->orderBy('sort_order')->get(['id', 'label']),
             ...$this->scopedDropdowns(),
-            'filters' => $request->only(['tool_id', 'district_id', 'facility_id']),
+            'menteeOptions' => $this->scope->menteeOptions(),
+            'filters' => $request->only(['tool_id', 'district_id', 'facility_id', 'mentee_id']),
         ]);
     }
 

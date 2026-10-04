@@ -1,4 +1,5 @@
 <script setup>
+import InsightsPanel from '../../components/InsightsPanel.vue';
 import ApexChart from '../../components/ui/ApexChart.vue';
 import FilterBar from '../../components/FilterBar.vue';
 import Badge from '../../components/ui/Badge.vue';
@@ -18,6 +19,7 @@ const props = defineProps({
     series: { type: Array, default: () => [] },
     tools: { type: Array, default: () => [] },
     districts: { type: Array, default: () => [] },
+    menteeOptions: { type: Array, default: () => [] },
     filters: { type: Object, default: () => ({}) },
 });
 
@@ -36,6 +38,15 @@ const chartOptions = computed(() => ({
     <Head title="Needs Attention" />
 
     <main class="mx-auto max-w-7xl space-y-5 px-4 py-6 sm:px-6 lg:px-8">
+        <InsightsPanel
+            summary="Finds journeys still in progress with no recorded session in the last 30 days."
+            :points="[
+                'This list is a follow-up queue based on journey status and recency; filter by mentee to focus on one person. It does not infer why mentorship paused.',
+                'The 30-day interval is measured from the latest session date. Check the journey history before contacting a mentee.',
+                'A journey may remain active while some items are already strong; use item-level results to focus the next visit.',
+                'Basic competent journeys are not included because the required non-advanced items have reached 4 or 5.',
+            ]"
+        />
         <div class="flex flex-col gap-1">
             <h1 class="text-2xl font-semibold tracking-normal">Needs Attention</h1>
             <p class="text-sm text-muted-foreground">
@@ -52,6 +63,12 @@ const chartOptions = computed(() => ({
                     label: 'Tool',
                     placeholder: 'All tools',
                     options: tools.map((t) => ({ value: String(t.id), label: t.label })),
+                },
+                {
+                    key: 'mentee_id',
+                    label: 'Mentee',
+                    placeholder: 'All mentees',
+                    options: menteeOptions.map((m) => ({ value: String(m.id), label: m.name })),
                 },
                 {
                     key: 'district_id',

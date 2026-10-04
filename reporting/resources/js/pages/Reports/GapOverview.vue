@@ -3,6 +3,7 @@ import FilterBar from '../../components/FilterBar.vue';
 import MetricCard from '../../components/MetricCard.vue';
 import Badge from '../../components/ui/Badge.vue';
 import Card from '../../components/ui/Card.vue';
+import InsightsPanel from '../../components/InsightsPanel.vue';
 import TableLink from '../../components/ui/TableLink.vue';
 import AppLayout from '../../layouts/AppLayout.vue';
 import { Head } from '@inertiajs/vue3';
@@ -44,6 +45,15 @@ const metric = (n, suffix = '') => (n == null ? '—' : `${Number(n).toFixed(1)}
             <h1 class="text-2xl font-semibold tracking-normal">Gap Overview</h1>
             <p class="text-sm text-muted-foreground">Aggregated gap analytics by tool and supervision level.</p>
         </div>
+        <InsightsPanel
+            summary="Summarizes identified learning gaps, whether they remain open, and the recommended supervision level."
+            :points="[
+                'Open gaps are unresolved follow-up needs; resolved gaps have a recorded resolution date and note.',
+                'Percent resolved is resolved gaps divided by all matching gaps. Average days to resolve applies only to resolved gaps.',
+                'Supervision levels summarize the latest recommendation for open gaps; they are not competency scores.',
+                'Use the tool, domain, and resolution filters to prioritize recurring gaps, then open individual records for context.',
+            ]"
+        />
 
         <FilterBar
             :filters="filters"

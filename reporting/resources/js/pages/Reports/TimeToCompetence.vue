@@ -2,6 +2,7 @@
 import ApexChart from '../../components/ui/ApexChart.vue';
 import FilterBar from '../../components/FilterBar.vue';
 import Card from '../../components/ui/Card.vue';
+import InsightsPanel from '../../components/InsightsPanel.vue';
 import AppLayout from '../../layouts/AppLayout.vue';
 import { Head } from '@inertiajs/vue3';
 import { computed } from 'vue';
@@ -34,6 +35,15 @@ const fmt = (n) => (n == null ? '—' : Number(n).toFixed(1));
     <Head title="Time to Competence" />
 
     <main class="mx-auto max-w-7xl space-y-5 px-4 py-6 sm:px-6 lg:px-8">
+        <InsightsPanel
+            summary="Shows elapsed days and mentorship visits from the first session until a journey first met basic competence."
+            :points="[
+                'Only journeys that reached basic competence are included; journeys still in progress do not yet have a time-to-competence outcome.',
+                'Basic competence is achieved when all non-advanced items score 4 or 5. Advanced items are excluded from this milestone.',
+                'Sessions to competence counts visits through the first competent session, including round-aware session ordering.',
+                'Compare tools and districts with sample sizes in mind; differences describe observed journeys and do not establish why progress differed.',
+            ]"
+        />
         <div class="flex flex-col gap-1">
             <h1 class="text-2xl font-semibold tracking-normal">Time to Competence</h1>
             <p class="text-sm text-muted-foreground">

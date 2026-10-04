@@ -2,6 +2,7 @@
 import ApexChart from '../../components/ui/ApexChart.vue';
 import FilterBar from '../../components/FilterBar.vue';
 import Card from '../../components/ui/Card.vue';
+import InsightsPanel from '../../components/InsightsPanel.vue';
 import AppLayout from '../../layouts/AppLayout.vue';
 import { Head } from '@inertiajs/vue3';
 import { computed } from 'vue';
@@ -77,6 +78,15 @@ const scoreColor = (score) => {
                 Average score across all mentees by session number — shows cohort-wide learning trajectory.
             </p>
         </div>
+        <InsightsPanel
+            summary="The line shows the cohort's average score at each journey session number."
+            :points="[
+                'A rising line suggests scores tend to improve over successive mentorship visits; a flat or falling line can indicate a need to review support.',
+                'Each point averages journeys that have reached that session number, so later points usually include fewer journeys.',
+                'Use the journey count beside each point to judge how much data supports it; compare like-for-like tool and district filters.',
+                'The 4.0 line is a score reference, not proof that every item or every mentee is competent.',
+            ]"
+        />
 
         <FilterBar
             :filters="filters"

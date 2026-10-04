@@ -1,4 +1,5 @@
 <script setup>
+import InsightsPanel from '../../components/InsightsPanel.vue';
 import Badge from '../../components/ui/Badge.vue';
 import Card from '../../components/ui/Card.vue';
 import TableLink from '../../components/ui/TableLink.vue';
@@ -55,6 +56,15 @@ const isCompetencySession = (sessionNumber) =>
     <Head :title="`Sessions — ${journey.menteeName}`" />
 
     <main class="mx-auto max-w-5xl space-y-5 px-4 py-6 sm:px-6 lg:px-8">
+        <InsightsPanel
+            summary="Lists all visits contributing to this mentee-tool journey, including numbered sessions and round details."
+            :points="[
+                'Session numbers are assigned from evaluation date and creation time; they are derived for reporting and are not stored in the source session.',
+                'Round labels distinguish multiple visits on the same date. Review those visits in round order when interpreting same-day score changes.',
+                'Each session is a snapshot; compare item scores and notes across visits to see what changed and what still needs attention.',
+                'Competency closure is journey-level: basic competence requires all non-advanced items to score 4 or 5.',
+            ]"
+        />
 
         <!-- Breadcrumb -->
         <div class="flex items-center gap-2 text-sm text-muted-foreground">

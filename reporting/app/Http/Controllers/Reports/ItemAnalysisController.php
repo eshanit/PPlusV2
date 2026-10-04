@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Reports;
 use App\Http\Controllers\Controller;
 use App\Models\EvaluationItem;
 use App\Services\ReportScopeService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -13,15 +14,17 @@ class ItemAnalysisController extends Controller
 {
     public function __construct(private readonly ReportScopeService $scope) {}
 
-    public function __invoke(int $id): Response
+    public function __invoke(Request $request, int $id): Response
     {
         $item = EvaluationItem::with(['tool', 'category'])->findOrFail($id);
+        $menteeId = $request->input('mentee_id');
 
         // Summary stats
         $statsRow = DB::table('session_item_scores as sis')
             ->join('evaluation_sessions as es', 'es.id', '=', 'sis.session_id')
             ->where('sis.item_id', $id)
             ->whereRaw(...$this->scope->scope('es'))
+            ->when($menteeId, fn ($q) => $q->where('es.mentee_id', $menteeId))
             ->selectRaw('COUNT(sis.mentee_score) as times_scored')
             ->selectRaw('ROUND(AVG(sis.mentee_score), 2) as avg_score')
             ->selectRaw('SUM(CASE WHEN sis.mentee_score >= 4 THEN 1 ELSE 0 END) as count_competent')
@@ -45,6 +48,7 @@ class ItemAnalysisController extends Controller
             ->where('sis.item_id', $id)
             ->whereNotNull('sis.mentee_score')
             ->whereRaw(...$this->scope->scope('es'))
+            ->when($menteeId, fn ($q) => $q->where('es.mentee_id', $menteeId))
             ->selectRaw('sis.mentee_score as score, COUNT(*) as cnt')
             ->groupBy('sis.mentee_score')
             ->orderBy('sis.mentee_score')
@@ -64,6 +68,7 @@ class ItemAnalysisController extends Controller
             ->where('sis.item_id', $id)
             ->whereNotNull('sis.mentee_score')
             ->whereRaw(...$this->scope->scope('vsn'))
+            ->when($menteeId, fn ($q) => $q->where('vsn.mentee_id', $menteeId))
             ->selectRaw('vsn.session_number, ROUND(AVG(sis.mentee_score), 2) as avg_score, COUNT(*) as journey_count')
             ->groupBy('vsn.session_number')
             ->havingRaw('COUNT(*) >= 3')
@@ -83,6 +88,7 @@ class ItemAnalysisController extends Controller
             ->where('vlis.item_id', $id)
             ->whereNotNull('vlis.mentee_score')
             ->whereRaw(...$this->scope->scope('vlis'))
+            ->when($menteeId, fn ($q) => $q->where('vlis.mentee_id', $menteeId))
             ->select([
                 'vlis.evaluation_group_id',
                 'u.firstname',
@@ -124,6 +130,8 @@ class ItemAnalysisController extends Controller
             'distribution' => $distribution,
             'trend' => $trend,
             'journeys' => $journeys,
+            'menteeOptions' => $this->scope->menteeOptions(),
+            'filters' => $request->only(['mentee_id']),
         ]);
     }
 }
