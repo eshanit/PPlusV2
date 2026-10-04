@@ -14,6 +14,7 @@ defineOptions({ layout: AppLayout });
 const props = defineProps({
     alerts: { type: Array, default: () => [] },
     summary: { type: Object, default: null },
+    criticalItems: { type: Array, default: () => [] },
     tools: { type: Array, default: () => [] },
     menteeOptions: { type: Array, default: () => [] },
     districts: { type: Array, default: () => [] },
@@ -103,6 +104,44 @@ const scoreBg = (score) => {
                 :helper="`Across ${summary.totalCriticalItems} monitored critical items`"
             />
         </section>
+
+        <details class="group rounded-lg border border-red-200 bg-red-50/40">
+            <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
+                <div>
+                    <h2 class="text-sm font-semibold text-red-950">
+                        Critical competency reference
+                        <span class="ml-1 font-normal text-red-800">({{ criticalItems.length }} items)</span>
+                    </h2>
+                    <p class="mt-0.5 text-xs text-red-900/75">
+                        The items monitored by this report and why a low score may matter for patient safety.
+                    </p>
+                </div>
+                <span class="shrink-0 text-xs font-medium text-red-700 group-open:hidden">Show guide</span>
+                <span class="hidden shrink-0 text-xs font-medium text-red-700 group-open:inline">Hide guide</span>
+            </summary>
+            <div class="border-t border-red-200 px-4 py-3">
+                <p class="mb-3 text-xs leading-relaxed text-muted-foreground">
+                    These plain-language rationales are interpretations of the competency statements, not clinical guidelines.
+                    Confirm them with the clinical team before using them as formal policy.
+                </p>
+                <ol class="grid gap-3 md:grid-cols-2">
+                    <li
+                        v-for="item in criticalItems"
+                        :key="item.slug"
+                        class="rounded-md border border-red-100 bg-background/80 p-3"
+                    >
+                        <p class="text-xs font-semibold text-foreground">
+                            {{ item.tool }} · {{ item.number }}
+                        </p>
+                        <p class="mt-1 text-sm font-medium leading-snug">{{ item.title }}</p>
+                        <p class="mt-1.5 text-xs leading-relaxed text-muted-foreground">{{ item.rationale }}</p>
+                    </li>
+                </ol>
+                <p v-if="criticalItems.length === 0" class="py-4 text-center text-sm text-muted-foreground">
+                    No competencies are currently flagged as critical.
+                </p>
+            </div>
+        </details>
 
         <!-- Empty state -->
         <div
