@@ -38,18 +38,16 @@ class NeedsAttentionController extends Controller
             ->when($districtId, fn ($q) => $q->where('district_id', $districtId))
             ->when($menteeId, fn ($q) => $q->where('mentee_id', $menteeId));
 
-        $paginator = (clone $base)
+        $journeyQuery = (clone $base)
             ->selectRaw('
                 evaluation_group_id, mentee_firstname, mentee_lastname,
                 tool_label, district_name, facility_name,
                 total_sessions, latest_avg_score, open_gaps,
                 DATEDIFF(CURDATE(), latest_session_date) as days_stale
             ')
-            ->orderByRaw('days_stale DESC')
-            ->paginate(25)
-            ->withQueryString();
+            ->orderByRaw('days_stale DESC');
 
-        $items = $paginator->map(fn (object $j): array => [
+        $mapJourney = fn (object $j): array => [
             'groupId' => $j->evaluation_group_id,
             'mentee' => trim("{$j->mentee_firstname} {$j->mentee_lastname}"),
             'tool' => $j->tool_label,
@@ -59,17 +57,25 @@ class NeedsAttentionController extends Controller
             'latestAvgScore' => $j->latest_avg_score !== null ? round((float) $j->latest_avg_score, 1) : null,
             'openGaps' => (int) $j->open_gaps,
             'daysStale' => (int) $j->days_stale,
-        ]);
-
-        $itemsMeta = [
-            'current_page' => $paginator->currentPage(),
-            'from' => $paginator->firstItem(),
-            'to' => $paginator->lastItem(),
-            'total' => $paginator->total(),
-            'last_page' => $paginator->lastPage(),
-            'per_page' => $paginator->perPage(),
-            'links' => $paginator->linkCollection()->toArray(),
         ];
+
+        $printMode = $request->boolean('print');
+        if ($printMode) {
+            $items = $journeyQuery->get()->map($mapJourney)->all();
+            $itemsMeta = null;
+        } else {
+            $paginator = $journeyQuery->paginate(25)->withQueryString();
+            $items = $paginator->getCollection()->map($mapJourney)->all();
+            $itemsMeta = [
+                'current_page' => $paginator->currentPage(),
+                'from' => $paginator->firstItem(),
+                'to' => $paginator->lastItem(),
+                'total' => $paginator->total(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'links' => $paginator->linkCollection()->toArray(),
+            ];
+        }
 
         $chartData = DB::table('v_journey_summary')
             ->whereRaw(...$this->scope->scope('v_journey_summary'))
@@ -108,6 +114,7 @@ class NeedsAttentionController extends Controller
         return Inertia::render('Reports/NeedsAttention', [
             'items' => $items,
             'itemsMeta' => $itemsMeta,
+            'printMode' => $printMode,
             'binLabels' => $binLabels,
             'series' => $series,
             'tools' => $tools,

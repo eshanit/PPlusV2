@@ -59,7 +59,7 @@ const sections = computed(() => {
         {
             label: 'Trend Analysis',
             items: [
-                { href: '/needs-attention', label: 'Needs Attention', icon: Clock },
+                { href: '/needs-attention', label: 'Needs Attention', icon: Clock, pro: true },
                 { href: '/score-trajectory', label: 'Score Trajectory', icon: TrendingUp },
                 { href: '/time-to-competence', label: 'Time to Competence', icon: Gauge, pro: true },
                 { href: '/cohort-progress', label: 'Cohort Progress', icon: BarChart3 },
