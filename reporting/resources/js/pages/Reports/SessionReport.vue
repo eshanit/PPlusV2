@@ -410,9 +410,11 @@ const trajectoryOptions = computed(() => ({
                 <span class="font-medium">Journey reopened by the mentor:</span> {{ session.reopenReason }}
             </div>
 
-            <div v-if="session.notes" class="mt-3 rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
-                <span class="font-medium text-foreground">Notes:</span> {{ session.notes }}
-            </div>
+        </Card>
+
+        <Card v-if="session.notes" class="border-sky-200 bg-sky-50/40 p-4">
+            <h2 class="text-sm font-semibold text-foreground">Session Notes</h2>
+            <p class="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">{{ session.notes }}</p>
         </Card>
 
         <!-- Insights -->
@@ -692,7 +694,12 @@ const trajectoryOptions = computed(() => ({
                             <td class="px-4 py-2.5 font-mono text-xs font-medium text-muted-foreground">
                                 {{ item.number }}
                             </td>
-                            <td class="px-4 py-2.5 text-foreground">{{ item.title }}</td>
+                            <td class="px-4 py-2.5 text-foreground">
+                                <p>{{ item.title }}</p>
+                                <p v-if="item.notes" class="mt-1 whitespace-pre-wrap rounded bg-sky-50 px-2 py-1.5 text-xs leading-relaxed text-sky-950">
+                                    <span class="font-semibold">Note:</span> {{ item.notes }}
+                                </p>
+                            </td>
                             <td class="px-3 py-2.5 text-center">
                                 <span
                                     v-if="item.score != null"
@@ -755,7 +762,12 @@ const trajectoryOptions = computed(() => ({
                             <td class="px-4 py-2.5 font-mono text-xs font-medium text-muted-foreground">
                                 {{ item.number }}
                             </td>
-                            <td class="px-4 py-2.5 text-foreground">{{ item.title }}</td>
+                            <td class="px-4 py-2.5 text-foreground">
+                                <p>{{ item.title }}</p>
+                                <p v-if="item.notes" class="mt-1 whitespace-pre-wrap rounded bg-sky-50 px-2 py-1.5 text-xs leading-relaxed text-sky-950">
+                                    <span class="font-semibold">Note:</span> {{ item.notes }}
+                                </p>
+                            </td>
                             <td class="px-3 py-2.5 text-center">
                                 <span
                                     v-if="item.score != null"

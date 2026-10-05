@@ -81,14 +81,14 @@ class SessionReportController extends Controller
             ->where('sis.session_id', $session)
             ->where('ei.tool_id', $sessionRow->tool_id)
             ->orderBy('ei.sort_order')
-            ->get(['ei.id as item_id', 'ei.number', 'ei.title', 'ei.is_advanced', 'ei.is_critical', 'sis.mentee_score']);
+            ->get(['ei.id as item_id', 'ei.number', 'ei.title', 'ei.is_advanced', 'ei.is_critical', 'sis.mentee_score', 'sis.notes']);
 
         $counsellingScores = DB::table('session_item_scores as sis')
             ->join('evaluation_items as ei', 'ei.id', '=', 'sis.item_id')
             ->where('sis.session_id', $session)
             ->where('ei.tool_id', $counsellingToolId)
             ->orderBy('ei.sort_order')
-            ->get(['ei.id as item_id', 'ei.number', 'ei.title', 'sis.mentee_score']);
+            ->get(['ei.id as item_id', 'ei.number', 'ei.title', 'sis.mentee_score', 'sis.notes']);
 
         $prevSession = DB::table('v_sessions_numbered')
             ->where('evaluation_group_id', $sessionRow->evaluation_group_id)
@@ -127,6 +127,7 @@ class SessionReportController extends Controller
             'isAdvanced' => (bool) $r->is_advanced,
             'isCritical' => (bool) $r->is_critical,
             'score' => $r->mentee_score !== null ? (int) $r->mentee_score : null,
+            'notes' => $r->notes,
             'prevScore' => isset($prevToolScores[$r->item_id]) ? (int) $prevToolScores[$r->item_id] : null,
             'delta' => ($r->mentee_score !== null && isset($prevToolScores[$r->item_id]))
                 ? (int) $r->mentee_score - (int) $prevToolScores[$r->item_id]
@@ -140,6 +141,7 @@ class SessionReportController extends Controller
             'isAdvanced' => false,
             'isCritical' => false,
             'score' => $r->mentee_score !== null ? (int) $r->mentee_score : null,
+            'notes' => $r->notes,
             'prevScore' => isset($prevCounsellingScores[$r->item_id]) ? (int) $prevCounsellingScores[$r->item_id] : null,
             'delta' => ($r->mentee_score !== null && isset($prevCounsellingScores[$r->item_id]))
                 ? (int) $r->mentee_score - (int) $prevCounsellingScores[$r->item_id]
