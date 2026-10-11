@@ -142,8 +142,54 @@ const allItems = computed(() => {
 
 const currentItem = computed(() => allItems.value[currentIndex.value])
 
+const itemGroups = computed(() => {
+  const groups = [...(tool.value?.groups ?? []).map(group => ({
+    ...group,
+    items: group.itemSlugs
+      .map(slug => allItems.value.find(item => item.slug === slug))
+      .filter((item): item is Exclude<typeof item, undefined> => !!item),
+  }))]
+
+  groups.push({
+    slug: 'general-counselling',
+    label: 'General Counselling Competencies',
+    items: counsellingTool.items.map(item => ({ ...item, type: 'counselling' as const })),
+  })
+
+  return groups.map(group => ({
+    ...group,
+    scored: group.items.filter(item => {
+      const score = currentScores.value[item.slug]
+      if (score !== null) return true
+      return !!getItemNote(item.slug)?.trim()
+    }).length,
+  }))
+})
+
 function getItemType(slug: string): string {
   return slug.startsWith('counselling-') ? 'counselling' : 'tool'
+}
+
+function getItemNote(slug: string): string {
+  return getItemType(slug) === 'counselling'
+    ? (counsellingNotes[slug] ?? '')
+    : (itemNotes[slug] ?? '')
+}
+
+function jumpToGroup(groupSlug: string) {
+  const group = itemGroups.value.find(item => item.slug === groupSlug)
+  if (!group) return
+
+  const firstIncomplete = group.items.findIndex(item => {
+    const score = currentScores.value[item.slug]
+    return score === null && !getItemNote(item.slug)?.trim()
+  })
+
+  const targetItem = firstIncomplete >= 0 ? group.items[firstIncomplete] : group.items[0]
+  if (!targetItem) return
+
+  const targetIndex = allItems.value.findIndex(item => item.slug === targetItem.slug)
+  if (targetIndex >= 0) currentIndex.value = targetIndex
 }
 
 // Current scores map (combining tool and counselling)
@@ -228,10 +274,7 @@ function handleItemNotes(value: string) {
 
 function getCurrentItemNotes(): string {
   if (!currentItem.value?.slug) return ''
-  const type = getItemType(currentItem.value.slug)
-  return type === 'counselling' 
-    ? (counsellingNotes[currentItem.value.slug] ?? '')
-    : (itemNotes[currentItem.value.slug] ?? '')
+  return getItemNote(currentItem.value.slug)
 }
 
 function getPreviousScore(itemSlug: string) {
@@ -457,6 +500,49 @@ function viewEvaluation() {
       </section>
 
       <SessionRoundSelector v-model="roundOfDay" :options="roundOptions" />
+
+      <section v-if="tool && itemGroups.length">
+        <div class="flex items-center justify-between gap-3 mb-3">
+          <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            Plan by section
+          </p>
+          <span class="text-[11px] text-gray-500 dark:text-gray-400">
+            {{ itemGroups.reduce((count, group) => count + group.scored, 0) }}/{{ allItems.length }} scored
+          </span>
+        </div>
+        <div class="grid gap-3 sm:grid-cols-2">
+          <button
+            v-for="group in itemGroups"
+            :key="group.slug"
+            type="button"
+            class="text-left rounded-xl border p-3 transition-colors"
+            :class="group.items.some(item => item.slug === currentItem?.slug)
+              ? 'border-primary-500 bg-primary-50 dark:bg-primary-950/40'
+              : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-600'"
+            @click="jumpToGroup(group.slug)"
+          >
+            <div class="flex items-center justify-between gap-3">
+              <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ group.label }}</span>
+              <span class="text-[11px] font-medium rounded-full px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
+                {{ group.scored }}/{{ group.items.length }}
+              </span>
+            </div>
+            <div class="mt-2 flex flex-wrap gap-1">
+              <span
+                v-for="item in group.items.slice(0, 5)"
+                :key="item.slug"
+                class="inline-flex h-6 min-w-6 items-center justify-center rounded-md border px-1.5 text-[10px] font-medium"
+                :class="(currentScores[item.slug] ?? null) !== null ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950/30 dark:text-green-300' : 'border-gray-200 bg-gray-50 text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300'"
+              >
+                {{ item.number }}
+              </span>
+              <span v-if="group.items.length > 5" class="text-[10px] text-gray-500 dark:text-gray-400 self-center">
+                +{{ group.items.length - 5 }} more
+              </span>
+            </div>
+          </button>
+        </div>
+      </section>
 
       <!-- Current Item Card -->
       <SessionItemCard

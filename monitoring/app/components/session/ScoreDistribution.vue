@@ -1,25 +1,11 @@
 <script setup lang="ts">
+import { SCORE_COLORS } from '~/data/evaluationItemData'
+
 interface Props {
   counts: Record<string, number>
 }
 
 defineProps<Props>()
-
-interface ScoreDisplay {
-  score: number | null
-  label: string
-  color: string
-}
-
-function getScoreColor(score: number | null): string {
-  if (score === null) return 'bg-gray-100 dark:bg-gray-800 text-gray-500'
-  if (score === 1) return 'bg-red-500 text-white'
-  if (score === 2) return 'bg-orange-500 text-white'
-  if (score === 3) return 'bg-blue-500 text-white'
-  if (score === 4) return 'bg-green-500 text-white'
-  if (score === 5) return 'bg-teal-500 text-white'
-  return 'bg-gray-500 text-white'
-}
 
 const scoreItems: { score: number | null; label: string }[] = [
   { score: 1, label: '1' },
@@ -29,6 +15,16 @@ const scoreItems: { score: number | null; label: string }[] = [
   { score: 5, label: '5' },
   { score: null, label: 'N/A' },
 ]
+
+function getScoreColor(score: number | null): string {
+  if (score === null) return 'text-gray-600'
+  return 'text-white'
+}
+
+function getScoreBackground(score: number | null): string {
+  if (score === null) return SCORE_COLORS[0]
+  return SCORE_COLORS[score as 1 | 2 | 3 | 4 | 5]
+}
 </script>
 
 <template>
@@ -39,8 +35,9 @@ const scoreItems: { score: number | null; label: string }[] = [
     <div class="grid grid-cols-6 gap-2 text-center">
       <div v-for="item in scoreItems" :key="item.label" class="text-center">
         <div
-          class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-white text-sm mx-auto"
+          class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm mx-auto"
           :class="getScoreColor(item.score)"
+          :style="{ backgroundColor: getScoreBackground(item.score) }"
         >
           {{ item.label }}
         </div>
