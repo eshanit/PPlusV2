@@ -223,6 +223,15 @@ class SyncCouchDb extends Command
             'district_id' => $districtId,
             'phase' => $doc['phase'] ?? null,
             'day_round' => $doc['roundOfDay'] ?? null,
+            'round_count' => max(1, count(is_array($doc['rounds'] ?? null) ? $doc['rounds'] : [])),
+            'selected_item_slugs' => json_encode(
+                $this->selectedSessionItems($doc, 'selectedItemSlugs', 'itemScores'),
+                JSON_THROW_ON_ERROR,
+            ),
+            'selected_counselling_slugs' => json_encode(
+                $this->selectedSessionItems($doc, 'selectedCounsellingSlugs', 'counsellingScores'),
+                JSON_THROW_ON_ERROR,
+            ),
             'notes' => $doc['notes'] ?? null,
             'reopen_reason' => $doc['reopenReason'] ?? null,
             'couchdb_rev' => $doc['_rev'] ?? null,
@@ -236,6 +245,9 @@ class SyncCouchDb extends Command
             'district_id',
             'phase',
             'day_round',
+            'round_count',
+            'selected_item_slugs',
+            'selected_counselling_slugs',
             'notes',
             'reopen_reason',
             'couchdb_rev',
@@ -245,10 +257,21 @@ class SyncCouchDb extends Command
 
         DB::table('session_item_scores')->where('session_id', $doc['_id'])->delete();
 
-        $scores = [
-            ...$this->sessionScoreRows($doc['_id'], $doc['itemScores'] ?? []),
-            ...$this->sessionScoreRows($doc['_id'], $doc['counsellingScores'] ?? []),
-        ];
+        $rounds = is_array($doc['rounds'] ?? null) && $doc['rounds'] !== []
+            ? $doc['rounds']
+            : [[
+                'itemScores' => $doc['itemScores'] ?? [],
+                'counsellingScores' => $doc['counsellingScores'] ?? [],
+            ]];
+        $scores = [];
+        foreach (array_values($rounds) as $index => $round) {
+            $roundIndex = $index + 1;
+            $scores = [
+                ...$scores,
+                ...$this->sessionScoreRows($doc['_id'], $round['itemScores'] ?? [], $roundIndex),
+                ...$this->sessionScoreRows($doc['_id'], $round['counsellingScores'] ?? [], $roundIndex),
+            ];
+        }
 
         if ($scores !== []) {
             DB::table('session_item_scores')->insert($scores);
@@ -379,9 +402,9 @@ class SyncCouchDb extends Command
 
     /**
      * @param  array<int, array{itemSlug: string, menteeScore: int|null, notes?: string}>  $scores
-     * @return array<int, array{session_id: string, item_id: int, mentee_score: int|null, notes: string|null}>
+     * @return array<int, array{session_id: string, round_index: int, item_id: int, mentee_score: int|null, notes: string|null}>
      */
-    private function sessionScoreRows(string $sessionId, array $scores): array
+    private function sessionScoreRows(string $sessionId, array $scores, int $roundIndex): array
     {
         $rows = [];
 
@@ -394,6 +417,7 @@ class SyncCouchDb extends Command
 
             $rows[] = [
                 'session_id' => $sessionId,
+                'round_index' => $roundIndex,
                 'item_id' => (int) $itemId,
                 'mentee_score' => $score['menteeScore'],
                 'notes' => $score['notes'] ?? null,
@@ -401,6 +425,30 @@ class SyncCouchDb extends Command
         }
 
         return $rows;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function selectedSessionItems(array $doc, string $selectedKey, string $legacyKey): array
+    {
+        $selected = $doc[$selectedKey] ?? null;
+        if (is_array($selected)) {
+            return array_values(array_unique(array_filter($selected, 'is_string')));
+        }
+
+        $rounds = is_array($doc['rounds'] ?? null) && $doc['rounds'] !== []
+            ? $doc['rounds']
+            : [['itemScores' => $doc[$legacyKey] ?? []]];
+        $scores = [];
+        foreach (array_values($rounds) as $round) {
+            $scores = [...$scores, ...($round[$legacyKey] ?? [])];
+        }
+
+        return array_values(array_unique(array_filter(
+            array_map(static fn (array $score): mixed => $score['itemSlug'] ?? null, $scores),
+            'is_string',
+        )));
     }
 
     private function resolveDistrictId(?string $districtName): ?string

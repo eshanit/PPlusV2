@@ -134,7 +134,7 @@ class ReportQueryService
 
     public function getScoreDistributionByTool(): array
     {
-        return DB::table('session_item_scores as sis')
+        return DB::table('v_session_item_scores as sis')
             ->join('evaluation_sessions as es', 'es.id', '=', 'sis.session_id')
             ->join('evaluation_items as ei', 'ei.id', '=', 'sis.item_id')
             ->join('tools as t', 't.id', '=', 'ei.tool_id')

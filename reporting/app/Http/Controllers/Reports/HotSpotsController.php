@@ -25,7 +25,7 @@ class HotSpotsController extends Controller
         $rows = DB::table('evaluation_items as ei')
             ->join('tool_categories as tc', 'tc.id', '=', 'ei.category_id')
             ->join('tools as t', 't.id', '=', 'ei.tool_id')
-            ->leftJoin('session_item_scores as sis', 'sis.item_id', '=', 'ei.id')
+            ->leftJoin('v_session_item_scores as sis', 'sis.item_id', '=', 'ei.id')
             ->leftJoin('evaluation_sessions as es', 'es.id', '=', 'sis.session_id')
             ->where('t.slug', '!=', 'counselling')
             ->whereRaw(...$this->scope->scope('es'))

@@ -47,7 +47,7 @@ class JourneyHeatmapController extends Controller
         $sessionIds = $sessions->pluck('id');
 
         // All scores for this journey (including null = N/A)
-        $scores = DB::table('session_item_scores as sis')
+        $scores = DB::table('v_session_item_scores as sis')
             ->whereIn('sis.session_id', $sessionIds)
             ->get(['sis.session_id', 'sis.item_id', 'sis.mentee_score']);
 

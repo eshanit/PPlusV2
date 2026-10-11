@@ -3,11 +3,13 @@ interface Props {
   sessionNumber: number
   date: string
   phase: string
+  roundCount?: number
   roundLabel?: string
   reopenReason?: string
 }
 
 const props = defineProps<Props>()
+const emit = defineEmits<{ edit: [] }>()
 
 type BadgeColor = 'primary' | 'success' | 'warning' | 'neutral'
 
@@ -40,14 +42,25 @@ function getPhaseColor(phase: string): BadgeColor {
         </p>
         <p class="text-xs text-gray-500 dark:text-gray-400">
           {{ date }}
+          <span v-if="roundCount"> · {{ roundCount }} round{{ roundCount === 1 ? '' : 's' }}</span>
         </p>
       </div>
-      <UBadge
-        :label="phase"
-        :color="getPhaseColor(phase)"
-        variant="soft"
-        size="sm"
-      />
+      <div class="flex items-center gap-2">
+        <UBadge
+          :label="phase"
+          :color="getPhaseColor(phase)"
+          variant="soft"
+          size="sm"
+        />
+        <UButton
+          size="xs"
+          variant="soft"
+          color="neutral"
+          @click.stop="emit('edit')"
+        >
+          Edit
+        </UButton>
+      </div>
     </div>
   </div>
 </template>

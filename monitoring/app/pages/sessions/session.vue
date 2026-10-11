@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { useSessionStore } from '~/stores/sessionStore'
-import { getToolBySlug } from '~/data/evaluationItemData'
+import { counsellingTool, getToolBySlug } from '~/data/evaluationItemData'
 import { calculateScoreCounts, calculateAverage, formatDate } from '~/composables/useSessionCalculations'
+import type { IRound } from '~/interfaces/ISession'
 import ScoreLegend from '~/components/session/ScoreLegend.vue'
 import ScoreDistribution from '~/components/session/ScoreDistribution.vue'
 import ItemScoresList from '~/components/session/ItemScoresList.vue'
@@ -30,7 +31,7 @@ const toolItemScores = computed(() => {
 
 const counsellingItemScores = computed(() => {
   if (!session.value) return []
-  return session.value.itemScores.filter(s => s.itemSlug.startsWith('counselling'))
+  return session.value.counsellingScores ?? []
 })
 
 const scoreCounts = computed(() => calculateScoreCounts(toolItemScores.value))
@@ -41,6 +42,56 @@ const itemMetadata = computed(() => toolItems.value.map(item => ({
   number: item.number,
   title: item.title,
 })))
+
+const counsellingMetadata = computed(() => counsellingTool.items.map(item => ({
+  slug: item.slug,
+  number: item.number,
+  title: item.title,
+})))
+
+const roundBreakdowns = computed(() => {
+  if (!session.value || !tool.value) return []
+  const rounds: IRound[] = session.value.rounds?.length
+    ? session.value.rounds
+    : [{
+        roundId: `legacy-${session.value._id}`,
+        label: 'Round 1',
+        itemScores: session.value.itemScores ?? [],
+        counsellingScores: session.value.counsellingScores ?? [],
+        startedAt: session.value.createdAt,
+      }]
+
+  return rounds.map((round, index) => {
+    const sections = (tool.value?.groups ?? []).map(group => {
+      const items = round.itemScores.filter(score => group.itemSlugs.includes(score.itemSlug))
+      return {
+        key: group.slug,
+        title: group.label,
+        items,
+        metadata: group.itemSlugs.flatMap(slug => {
+          const item = tool.value?.items.find(candidate => candidate.slug === slug)
+          return item ? [{ slug: item.slug, number: item.number, title: item.title }] : []
+        }),
+      }
+    }).filter(section => section.items.length > 0)
+
+    if (round.counsellingScores.length) {
+      sections.push({
+        key: 'counselling',
+        title: 'General Counselling Competencies (SME)',
+        items: round.counsellingScores,
+        metadata: counsellingMetadata.value,
+      })
+    }
+
+    return {
+      key: round.roundId,
+      label: round.label ?? `Round ${index + 1}`,
+      notes: round.notes,
+      sections,
+    }
+  })
+})
 
 const phaseLabels: Record<string, string> = {
   initial_intensive: 'Initial Intensive',
@@ -72,6 +123,18 @@ function phaseLabel(phase: string | null | undefined): string {
             <h1 class="font-semibold text-gray-900 dark:text-white truncate">Session Details</h1>
             <p class="text-xs text-gray-500 dark:text-gray-400">{{ formatDate(session?.evalDate) }}</p>
           </div>
+          <UButton
+            v-if="session"
+            size="sm"
+            color="primary"
+            @click="router.push({
+              path: '/sessions/new',
+              query: { menteeId: session.mentee.id, toolSlug: session.toolSlug, edit: session._id },
+            })"
+          >
+            <UIcon name="i-heroicons-pencil-square" class="mr-1 h-4 w-4" />
+            Edit
+          </UButton>
         </div>
       </div>
     </div>
@@ -79,10 +142,14 @@ function phaseLabel(phase: string | null | undefined): string {
     <div v-if="session" class="max-w-2xl mx-auto px-4 py-4 space-y-6">
       <!-- Summary Card -->
       <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-4">
-        <div class="grid grid-cols-3 gap-4 text-center">
+        <div class="grid grid-cols-2 gap-4 text-center sm:grid-cols-4">
           <div>
-            <p class="text-2xl font-bold text-primary-600 dark:text-primary-400">{{ toolItemScores.length }}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">Items</p>
+            <p class="text-2xl font-bold text-primary-600 dark:text-primary-400">{{ session.selectedItemSlugs?.length ?? toolItemScores.length }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Planned items</p>
+          </div>
+          <div>
+            <p class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{{ session.rounds?.length ?? 1 }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Rounds</p>
           </div>
           <div>
             <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ averageScore }}</p>
@@ -101,9 +168,30 @@ function phaseLabel(phase: string | null | undefined): string {
       <!-- Score Distribution -->
       <ScoreDistribution :counts="scoreCounts" />
 
-      <!-- Tool Items -->
+      <section v-if="roundBreakdowns.length" class="space-y-4">
+        <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Round-by-round scores</h2>
+        <article
+          v-for="round in roundBreakdowns"
+          :key="round.key"
+          class="space-y-4 rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-950"
+        >
+          <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white">{{ round.label }}</h3>
+            <p v-if="round.notes" class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ round.notes }}</p>
+          </div>
+          <ItemScoresList
+            v-for="section in round.sections"
+            :key="section.key"
+            :title="section.title"
+            :items="section.items"
+            :item-metadata="section.metadata"
+          />
+        </article>
+      </section>
+
+      <!-- Latest session aggregate -->
       <ItemScoresList
-        :title="tool?.label ?? ''"
+        :title="`${tool?.label ?? ''} · session summary`"
         :items="toolItemScores"
         :item-metadata="itemMetadata"
       />
@@ -111,7 +199,7 @@ function phaseLabel(phase: string | null | undefined): string {
       <!-- Counselling Items -->
       <ItemScoresList
         v-if="counsellingItemScores.length > 0"
-        title="General Counselling Competencies"
+        title="General Counselling Competencies · session summary"
         :items="counsellingItemScores"
         :item-metadata="itemMetadata"
         color-class="bg-orange-50 dark:bg-orange-900/20 border-orange-100 dark:border-orange-800"

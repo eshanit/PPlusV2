@@ -3,7 +3,7 @@ import { format } from 'date-fns'
 import { useSessionStore } from '~/stores/sessionStore'
 import { useUserStore } from '~/stores/userStore'
 import { getToolBySlug, counsellingTool } from '~/data/evaluationItemData'
-import type { MentorshipPhase } from '~/interfaces/ISession'
+import type { IRound, ISession, MentorshipPhase } from '~/interfaces/ISession'
 import { calculateScoreCounts, calculateAverage, formatDate } from '~/composables/useSessionCalculations'
 import ScoreLegend from '~/components/session/ScoreLegend.vue'
 import ScoreDistribution from '~/components/session/ScoreDistribution.vue'
@@ -27,6 +27,7 @@ interface PreviewItem {
   type: 'tool' | 'counselling'
   score: number | null
   notes: string
+  evaluated?: boolean
 }
 
 interface PreviewData {
@@ -35,9 +36,13 @@ interface PreviewData {
   toolSlug: string
   toolLabel: string
   items: PreviewItem[]
+  rounds?: IRound[]
+  selectedItemSlugs?: string[]
+  selectedCounsellingSlugs?: string[]
+  sessionId?: string
+  sessionRev?: string
   phase: MentorshipPhase | null
   evalDate: string
-  roundOfDay?: number
   reopenReason?: string
   notes: string
 }
@@ -73,6 +78,13 @@ const totalItems = computed(() => {
   return previewData.value.items.length
 })
 
+const plannedItemCount = computed(() => previewData.value?.selectedItemSlugs?.length
+  ?? previewData.value?.items.filter(item => item.type === 'tool').length
+  ?? 0)
+const plannedCounsellingCount = computed(() => previewData.value?.selectedCounsellingSlugs?.length
+  ?? previewData.value?.items.filter(item => item.type === 'counselling').length
+  ?? 0)
+
 const averageScore = computed(() => {
   if (!previewData.value) return '0'
   const items = previewData.value.items.map(i => ({ itemSlug: i.slug, menteeScore: i.score, notes: i.notes }))
@@ -81,7 +93,7 @@ const averageScore = computed(() => {
 
 const naCount = computed(() => {
   if (!previewData.value) return 0
-  return previewData.value.items.filter(item => item.score === null).length
+  return previewData.value.items.filter(item => item.evaluated && item.score === null).length
 })
 
 const toolAverageScore = computed(() => {
@@ -99,7 +111,7 @@ const dcAverageScore = computed(() => {
 const toolScoresForDistribution = computed(() => {
   if (!previewData.value) return []
   return previewData.value.items
-    .filter(i => i.type === 'tool')
+    .filter(i => i.type === 'tool' && (i.evaluated ?? true))
     .map(item => ({ itemSlug: item.slug, menteeScore: item.score, notes: item.notes }))
 })
 
@@ -119,11 +131,33 @@ async function saveSession() {
     const evalDate = new Date(evalDateStr.value + 'T12:00:00').getTime()
     const evaluationGroupId = `${pData.menteeId}::${tool.slug}`
 
-    const toolItems = pData.items.filter(i => i.type === 'tool')
-    const counsellingItems = pData.items.filter(i => i.type === 'counselling')
+    const toolItems = pData.items.filter(i => i.type === 'tool' && (i.evaluated ?? true))
+    const counsellingItems = pData.items.filter(i => i.type === 'counselling' && (i.evaluated ?? true))
+    const rounds: IRound[] = pData.rounds?.length
+      ? pData.rounds
+      : [{
+          roundId: `legacy-${now}`,
+          label: 'Round 1',
+          itemScores: toolItems.map(item => ({
+            itemSlug: item.slug,
+            menteeScore: (item.score ?? null) as 1 | 2 | 3 | 4 | 5 | null,
+            notes: item.notes?.trim() || undefined,
+          })),
+          counsellingScores: counsellingItems.map(item => ({
+            itemSlug: item.slug,
+            menteeScore: (item.score ?? null) as 1 | 2 | 3 | 4 | 5 | null,
+            notes: item.notes?.trim() || undefined,
+          })),
+          startedAt: now,
+          completedAt: now,
+        }]
+    const existingSession = pData.sessionId
+      ? sessionStore.sessions.find(session => session._id === pData.sessionId)
+      : undefined
 
     await sessionStore.save({
-      _id: '',
+      _id: pData.sessionId ?? '',
+      _rev: pData.sessionRev ?? existingSession?._rev,
       type: 'session',
       evaluationGroupId,
       mentee: {
@@ -137,7 +171,6 @@ async function saveSession() {
       evaluator: userStore.currentUser,
       toolSlug: tool.slug,
       evalDate,
-      roundOfDay: pData.roundOfDay,
       reopenReason: pData.reopenReason,
       facilityId: mentee.facilityId ?? '',
       districtId: mentee.districtId ?? '',
@@ -151,13 +184,17 @@ async function saveSession() {
         menteeScore: (item.score ?? null) as 1 | 2 | 3 | 4 | 5 | null,
         notes: item.notes?.trim() || undefined,
       })),
+      rounds,
+      selectedItemSlugs: pData.selectedItemSlugs ?? toolItems.map(item => item.slug),
+      selectedCounsellingSlugs: pData.selectedCounsellingSlugs ?? counsellingItems.map(item => item.slug),
       phase: (phase.value ?? null) as MentorshipPhase | null,
       notes: notes.value.trim() || undefined,
       syncStatus: 'pending',
-      createdAt: now,
+      createdAt: existingSession?.createdAt ?? now,
       updatedAt: now,
     })
 
+    sessionStorage.removeItem('penplus_session_draft')
     toast.add({ title: 'Session saved', color: 'success', icon: 'i-heroicons-check-circle' })
     router.push(`/mentees/${pData.menteeId}`)
   } catch (err) {
@@ -187,7 +224,7 @@ const toolItemMetadata = computed(() => allItemMetadata.value)
 const toolItemsData = computed(() => {
   if (!previewData.value) return []
   return previewData.value.items
-    .filter(i => i.type === 'tool')
+    .filter(i => i.type === 'tool' && (i.evaluated ?? true))
     .map(item => ({
       itemSlug: item.slug,
       menteeScore: item.score,
@@ -199,7 +236,7 @@ const toolItemsData = computed(() => {
 const counsellingItemsData = computed(() => {
   if (!previewData.value) return []
   return previewData.value.items
-    .filter(i => i.type === 'counselling')
+    .filter(i => i.type === 'counselling' && (i.evaluated ?? true))
     .map(item => ({
       itemSlug: item.slug,
       menteeScore: item.score,
@@ -210,6 +247,38 @@ const counsellingItemsData = computed(() => {
 const counsellingItemMetadata = computed(() =>
   counsellingTool.items.map(item => ({ slug: item.slug, number: item.number, title: item.title }))
 )
+
+const reviewRoundGroups = computed(() => {
+  if (!previewData.value?.rounds?.length || !tool.value) return []
+  return previewData.value.rounds.map((round, index) => {
+    const toolGroups = (tool.value?.groups ?? []).map(group => ({
+      key: group.slug,
+      title: group.label,
+      items: round.itemScores.filter(score => group.itemSlugs.includes(score.itemSlug)),
+      metadata: group.itemSlugs.flatMap(slug => {
+        const item = tool.value?.items.find(candidate => candidate.slug === slug)
+        return item ? [{ slug: item.slug, number: item.number, title: item.title }] : []
+      }),
+    })).filter(group => group.items.length > 0)
+
+    const counsellingScores = round.counsellingScores
+    if (counsellingScores.length) {
+      toolGroups.push({
+        key: 'counselling',
+        title: 'General Counselling Competencies (SME)',
+        items: counsellingScores,
+        metadata: counsellingItemMetadata.value,
+      })
+    }
+
+    return {
+      key: round.roundId,
+      label: round.label || `Round ${index + 1}`,
+      notes: round.notes,
+      groups: toolGroups,
+    }
+  })
+})
 
 function goBack() {
   router.back()
@@ -259,12 +328,19 @@ const isValid = computed(() => !!phase.value && !!evalDateStr.value && !dateBefo
             <p class="text-sm font-medium text-gray-900 dark:text-white">
               {{ totalScored }}/{{ totalItems }} scored
             </p>
+            <p class="text-[10px] text-gray-500 dark:text-gray-400">
+              {{ previewData?.rounds?.length ?? 1 }} round(s)
+            </p>
           </div>
         </div>
       </div>
     </div>
 
     <div v-if="previewData" class="max-w-2xl mx-auto px-4 py-4 space-y-6">
+      <div class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+        Plan: {{ plannedItemCount }} tool items · {{ plannedCounsellingCount }} counselling items
+      </div>
+
       <!-- Reopened journey -->
       <div
         v-if="previewData.reopenReason"
@@ -341,16 +417,41 @@ const isValid = computed(() => !!phase.value && !!evalDateStr.value && !dateBefo
       <!-- Score Distribution -->
       <ScoreDistribution :counts="scoreCounts" />
 
-      <!-- Tool Items using reusable component -->
+      <section v-if="reviewRoundGroups.length" class="space-y-4">
+        <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Round-by-round review</h2>
+        <article
+          v-for="round in reviewRoundGroups"
+          :key="round.key"
+          class="space-y-4 rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-950"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h3 class="font-semibold text-gray-900 dark:text-white">{{ round.label }}</h3>
+              <p v-if="round.notes" class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ round.notes }}</p>
+            </div>
+            <span class="shrink-0 text-xs text-gray-500 dark:text-gray-400">
+              {{ round.groups.reduce((count, group) => count + group.items.length, 0) }} scored
+            </span>
+          </div>
+          <ItemScoresList
+            v-for="group in round.groups"
+            :key="group.key"
+            :title="group.title"
+            :items="group.items"
+            :item-metadata="group.metadata"
+          />
+        </article>
+      </section>
+
+      <!-- Latest non-null score per planned item -->
       <ItemScoresList
-        :title="previewData.toolLabel"
+        :title="`${previewData.toolLabel} · session summary`"
         :items="toolItemsData"
         :item-metadata="toolItemMetadata"
       />
 
-      <!-- Counselling Items using reusable component -->
       <ItemScoresList
-        title="General Counselling Competencies"
+        title="General Counselling Competencies · session summary"
         :items="counsellingItemsData"
         :item-metadata="counsellingItemMetadata"
         color-class="bg-orange-50 dark:bg-orange-900/20 border-orange-100 dark:border-orange-800"

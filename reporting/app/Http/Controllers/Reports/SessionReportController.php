@@ -76,14 +76,14 @@ class SessionReportController extends Controller
 
         $counsellingToolId = DB::table('tools')->where('slug', 'counselling')->value('id');
 
-        $toolScores = DB::table('session_item_scores as sis')
+        $toolScores = DB::table('v_session_item_scores as sis')
             ->join('evaluation_items as ei', 'ei.id', '=', 'sis.item_id')
             ->where('sis.session_id', $session)
             ->where('ei.tool_id', $sessionRow->tool_id)
             ->orderBy('ei.sort_order')
             ->get(['ei.id as item_id', 'ei.number', 'ei.title', 'ei.is_advanced', 'ei.is_critical', 'sis.mentee_score', 'sis.notes']);
 
-        $counsellingScores = DB::table('session_item_scores as sis')
+        $counsellingScores = DB::table('v_session_item_scores as sis')
             ->join('evaluation_items as ei', 'ei.id', '=', 'sis.item_id')
             ->where('sis.session_id', $session)
             ->where('ei.tool_id', $counsellingToolId)
@@ -108,11 +108,11 @@ class SessionReportController extends Controller
         ] : null;
 
         $prevToolScores = $prevSessionId
-            ? DB::table('session_item_scores')->where('session_id', $prevSessionId)->pluck('mentee_score', 'item_id')->all()
+            ? DB::table('v_session_item_scores')->where('session_id', $prevSessionId)->pluck('mentee_score', 'item_id')->all()
             : [];
 
         $prevCounsellingScores = $prevSessionId
-            ? DB::table('session_item_scores as sis')
+            ? DB::table('v_session_item_scores as sis')
                 ->join('evaluation_items as ei', 'ei.id', '=', 'sis.item_id')
                 ->where('sis.session_id', $prevSessionId)
                 ->where('ei.tool_id', $counsellingToolId)

@@ -310,8 +310,13 @@ async function confirmResolve() {
               :session-number="entry.sessionNumber"
               :date="formatDate(entry.session.evalDate) ?? 'N/A'"
               :phase="entry.session.phase ?? 'unknown'"
+              :round-count="entry.session.rounds?.length ?? 1"
               :round-label="group.roundsCount > 1 ? `Round ${entry.roundNumber}` : undefined"
               :reopen-reason="entry.session.reopenReason"
+              @edit="router.push({
+                path: '/sessions/new',
+                query: { menteeId, toolSlug, edit: entry.session._id },
+              })"
             />
           </div>
         </div>

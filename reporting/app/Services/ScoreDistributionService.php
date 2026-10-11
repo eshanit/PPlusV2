@@ -30,7 +30,7 @@ class ScoreDistributionService
         ?string $fromDate = null,
         ?string $toDate = null,
     ): array {
-        $query = DB::table('session_item_scores as sis')
+        $query = DB::table('v_session_item_scores as sis')
             ->join('evaluation_items as ei', 'sis.item_id', '=', 'ei.id')
             ->join('tools as t', 'ei.tool_id', '=', 't.id')
             ->join('evaluation_sessions as es', 'sis.session_id', '=', 'es.id')
@@ -136,7 +136,7 @@ class ScoreDistributionService
         ?string $fromDate = null,
         ?string $toDate = null,
     ): array {
-        $query = DB::table('session_item_scores as sis')
+        $query = DB::table('v_session_item_scores as sis')
             ->join('evaluation_items as ei', 'sis.item_id', '=', 'ei.id')
             ->join('tools as t', 'ei.tool_id', '=', 't.id')
             ->join('evaluation_sessions as es', 'sis.session_id', '=', 'es.id')

@@ -11,6 +11,7 @@ class SessionItemScore extends Model
 
     protected $fillable = [
         'session_id',
+        'round_index',
         'item_id',
         'mentee_score',
         'notes',
@@ -20,6 +21,7 @@ class SessionItemScore extends Model
     {
         return [
             'mentee_score' => 'integer',
+            'round_index' => 'integer',
         ];
     }
 

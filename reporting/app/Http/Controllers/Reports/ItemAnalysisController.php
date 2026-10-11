@@ -20,7 +20,7 @@ class ItemAnalysisController extends Controller
         $menteeId = $request->input('mentee_id');
 
         // Summary stats
-        $statsRow = DB::table('session_item_scores as sis')
+        $statsRow = DB::table('v_session_item_scores as sis')
             ->join('evaluation_sessions as es', 'es.id', '=', 'sis.session_id')
             ->where('sis.item_id', $id)
             ->whereRaw(...$this->scope->scope('es'))
@@ -43,7 +43,7 @@ class ItemAnalysisController extends Controller
         ];
 
         // Score distribution (how many times each score 1-5 was given)
-        $distRows = DB::table('session_item_scores as sis')
+        $distRows = DB::table('v_session_item_scores as sis')
             ->join('evaluation_sessions as es', 'es.id', '=', 'sis.session_id')
             ->where('sis.item_id', $id)
             ->whereNotNull('sis.mentee_score')
@@ -63,7 +63,7 @@ class ItemAnalysisController extends Controller
 
         // Score trend by session number (avg score across all journeys at session N)
         // Only include session numbers where ≥ 3 journeys contributed
-        $trend = DB::table('session_item_scores as sis')
+        $trend = DB::table('v_session_item_scores as sis')
             ->join('v_sessions_numbered as vsn', 'vsn.id', '=', 'sis.session_id')
             ->where('sis.item_id', $id)
             ->whereNotNull('sis.mentee_score')
@@ -98,7 +98,7 @@ class ItemAnalysisController extends Controller
                 'vlis.score_date',
             ])
             ->selectRaw(
-                '(SELECT COUNT(sis3.id) FROM session_item_scores sis3
+                '(SELECT COUNT(sis3.id) FROM v_session_item_scores sis3
                   INNER JOIN evaluation_sessions es3 ON es3.id = sis3.session_id
                   WHERE sis3.item_id = ? AND es3.evaluation_group_id = vlis.evaluation_group_id
                     AND sis3.mentee_score IS NOT NULL) as times_scored',

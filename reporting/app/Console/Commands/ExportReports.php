@@ -207,6 +207,7 @@ class ExportReports extends Command
             'Competency Item',
             'Category',
             'Mentee Score',
+            'Observation Round',
             'Is Advanced',
             'Is Critical',
             'Session Number',
@@ -246,6 +247,7 @@ class ExportReports extends Command
                 'ei.title as item_title',
                 'tc.name as category',
                 'sis.mentee_score',
+                'sis.round_index',
                 'ei.is_advanced',
                 'ei.is_critical',
                 'vsn.session_number',
@@ -265,6 +267,7 @@ class ExportReports extends Command
             ->orderBy('es.eval_date')
             ->orderBy('vsn.session_number')
             ->orderBy('ei.sort_order')
+            ->orderBy('sis.round_index')
             ->orderBy('es.id');
     }
 
@@ -281,6 +284,7 @@ class ExportReports extends Command
             $score->item_title,
             $score->category,
             $score->mentee_score === null ? 'N/A' : (int) $score->mentee_score,
+            $score->round_index,
             $score->is_advanced ? 'Yes' : 'No',
             $score->is_critical ? 'Yes' : 'No',
             $score->session_number === null ? null : (int) $score->session_number,

@@ -56,6 +56,16 @@ class EvaluationSessionResource extends Resource
                             ->badge()
                             ->formatStateUsing(fn (?string $state): string => self::formatPhase($state))
                             ->color(fn (?string $state): string => self::phaseColor($state)),
+                        Infolists\Components\TextEntry::make('round_count')
+                            ->label('Observation rounds'),
+                        Infolists\Components\TextEntry::make('selected_item_slugs')
+                            ->label('Planned tool items')
+                            ->formatStateUsing(fn (?array $state): string => implode(', ', $state ?? []))
+                            ->placeholder('Not available'),
+                        Infolists\Components\TextEntry::make('selected_counselling_slugs')
+                            ->label('Planned counselling items')
+                            ->formatStateUsing(fn (?array $state): string => implode(', ', $state ?? []))
+                            ->placeholder('Not available'),
                         Infolists\Components\TextEntry::make('notes')
                             ->label('Notes')
                             ->placeholder('No notes recorded.')
@@ -72,11 +82,13 @@ class EvaluationSessionResource extends Resource
                                     ->label('#'),
                                 Infolists\Components\TextEntry::make('item.title')
                                     ->label('Competency'),
+                                Infolists\Components\TextEntry::make('round_index')
+                                    ->label('Round'),
                                 Infolists\Components\TextEntry::make('mentee_score')
                                     ->label('Score')
                                     ->placeholder('N/A'),
                             ])
-                            ->columns(4),
+                            ->columns(5),
                     ]),
             ]);
     }
@@ -109,6 +121,10 @@ class EvaluationSessionResource extends Resource
                 Tables\Columns\TextColumn::make('eval_date')
                     ->label('Date')
                     ->date()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('round_count')
+                    ->label('Rounds')
+                    ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('district.name')
                     ->label('District')

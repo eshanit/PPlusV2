@@ -25,6 +25,9 @@ class EvaluationSession extends Model
         'district_id',
         'phase',
         'day_round',
+        'round_count',
+        'selected_item_slugs',
+        'selected_counselling_slugs',
         'notes',
         'reopen_reason',
         'couchdb_rev',
@@ -37,6 +40,9 @@ class EvaluationSession extends Model
     {
         return [
             'eval_date' => 'date',
+            'round_count' => 'integer',
+            'selected_item_slugs' => 'array',
+            'selected_counselling_slugs' => 'array',
             'synced_at' => 'datetime',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
