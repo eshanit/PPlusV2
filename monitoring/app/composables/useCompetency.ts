@@ -3,16 +3,37 @@ import type { ITool } from '~/interfaces/ITool'
 
 export type CompetencyStatus = 'fully_competent' | 'basic_competent' | 'in_progress'
 
+function flattenSessionScores(session: ISession): Array<{ itemSlug: string, menteeScore: 1 | 2 | 3 | 4 | 5 | null }> {
+  const rounds = Array.isArray(session.rounds) && session.rounds.length > 0
+    ? session.rounds
+    : [{
+        roundId: 'legacy-round',
+        itemScores: session.itemScores ?? [],
+        counsellingScores: session.counsellingScores ?? [],
+        startedAt: session.createdAt ?? Date.now(),
+      }]
+
+  const scores: Array<{ itemSlug: string, menteeScore: 1 | 2 | 3 | 4 | 5 | null }> = []
+
+  for (const round of rounds) {
+    scores.push(...(round.itemScores ?? []), ...(round.counsellingScores ?? []))
+  }
+
+  return scores
+}
+
 function buildLatestScores(sessions: ISession[]): Map<string, number> {
   const map = new Map<string, number>()
   const sorted = [...sessions].sort((a, b) => a.evalDate - b.evalDate || a.createdAt - b.createdAt)
+
   for (const session of sorted) {
-    for (const score of session.itemScores ?? []) {
+    for (const score of flattenSessionScores(session)) {
       if (score.menteeScore !== null) {
         map.set(score.itemSlug, score.menteeScore)
       }
     }
   }
+
   return map
 }
 

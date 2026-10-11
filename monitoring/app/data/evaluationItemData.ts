@@ -1,4 +1,63 @@
-import type { ITool } from '../interfaces/ITool'
+import type { IItemGroup, ITool, IToolTheme } from '../interfaces/ITool'
+
+export const SCORE_LABELS: Record<1 | 2 | 3 | 4 | 5, string> = {
+  1: 'Does not demonstrate competency',
+  2: 'Demonstrates basic competency',
+  3: 'Demonstrates satisfactory competency',
+  4: 'Demonstrates advanced competency',
+  5: 'Demonstrates exceptional competency',
+}
+
+export const NA_LABEL = 'The competency cannot be evaluated'
+
+export const SCORE_COLORS: Record<1 | 2 | 3 | 4 | 5 | 0, string> = {
+  1: '#ef4444',
+  2: '#f59e0b',
+  3: '#facc15',
+  4: '#22c55e',
+  5: '#15803d',
+  0: '#cbd5e1',
+}
+
+const DEFAULT_TOOL_THEME: IToolTheme = {
+  primary: '#475569',
+  headerBg: '#e2e8f0',
+  headerText: '#0f172a',
+  accent: '#94a3b8',
+}
+
+const TOOL_THEMES: Record<string, IToolTheme> = {
+  diabetes: { primary: '#84cc16', headerBg: '#ecfccb', headerText: '#14532d', accent: '#65a30d' },
+  cardiac: { primary: '#7c3aed', headerBg: '#f3e8ff', headerText: '#3b0764', accent: '#6d28d9' },
+  echo: { primary: '#0ea5e9', headerBg: '#e0f2fe', headerText: '#0f172a', accent: '#0284c7' },
+  sickle_cell: { primary: '#ef4444', headerBg: '#fee2e2', headerText: '#7f1d1d', accent: '#dc2626' },
+  respiratory: { primary: '#10b981', headerBg: '#d1fae5', headerText: '#064e3b', accent: '#059669' },
+  hypertension: { primary: '#f97316', headerBg: '#ffedd5', headerText: '#7c2d12', accent: '#ea580c' },
+  ckd: { primary: '#3b82f6', headerBg: '#dbeafe', headerText: '#1e3a8a', accent: '#2563eb' },
+  epilepsy: { primary: '#a855f7', headerBg: '#f3e8ff', headerText: '#4c1d95', accent: '#9333ea' },
+  palliative: { primary: '#f472b6', headerBg: '#fce7f3', headerText: '#831843', accent: '#db2777' },
+  liver: { primary: '#f59e0b', headerBg: '#fef3c7', headerText: '#78350f', accent: '#d97706' },
+  counselling: { primary: '#64748b', headerBg: '#f8fafc', headerText: '#0f172a', accent: '#475569' },
+}
+
+function buildGroupsForTool(tool: ITool): IItemGroup[] {
+  const groups = new Map<string, IItemGroup>()
+
+  for (const item of tool.items) {
+    const group = groups.get(item.category)
+    if (!group) {
+      groups.set(item.category, {
+        slug: item.category.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+        label: item.category,
+        itemSlugs: [item.slug],
+      })
+    } else {
+      group.itemSlugs.push(item.slug)
+    }
+  }
+
+  return [...groups.values()]
+}
 
 // NOTE: isAdvanced = true marks items that appear in GREY in the paper tool.
 // Grey = advanced competencies not required to be considered a competent provider.
@@ -949,6 +1008,20 @@ export const evaluationTools: ITool[] = [
 
 /** All tools including counselling — useful for seeding the database */
 export const allTools: ITool[] = [counsellingTool, ...evaluationTools]
+
+for (const tool of allTools) {
+  tool.theme = TOOL_THEMES[tool.slug] ?? DEFAULT_TOOL_THEME
+  tool.groups = buildGroupsForTool(tool)
+}
+
+counsellingTool.groups = [{
+  slug: 'general-counselling-competencies-sme',
+  label: 'General Counselling Competencies (SME)',
+  itemSlugs: counsellingTool.items.map(item => item.slug),
+}]
+
+// TODO(client-confirm): final PDF palette review for the remaining tools and the
+// exact score-button hex values if the design team wants closer matching.
 
 /** Look up a tool by slug */
 export const getToolBySlug = (slug: string): ITool | undefined =>

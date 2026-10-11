@@ -9,6 +9,33 @@ export interface PreviousScore {
   sessionNumber: number
 }
 
+function migrateLegacySession(doc: Partial<ISession> & Record<string, any>): ISession {
+  const document = { ...doc } as ISession
+  const legacyItemScores = Array.isArray(document.itemScores) ? document.itemScores : []
+  const legacyCounsellingScores = Array.isArray(document.counsellingScores) ? document.counsellingScores : []
+
+  if (!Array.isArray(document.rounds) || document.rounds.length === 0) {
+    document.rounds = [{
+      roundId: document._id ?? `round-${Date.now()}`,
+      label: 'Round 1',
+      itemScores: legacyItemScores,
+      counsellingScores: legacyCounsellingScores,
+      startedAt: document.createdAt ?? Date.now(),
+      completedAt: document.createdAt ?? Date.now(),
+    }]
+  }
+
+  if (!Array.isArray(document.selectedItemSlugs) && legacyItemScores.length > 0) {
+    document.selectedItemSlugs = legacyItemScores.map(score => score.itemSlug)
+  }
+
+  if (!Array.isArray(document.selectedCounsellingSlugs) && legacyCounsellingScores.length > 0) {
+    document.selectedCounsellingSlugs = legacyCounsellingScores.map(score => score.itemSlug)
+  }
+
+  return document as ISession
+}
+
 export const useSessionStore = defineStore('sessions', () => {
   const { sessionsDb } = useDb()
 
@@ -20,8 +47,8 @@ export const useSessionStore = defineStore('sessions', () => {
     try {
       const result = await sessionsDb.allDocs<ISession>({ include_docs: true })
       sessions.value = result.rows
-        .map(r => r.doc!)
-        .filter(d => d.type === 'session')
+        .map(r => migrateLegacySession(r.doc ?? {} as ISession))
+        .filter((d): d is ISession => d.type === 'session')
     } finally {
       loading.value = false
     }
@@ -29,11 +56,22 @@ export const useSessionStore = defineStore('sessions', () => {
 
   async function save(session: ISession): Promise<ISession> {
     const now = Date.now()
-    const doc: ISession = { ...session, updatedAt: now }
+    const doc: ISession = migrateLegacySession({ ...session, updatedAt: now })
 
     if (!doc._id) {
       doc._id = `session::${doc.evaluationGroupId}::${now}`
       doc.createdAt = now
+    }
+
+    if (!Array.isArray(doc.rounds) || doc.rounds.length === 0) {
+      doc.rounds = [{
+        roundId: `round-${doc._id}-${now}`,
+        label: 'Round 1',
+        itemScores: doc.itemScores ?? [],
+        counsellingScores: doc.counsellingScores ?? [],
+        startedAt: doc.createdAt ?? now,
+        completedAt: doc.createdAt ?? now,
+      }]
     }
 
     const response = await sessionsDb.put(doc)
@@ -131,20 +169,14 @@ export const useSessionStore = defineStore('sessions', () => {
 
     // Go through sessions in reverse order (newest first)
     for (const session of [...groupSessions].reverse()) {
-      // Check tool items
-      const toolScore = session.itemScores?.find(s => s.itemSlug === itemSlug)
+      const roundScores = Array.isArray(session.rounds) && session.rounds.length > 0
+        ? session.rounds.flatMap(round => [...(round.itemScores ?? []), ...(round.counsellingScores ?? [])])
+        : [...(session.itemScores ?? []), ...(session.counsellingScores ?? [])]
+
+      const toolScore = roundScores.find(s => s.itemSlug === itemSlug)
       if (toolScore && toolScore.menteeScore !== null) {
         return {
           score: toolScore.menteeScore,
-          date: session.evalDate,
-          sessionNumber: sessionNumber(session),
-        }
-      }
-      // Check counselling items
-      const counsScore = session.counsellingScores?.find(s => s.itemSlug === itemSlug)
-      if (counsScore && counsScore.menteeScore !== null) {
-        return {
-          score: counsScore.menteeScore,
           date: session.evalDate,
           sessionNumber: sessionNumber(session),
         }
