@@ -1,13 +1,22 @@
 <script setup lang="ts">
+import { format } from 'date-fns'
 import type { IEvalItem } from '~/interfaces/IEvalItem'
-import { NA_LABEL, SCORE_COLORS } from '~/data/evaluationItemData'
+import { NA_LABEL, SCORE_COLORS, SCORE_LABELS } from '~/data/evaluationItemData'
 
 type ScoreValue = 1 | 2 | 3 | 4 | 5 | null
+
+interface PreviousAssessment {
+  score: ScoreValue
+  evalDate: number
+  sessionNumber: number
+  roundNumber: number
+}
 
 const props = defineProps<{
   item: IEvalItem
   score: ScoreValue
   isScored: boolean
+  previousAssessment?: PreviousAssessment
   note?: string
   counselling?: boolean
 }>()
@@ -30,6 +39,38 @@ function backgroundColor(value: ScoreValue): string {
   if (value === null) return SCORE_COLORS[0]
   return SCORE_COLORS[value]
 }
+
+const selectedScoreLabel = computed(() => {
+  if (!props.isScored) return undefined
+  return props.score === null ? NA_LABEL : SCORE_LABELS[props.score]
+})
+
+const scoreChange = computed(() => {
+  const previousScore = props.previousAssessment?.score
+  if (
+    !props.isScored
+    || props.score === null
+    || previousScore === null
+    || previousScore === undefined
+  ) return undefined
+
+  if (props.score > previousScore) return 'improved'
+  if (props.score < previousScore) return 'regressed'
+  return 'unchanged'
+})
+
+const scoreChangeDisplay = computed(() => {
+  if (scoreChange.value === 'improved') {
+    return { icon: 'i-heroicons-arrow-trending-up', label: 'Improved', class: 'text-green-700 dark:text-green-400' }
+  }
+  if (scoreChange.value === 'regressed') {
+    return { icon: 'i-heroicons-arrow-trending-down', label: 'Regressed', class: 'text-red-700 dark:text-red-400' }
+  }
+  if (scoreChange.value === 'unchanged') {
+    return { icon: 'i-heroicons-minus', label: 'No change', class: 'text-gray-500 dark:text-gray-400' }
+  }
+  return undefined
+})
 </script>
 
 <template>
@@ -83,6 +124,35 @@ function backgroundColor(value: ScoreValue): string {
       >
         {{ option.label }}
       </button>
+    </div>
+
+    <div v-if="selectedScoreLabel" class="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+      <p class="text-xs font-medium text-gray-700 dark:text-gray-300">
+        {{ selectedScoreLabel }}
+      </p>
+      <span
+        v-if="scoreChangeDisplay"
+        class="inline-flex items-center gap-1 text-xs font-semibold"
+        :class="scoreChangeDisplay.class"
+        role="status"
+        :aria-label="scoreChangeDisplay.label"
+      >
+        <UIcon :name="scoreChangeDisplay.icon" class="h-4 w-4" />
+        {{ scoreChangeDisplay.label }}
+      </span>
+    </div>
+
+    <div
+      v-if="previousAssessment"
+      class="mt-2 rounded-md bg-gray-50 px-2.5 py-2 text-xs text-gray-600 dark:bg-gray-900/70 dark:text-gray-300"
+    >
+      <span class="font-semibold">Previous score:</span>
+      {{ previousAssessment.score === null ? 'N/A' : `${previousAssessment.score} — ${SCORE_LABELS[previousAssessment.score]}` }}
+      <span class="mt-0.5 block text-gray-500 dark:text-gray-400">
+        {{ format(new Date(previousAssessment.evalDate), 'd MMM yyyy') }}
+        · Session {{ previousAssessment.sessionNumber }}
+        · Round {{ previousAssessment.roundNumber }}
+      </span>
     </div>
 
     <UTextarea

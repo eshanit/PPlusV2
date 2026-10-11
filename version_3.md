@@ -255,6 +255,10 @@ If any of the above conflicts with the client's clinical understanding, flag it 
 - `ScoreButtons` renders `1 2 3 4 5 N/A` in that order.
 - Each button shows the number; the label is available via `ScoreLegend` (always visible above the list) and via tooltip/long-press on mobile.
 - Apply the PDF's score-color coding (single palette, shared across tools).
+- Once a score is selected on a competency card, immediately show its exact score label from §3.1 on that card. For example, score 2 displays "Demonstrates basic competency"; N/A displays "The competency cannot be evaluated". Update this text reactively whenever the selected score changes, and show no selected-score label before a score is recorded.
+- Each clinical competency card also shows the most recent previous assessment for that item, when available: the previous score (with its score label, or N/A), assessment date, journey session number, and round number. Search earlier rounds in the current session first, then earlier sessions in reverse chronological journey order; use the most recent round containing an assessment of that item. Legacy flat-score sessions count as Round 1. Do not show the current round as its own previous assessment.
+- When a numeric score from 1–5 is selected and a prior numeric score exists, show an accessible change indicator relative to that prior score: green upward trend for a higher score (improvement), red downward trend for a lower score (regression), or a grey dash for an equal score. Recalculate immediately when either score changes. Do not classify N/A as improved, regressed, or unchanged; if the prior assessment was N/A, show its details but no directional indicator.
+- Previous-assessment details must use computed journey session numbers; never persist a session number in the session document. Within the current session, use the round's 1-based position.
 
 ### 6.3 Preview / detail (`sessions/preview.vue`, `sessions/session.vue`)
 

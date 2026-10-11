@@ -41,6 +41,13 @@ interface ItemGroup {
   items: GroupItem[]
 }
 
+interface PreviousAssessment {
+  score: ScoreValue
+  evalDate: number
+  sessionNumber: number
+  roundNumber: number
+}
+
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
@@ -97,6 +104,37 @@ const activeRoundIndex = ref(0)
 const selectedItemSlugs = ref<string[]>([])
 const selectedCounsellingSlugs = ref(counsellingTool.items.map(item => item.slug))
 const rounds = reactive<DraftRound[]>([createDraftRound(1)])
+
+function compareSessions(a: ISession, b: ISession): number {
+  return a.evalDate - b.evalDate
+    || sessionStore.roundSortKey(a) - sessionStore.roundSortKey(b)
+    || a.createdAt - b.createdAt
+}
+
+const sessionsBeforeCurrent = computed(() => {
+  const sessions = sessionStore.sessionsForGroup(evaluationGroupId.value)
+  const currentEvalDate = new Date(`${evalDateStr.value}T12:00:00`).getTime()
+
+  if (editId.value) {
+    const ordered = sessions
+      .map(session => session._id === editId.value
+        ? { ...session, evalDate: currentEvalDate }
+        : session)
+      .sort(compareSessions)
+    const currentIndex = ordered.findIndex(session => session._id === editId.value)
+    if (currentIndex >= 0) return ordered.slice(0, currentIndex)
+  }
+
+  const currentCreatedAt = Date.now()
+  return sessions
+    .filter(session => session.evalDate < currentEvalDate
+      || (session.evalDate === currentEvalDate
+        && (sessionStore.roundSortKey(session) < Number.POSITIVE_INFINITY
+          || session.createdAt <= currentCreatedAt)))
+    .sort(compareSessions)
+})
+
+const currentSessionNumber = computed(() => sessionsBeforeCurrent.value.length + 1)
 
 const allGroups = computed<ItemGroup[]>(() => {
   if (!tool.value) return []
@@ -187,11 +225,56 @@ function createDraftRound(index: number, round?: IRound): DraftRound {
 }
 
 function hasScore(round: DraftRound, slug: string): boolean {
-  return Object.prototype.hasOwnProperty.call(round.scores, slug)
+  return round.scores[slug] !== undefined
 }
 
 function getScore(round: DraftRound | undefined, slug: string): ScoreValue {
   return round && hasScore(round, slug) ? round.scores[slug] : null
+}
+
+function scoresInSession(session: ISession): IRound[] {
+  return session.rounds?.length
+    ? session.rounds
+    : [{
+        roundId: `legacy-${session._id}`,
+        label: 'Round 1',
+        itemScores: session.itemScores ?? [],
+        counsellingScores: session.counsellingScores ?? [],
+        startedAt: session.createdAt,
+      }]
+}
+
+function previousAssessment(itemSlug: string): PreviousAssessment | undefined {
+  for (let index = activeRoundIndex.value - 1; index >= 0; index--) {
+    const round = rounds[index]
+    if (round && hasScore(round, itemSlug)) {
+      return {
+        score: round.scores[itemSlug],
+        evalDate: new Date(`${evalDateStr.value}T12:00:00`).getTime(),
+        sessionNumber: currentSessionNumber.value,
+        roundNumber: index + 1,
+      }
+    }
+  }
+
+  for (const session of [...sessionsBeforeCurrent.value].reverse()) {
+    const sessionRounds = scoresInSession(session)
+    for (let roundIndex = sessionRounds.length - 1; roundIndex >= 0; roundIndex--) {
+      const round = sessionRounds[roundIndex]
+      const score = [...(round?.itemScores ?? []), ...(round?.counsellingScores ?? [])]
+        .find(candidate => candidate.itemSlug === itemSlug)
+      if (score) {
+        return {
+          score: score.menteeScore,
+          evalDate: session.evalDate,
+          sessionNumber: sessionsBeforeCurrent.value.findIndex(previous => previous._id === session._id) + 1,
+          roundNumber: roundIndex + 1,
+        }
+      }
+    }
+  }
+
+  return undefined
 }
 
 function isSelected(item: GroupItem): boolean {
@@ -307,7 +390,12 @@ function confirmRemoveRound() {
 }
 
 function setScore(slug: string, value: ScoreValue) {
-  if (activeRound.value) activeRound.value.scores[slug] = value
+  if (activeRound.value) {
+    activeRound.value.scores = {
+      ...activeRound.value.scores,
+      [slug]: value,
+    }
+  }
 }
 
 function setItemNote(slug: string, value: string) {
@@ -576,9 +664,6 @@ function viewEvaluation() {
           </p>
         </div>
         <div>
-          <label class="mb-2 block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-            Mentorship phase <span class="text-red-500">*</span>
-          </label>
           <SessionPhaseSelector v-model="phase" />
         </div>
       </section>
@@ -721,6 +806,7 @@ function viewEvaluation() {
               :item="item"
               :score="getScore(activeRound, item.slug)"
               :is-scored="!!activeRound && hasScore(activeRound, item.slug)"
+              :previous-assessment="previousAssessment(item.slug)"
               :note="activeRound?.notes[item.slug]"
               :counselling="item.kind === 'counselling'"
               @score="setScore(item.slug, $event)"
