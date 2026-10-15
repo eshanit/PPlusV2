@@ -26,6 +26,8 @@ class EvaluationSession extends Model
         'phase',
         'day_round',
         'round_count',
+        'echocardiograms_performed',
+        'echocardiograms_correct_diagnosis',
         'selected_item_slugs',
         'selected_counselling_slugs',
         'notes',
@@ -41,6 +43,8 @@ class EvaluationSession extends Model
         return [
             'eval_date' => 'date',
             'round_count' => 'integer',
+            'echocardiograms_performed' => 'integer',
+            'echocardiograms_correct_diagnosis' => 'integer',
             'selected_item_slugs' => 'array',
             'selected_counselling_slugs' => 'array',
             'synced_at' => 'datetime',

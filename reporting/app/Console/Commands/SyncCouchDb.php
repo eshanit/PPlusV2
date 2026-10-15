@@ -224,6 +224,8 @@ class SyncCouchDb extends Command
             'phase' => $doc['phase'] ?? null,
             'day_round' => $doc['roundOfDay'] ?? null,
             'round_count' => max(1, count(is_array($doc['rounds'] ?? null) ? $doc['rounds'] : [])),
+            'echocardiograms_performed' => $doc['echocardiogramsPerformed'] ?? null,
+            'echocardiograms_correct_diagnosis' => $doc['echocardiogramsCorrectDiagnosis'] ?? null,
             'selected_item_slugs' => json_encode(
                 $this->selectedSessionItems($doc, 'selectedItemSlugs', 'itemScores'),
                 JSON_THROW_ON_ERROR,
@@ -246,6 +248,8 @@ class SyncCouchDb extends Command
             'phase',
             'day_round',
             'round_count',
+            'echocardiograms_performed',
+            'echocardiograms_correct_diagnosis',
             'selected_item_slugs',
             'selected_counselling_slugs',
             'notes',

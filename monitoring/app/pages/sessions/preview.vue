@@ -39,6 +39,8 @@ interface PreviewData {
   rounds?: IRound[]
   selectedItemSlugs?: string[]
   selectedCounsellingSlugs?: string[]
+  echocardiogramsPerformed?: number
+  echocardiogramsCorrectDiagnosis?: number
   sessionId?: string
   sessionRev?: string
   phase: MentorshipPhase | null
@@ -187,6 +189,12 @@ async function saveSession() {
       rounds,
       selectedItemSlugs: pData.selectedItemSlugs ?? toolItems.map(item => item.slug),
       selectedCounsellingSlugs: pData.selectedCounsellingSlugs ?? counsellingItems.map(item => item.slug),
+      ...(pData.toolSlug === 'echo'
+        ? {
+            echocardiogramsPerformed: pData.echocardiogramsPerformed,
+            echocardiogramsCorrectDiagnosis: pData.echocardiogramsCorrectDiagnosis,
+          }
+        : {}),
       phase: (phase.value ?? null) as MentorshipPhase | null,
       notes: notes.value.trim() || undefined,
       syncStatus: 'pending',
@@ -298,7 +306,28 @@ const dateBeforeReopenedJourney = computed(() =>
   !!latestJourneyDateStr.value && !!evalDateStr.value && evalDateStr.value < latestJourneyDateStr.value
 )
 
-const isValid = computed(() => !!phase.value && !!evalDateStr.value && !dateBeforeReopenedJourney.value)
+const echoActivityError = computed(() => {
+  if (previewData.value?.toolSlug !== 'echo') return undefined
+  const { echocardiogramsPerformed, echocardiogramsCorrectDiagnosis } = previewData.value
+  if (
+    echocardiogramsPerformed === undefined
+    || echocardiogramsCorrectDiagnosis === undefined
+    || !Number.isSafeInteger(echocardiogramsPerformed)
+    || !Number.isSafeInteger(echocardiogramsCorrectDiagnosis)
+    || echocardiogramsPerformed < 0
+    || echocardiogramsCorrectDiagnosis < 0
+  ) return 'Return to observation and enter valid whole-number echocardiogram counts.'
+  if (echocardiogramsCorrectDiagnosis > echocardiogramsPerformed) {
+    return 'The number with a correct final diagnosis cannot exceed the number performed.'
+  }
+  return undefined
+})
+
+const isValid = computed(() =>
+  !!phase.value
+  && !!evalDateStr.value
+  && !dateBeforeReopenedJourney.value
+  && !echoActivityError.value)
 </script>
 
 <template>
@@ -380,6 +409,29 @@ const isValid = computed(() => !!phase.value && !!evalDateStr.value && !dateBefo
           <p class="text-xs text-orange-600 dark:text-orange-400">Counselling Avg</p>
         </div>
       </div>
+
+      <section
+        v-if="previewData.toolSlug === 'echo'"
+        class="rounded-xl border border-sky-200 bg-sky-50 p-4 dark:border-sky-900 dark:bg-sky-950/30"
+      >
+        <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Echocardiogram activity</h2>
+        <p class="mt-1 text-xs text-gray-600 dark:text-gray-300">
+          Visit-level supervised activity counts. These are separate from ratings and do not affect competency status.
+        </p>
+        <div class="mt-3 grid grid-cols-2 gap-3 text-center">
+          <div class="rounded-lg bg-white/70 p-3 dark:bg-gray-900/50">
+            <p class="text-xl font-bold text-sky-800 dark:text-sky-200">{{ previewData.echocardiogramsPerformed ?? 'Not recorded' }}</p>
+            <p class="text-xs text-gray-600 dark:text-gray-300">Performed under supervision</p>
+          </div>
+          <div class="rounded-lg bg-white/70 p-3 dark:bg-gray-900/50">
+            <p class="text-xl font-bold text-sky-800 dark:text-sky-200">{{ previewData.echocardiogramsCorrectDiagnosis ?? 'Not recorded' }}</p>
+            <p class="text-xs text-gray-600 dark:text-gray-300">Correct final diagnosis</p>
+          </div>
+        </div>
+        <p v-if="echoActivityError" class="mt-2 text-xs font-medium text-red-700 dark:text-red-300" role="alert">
+          {{ echoActivityError }}
+        </p>
+      </section>
 
       <!-- Session Details -->
       <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-4 space-y-4">

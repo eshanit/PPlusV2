@@ -412,6 +412,26 @@ const trajectoryOptions = computed(() => ({
 
         </Card>
 
+        <Card
+            v-if="session.toolSlug === 'echo' && (session.echocardiogramsPerformed !== null || session.echocardiogramsCorrectDiagnosis !== null)"
+            class="p-4"
+        >
+            <h2 class="text-sm font-semibold text-foreground">Echocardiogram activity</h2>
+            <p class="mt-1 text-xs text-muted-foreground">
+                Supervised activity counts for this visit, separate from competency ratings.
+            </p>
+            <div class="mt-3 grid grid-cols-2 gap-3 text-center">
+                <div class="rounded-lg bg-muted/40 p-3">
+                    <p class="text-xl font-bold tabular-nums">{{ session.echocardiogramsPerformed ?? 'Not recorded' }}</p>
+                    <p class="text-xs text-muted-foreground">Performed under supervision</p>
+                </div>
+                <div class="rounded-lg bg-muted/40 p-3">
+                    <p class="text-xl font-bold tabular-nums">{{ session.echocardiogramsCorrectDiagnosis ?? 'Not recorded' }}</p>
+                    <p class="text-xs text-muted-foreground">Correct final diagnosis</p>
+                </div>
+            </div>
+        </Card>
+
         <Card v-if="session.notes" class="border-sky-200 bg-sky-50/40 p-4">
             <h2 class="text-sm font-semibold text-foreground">Session Notes</h2>
             <p class="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">{{ session.notes }}</p>

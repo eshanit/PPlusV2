@@ -49,6 +49,10 @@ export interface ISession {
   selectedItemSlugs?: string[]
   selectedCounsellingSlugs?: string[]
 
+  // Echo-specific session activity counts from the paper tool's two "#" rows.
+  echocardiogramsPerformed?: number
+  echocardiogramsCorrectDiagnosis?: number
+
   // Explicitly selected by the evaluator at the time of recording
   phase: MentorshipPhase | null
 

@@ -161,6 +161,21 @@ selected disease tool.
   tool.
 - There is no separate counselling table.
 
+### Echocardiogram activity counts
+
+The two `#` rows in the Echocardiogram paper tool are per-session activity
+counts, not competency ratings or gaps:
+
+- `echocardiogramsPerformed`: supervised echocardiograms performed during the
+  visit.
+- `echocardiogramsCorrectDiagnosis`: supervised echocardiograms with a correct
+  final diagnosis during the visit.
+
+The monitoring form collects both counts after competency scoring and before
+review. Both must be non-negative whole numbers, and correct diagnoses cannot
+exceed the number performed. Counts are stored on the session document, sync to
+nullable `evaluation_sessions` columns, and do not affect competency status.
+
 ### Advanced items
 
 `isAdvanced: true` marks grey/paper advanced competencies. These are not required
@@ -256,6 +271,8 @@ export interface ISession {
   districtId: string
   itemScores: IItemScore[]
   counsellingScores: IItemScore[]
+  echocardiogramsPerformed?: number
+  echocardiogramsCorrectDiagnosis?: number
   phase: MentorshipPhase | null
   notes?: string
   syncStatus: SyncStatus

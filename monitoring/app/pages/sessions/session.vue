@@ -162,6 +162,26 @@ function phaseLabel(phase: string | null | undefined): string {
         </div>
       </div>
 
+      <section
+        v-if="session.toolSlug === 'echo'"
+        class="rounded-xl border border-sky-200 bg-sky-50 p-4 dark:border-sky-900 dark:bg-sky-950/30"
+      >
+        <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Echocardiogram activity</h2>
+        <p class="mt-1 text-xs text-gray-600 dark:text-gray-300">
+          Supervised activity counts for this visit. These are separate from competency ratings.
+        </p>
+        <div class="mt-3 grid grid-cols-2 gap-3 text-center">
+          <div class="rounded-lg bg-white/70 p-3 dark:bg-gray-900/50">
+            <p class="text-xl font-bold text-sky-800 dark:text-sky-200">{{ session.echocardiogramsPerformed ?? 'Not recorded' }}</p>
+            <p class="text-xs text-gray-600 dark:text-gray-300">Performed under supervision</p>
+          </div>
+          <div class="rounded-lg bg-white/70 p-3 dark:bg-gray-900/50">
+            <p class="text-xl font-bold text-sky-800 dark:text-sky-200">{{ session.echocardiogramsCorrectDiagnosis ?? 'Not recorded' }}</p>
+            <p class="text-xs text-gray-600 dark:text-gray-300">Correct final diagnosis</p>
+          </div>
+        </div>
+      </section>
+
       <!-- Score Legend -->
       <ScoreLegend />
 

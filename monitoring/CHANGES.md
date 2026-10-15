@@ -15,6 +15,7 @@ This document summarises the first implementation pass aligning the monitoring a
 - Session saves now persist round details and plan slugs while maintaining legacy flat score arrays for existing app consumers.
 - Added edit entry points on session detail and journey cards; edits reuse the same `_id` and PouchDB revision.
 - Session detail and review pages show round-by-round scores as well as the session-level latest-score summary.
+- Echocardiogram sessions collect the paper tool's supervised-procedure and correct-final-diagnosis counts after rating; the counts are validated, stored on the session independently of competency scoring, and synced to nullable `evaluation_sessions` fields by the reporting migration.
 - Competency closure now evaluates planned items only and uses the latest non-null score in the latest session's rounds.
 - Laravel sync now stores planned slugs and per-round score rows; reporting uses a per-session effective-score view for session-level analyses, while the score export preserves each observation round.
 - Round-aware MySQL views now cover session numbering, session averages, day progress, and planned-item journey competency status.
@@ -22,6 +23,7 @@ This document summarises the first implementation pass aligning the monitoring a
 ## Notes
 
 - Legacy flat score arrays are retained as a session-level latest-non-null summary for existing consumers. The `rounds` arrays and selected-item slugs are authoritative for new sessions.
+- Echocardiogram activity counts are optional session fields for backwards compatibility; new Echocardiogram sessions require explicit non-negative whole-number counts, with correct diagnoses no greater than procedures performed.
 - Tool palette values are now wired in a structured way, but the remaining PDF colour matching should still be confirmed with the client before release.
 - The advanced-item grey treatment remains represented by `isAdvanced`, and the competency rules continue to exclude advanced items from `basic_competent`.
 

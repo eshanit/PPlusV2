@@ -58,6 +58,14 @@ class EvaluationSessionResource extends Resource
                             ->color(fn (?string $state): string => self::phaseColor($state)),
                         Infolists\Components\TextEntry::make('round_count')
                             ->label('Observation rounds'),
+                        Infolists\Components\TextEntry::make('echocardiograms_performed')
+                            ->label('Echocardiograms supervised')
+                            ->placeholder('Not recorded')
+                            ->visible(fn (EvaluationSession $record): bool => $record->tool?->slug === 'echo'),
+                        Infolists\Components\TextEntry::make('echocardiograms_correct_diagnosis')
+                            ->label('Correct final diagnoses')
+                            ->placeholder('Not recorded')
+                            ->visible(fn (EvaluationSession $record): bool => $record->tool?->slug === 'echo'),
                         Infolists\Components\TextEntry::make('selected_item_slugs')
                             ->label('Planned tool items')
                             ->formatStateUsing(fn (?array $state): string => implode(', ', $state ?? []))

@@ -98,6 +98,8 @@ const latestJourneyDateStr = computed(() => {
 const phase = ref<MentorshipPhase | null>(null)
 const evalDateStr = ref(format(new Date(), 'yyyy-MM-dd'))
 const sessionNotes = ref('')
+const echocardiogramsPerformedInput = ref('')
+const echocardiogramsCorrectDiagnosisInput = ref('')
 const saving = ref(false)
 const activeStep = ref<'plan' | 'observe'>('plan')
 const activeRoundIndex = ref(0)
@@ -165,6 +167,18 @@ const selectedAdvancedCount = computed(() =>
   tool.value?.items.filter(item =>
     item.isAdvanced && selectedItemSlugs.value.includes(item.slug)).length ?? 0)
 const activeRound = computed(() => rounds[activeRoundIndex.value])
+const echocardiogramsPerformed = computed(() => parseCount(echocardiogramsPerformedInput.value))
+const echocardiogramsCorrectDiagnosis = computed(() => parseCount(echocardiogramsCorrectDiagnosisInput.value))
+const echoActivityError = computed(() => {
+  if (tool.value?.slug !== 'echo') return undefined
+  if (echocardiogramsPerformed.value === undefined || echocardiogramsCorrectDiagnosis.value === undefined) {
+    return 'Enter a whole-number count for both fields. Use 0 if none were performed.'
+  }
+  if (echocardiogramsCorrectDiagnosis.value > echocardiogramsPerformed.value) {
+    return 'The number with a correct final diagnosis cannot exceed the number performed.'
+  }
+  return undefined
+})
 
 const dateBeforeReopenedJourney = computed(() =>
   !!latestJourneyDateStr.value && evalDateStr.value < latestJourneyDateStr.value)
@@ -176,6 +190,7 @@ const isValid = computed(() =>
   && phase.value !== null
   && !!evalDateStr.value
   && !dateBeforeReopenedJourney.value
+  && !echoActivityError.value
   && selectedItemSlugs.value.length > 0
   && rounds.length > 0)
 
@@ -196,6 +211,8 @@ const hasUnsavedChanges = computed(() => {
   if (editId.value) return true
   return phase.value !== null
     || !!sessionNotes.value.trim()
+    || !!echocardiogramsPerformedInput.value
+    || !!echocardiogramsCorrectDiagnosisInput.value
     || rounds.some(round => Object.keys(round.scores).length > 0
       || Object.values(round.notes).some(note => note.trim())
       || !!round.notesText.trim())
@@ -406,6 +423,13 @@ function setItemNote(slug: string, value: string) {
   if (activeRound.value) activeRound.value.notes[slug] = value
 }
 
+function parseCount(value: string): number | undefined {
+  const normalized = value.trim()
+  if (!/^\d+$/.test(normalized)) return undefined
+  const count = Number(normalized)
+  return Number.isSafeInteger(count) ? count : undefined
+}
+
 function roundScores(round: DraftRound, kind: ItemKind): IItemScore[] {
   const selectedSlugs = kind === 'tool' ? selectedItemSlugs.value : selectedCounsellingSlugs.value
   const itemOrder = kind === 'tool'
@@ -471,6 +495,12 @@ function buildReviewPayload() {
     rounds: reviewRounds,
     selectedItemSlugs: [...selectedItemSlugs.value],
     selectedCounsellingSlugs: [...selectedCounsellingSlugs.value],
+    ...(tool.value.slug === 'echo'
+      ? {
+          echocardiogramsPerformed: echocardiogramsPerformed.value,
+          echocardiogramsCorrectDiagnosis: echocardiogramsCorrectDiagnosis.value,
+        }
+      : {}),
     sessionId: editId.value,
     sessionRev: sessionStore.sessions.find(session => session._id === editId.value)?._rev,
     phase: phase.value,
@@ -488,6 +518,8 @@ function snapshotDraft() {
     phase: phase.value,
     evalDateStr: evalDateStr.value,
     sessionNotes: sessionNotes.value,
+    echocardiogramsPerformedInput: echocardiogramsPerformedInput.value,
+    echocardiogramsCorrectDiagnosisInput: echocardiogramsCorrectDiagnosisInput.value,
     activeStep: activeStep.value,
     activeRoundIndex: activeRoundIndex.value,
     selectedItemSlugs: selectedItemSlugs.value,
@@ -503,6 +535,8 @@ function hydrateDraft(draft: Record<string, unknown>): boolean {
   phase.value = (draft.phase as MentorshipPhase | null) ?? null
   evalDateStr.value = String(draft.evalDateStr ?? evalDateStr.value)
   sessionNotes.value = String(draft.sessionNotes ?? '')
+  echocardiogramsPerformedInput.value = String(draft.echocardiogramsPerformedInput ?? '')
+  echocardiogramsCorrectDiagnosisInput.value = String(draft.echocardiogramsCorrectDiagnosisInput ?? '')
   activeStep.value = draft.activeStep === 'observe' ? 'observe' : 'plan'
   selectedItemSlugs.value = Array.isArray(draft.selectedItemSlugs)
     ? draft.selectedItemSlugs.filter((slug): slug is string => typeof slug === 'string')
@@ -531,6 +565,12 @@ function hydrateSession(session: ISession) {
   phase.value = session.phase
   evalDateStr.value = format(new Date(session.evalDate), 'yyyy-MM-dd')
   sessionNotes.value = session.notes ?? ''
+  echocardiogramsPerformedInput.value = session.echocardiogramsPerformed === undefined
+    ? ''
+    : String(session.echocardiogramsPerformed)
+  echocardiogramsCorrectDiagnosisInput.value = session.echocardiogramsCorrectDiagnosis === undefined
+    ? ''
+    : String(session.echocardiogramsCorrectDiagnosis)
   const storedRounds = session.rounds?.length ? session.rounds : [{
     roundId: `legacy-${session._id}`,
     label: 'Round 1',
@@ -841,6 +881,53 @@ function viewEvaluation() {
               @note="setItemNote(item.slug, $event)"
             />
           </div>
+        </section>
+
+        <section
+          v-if="tool?.slug === 'echo'"
+          class="space-y-3 rounded-xl border border-sky-200 bg-sky-50 p-4 dark:border-sky-900 dark:bg-sky-950/30"
+        >
+          <div>
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Echocardiogram activity</h3>
+            <p class="mt-1 text-xs text-gray-600 dark:text-gray-300">
+              Record the supervised echocardiogram counts for this visit. These activity counts are separate from competency ratings and do not affect competency status.
+            </p>
+          </div>
+          <div class="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">
+                Echocardiograms performed under supervision <span class="text-red-600">*</span>
+              </label>
+              <UInput
+                v-model="echocardiogramsPerformedInput"
+                type="number"
+                min="0"
+                step="1"
+                inputmode="numeric"
+                placeholder="Enter a whole number"
+                aria-label="Echocardiograms performed under supervision"
+                aria-required="true"
+              />
+            </div>
+            <div>
+              <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">
+                Echocardiograms with a correct final diagnosis <span class="text-red-600">*</span>
+              </label>
+              <UInput
+                v-model="echocardiogramsCorrectDiagnosisInput"
+                type="number"
+                min="0"
+                step="1"
+                inputmode="numeric"
+                placeholder="Enter a whole number"
+                aria-label="Echocardiograms with a correct final diagnosis"
+                aria-required="true"
+              />
+            </div>
+          </div>
+          <p v-if="echoActivityError" class="text-xs font-medium text-red-700 dark:text-red-300" role="alert">
+            {{ echoActivityError }}
+          </p>
         </section>
 
         <section class="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
