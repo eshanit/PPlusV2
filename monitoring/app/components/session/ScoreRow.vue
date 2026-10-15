@@ -77,14 +77,14 @@ const scoreChangeDisplay = computed(() => {
   <article
     class="rounded-lg border p-3"
     :class="item.isAdvanced
-      ? 'border-gray-300 bg-gray-100 dark:border-gray-700 dark:bg-gray-800'
+      ? 'border-gray-400 border-l-4 bg-gray-200 dark:border-gray-600 dark:bg-gray-800'
       : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900'"
   >
     <div class="flex items-start gap-2">
       <span
         class="inline-flex min-w-9 shrink-0 items-center justify-center rounded px-2 py-1 text-xs font-bold"
         :class="item.isAdvanced
-          ? 'bg-gray-300 text-gray-700 dark:bg-gray-700 dark:text-gray-200'
+          ? 'bg-gray-700 text-white dark:bg-gray-600'
           : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100'"
       >
         {{ item.number }}
@@ -94,7 +94,8 @@ const scoreChangeDisplay = computed(() => {
           <p class="text-sm text-gray-900 dark:text-gray-100">{{ item.title }}</p>
           <span
             v-if="item.isAdvanced"
-            class="rounded-full bg-gray-300 px-2 py-0.5 text-[10px] font-semibold uppercase text-gray-700 dark:bg-gray-700 dark:text-gray-200"
+            class="rounded-full bg-gray-700 px-2 py-0.5 text-[10px] font-semibold uppercase text-white dark:bg-gray-600"
+            title="Not required to be achieved to be considered a competent provider"
           >
             Advanced
           </span>

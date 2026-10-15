@@ -59,10 +59,7 @@ function buildGroupsForTool(tool: ITool): IItemGroup[] {
   return [...groups.values()]
 }
 
-// NOTE: isAdvanced = true marks items that appear in GREY in the paper tool.
-// Grey = advanced competencies not required to be considered a competent provider.
-// The pregnancy/inpatient/specialist sections have been marked advanced based on
-// document context — verify colours against the source docx before going live.
+// Grey-shaded paper competencies are advanced and do not block basic competence.
 
 // ─────────────────────────────────────────────────────────────────────────────
 // COUNSELLING (DC1–DC9)
@@ -218,14 +215,14 @@ export const evaluationTools: ITool[] = [
         category: 'PATIENT EDUCATION',
         title: 'Teaches about how to adjust insulin with physical activity' },
 
-      // SPECIAL SITUATION: PREGNANCY — advanced competencies
-      { slug: 'diabetes-D35', number: 'D35', isAdvanced: true,
+      // SPECIAL SITUATION: PREGNANCY
+      { slug: 'diabetes-D35', number: 'D35', isAdvanced: false,
         category: 'SPECIAL SITUATION: PREGNANCY',
         title: 'Integrates care with ANC services or Obstetrics/Gynaecology units' },
-      { slug: 'diabetes-D36', number: 'D36', isAdvanced: true,
+      { slug: 'diabetes-D36', number: 'D36', isAdvanced: false,
         category: 'SPECIAL SITUATION: PREGNANCY',
         title: 'Programs frequent monitoring (every 2–4 weeks until week 30 and every 2 weeks until 38 weeks) and adjusts insulin regimen based on glucose logbook' },
-      { slug: 'diabetes-D37', number: 'D37', isAdvanced: true,
+      { slug: 'diabetes-D37', number: 'D37', isAdvanced: false,
         category: 'SPECIAL SITUATION: PREGNANCY',
         title: 'Starts low dose aspirin (75–150 mg) in week 12' },
     ],
@@ -278,10 +275,10 @@ export const evaluationTools: ITool[] = [
       { slug: 'cardiac-C13', number: 'C13', isAdvanced: false,
         category: 'GENERAL MANAGEMENT OF HEART FAILURE',
         title: "Consistently recognizes when a patient's condition exceeds their level of autonomy and seeks timely specialist support, providing clear clinical summaries and specific questions to guide decision-making" },
-      { slug: 'cardiac-C14', number: 'C14', isAdvanced: false,
+      { slug: 'cardiac-C14', number: 'C14', isAdvanced: true,
         category: 'GENERAL MANAGEMENT OF HEART FAILURE',
         title: 'Performs and interprets basic ECG findings relevant to heart failure and valvular diseases' },
-      { slug: 'cardiac-C15', number: 'C15', isAdvanced: false,
+      { slug: 'cardiac-C15', number: 'C15', isAdvanced: true,
         category: 'GENERAL MANAGEMENT OF HEART FAILURE',
         title: 'Identifies signs of heart failure in a chest X-ray' },
 
@@ -295,7 +292,7 @@ export const evaluationTools: ITool[] = [
       { slug: 'cardiac-C18', number: 'C18', isAdvanced: false,
         category: 'RHEUMATIC HEART DISEASES',
         title: 'Initiates beta blockers in mitral stenosis and identifies the indication for rate control' },
-      { slug: 'cardiac-C19', number: 'C19', isAdvanced: false,
+      { slug: 'cardiac-C19', number: 'C19', isAdvanced: true,
         category: 'RHEUMATIC HEART DISEASES',
         title: 'Identifies atrial fibrillation on ECG and starts or indicates anticoagulation to prevent systemic embolic complications' },
       { slug: 'cardiac-C20', number: 'C20', isAdvanced: false,
@@ -384,7 +381,7 @@ export const evaluationTools: ITool[] = [
       { slug: 'echo-E6', number: 'E6', isAdvanced: false,
         category: 'ECHOCARDIOGRAM COMPETENCIES',
         title: 'Describes the echo features of cardiomyopathy, mitral stenosis, hypertensive heart diseases, right heart failure, pericardial diseases' },
-      { slug: 'echo-E7', number: 'E7', isAdvanced: false,
+      { slug: 'echo-E7', number: 'E7', isAdvanced: true,
         category: 'ECHOCARDIOGRAM COMPETENCIES',
         title: 'Describes the echo features for the most common congenital heart diseases' },
       { slug: 'echo-E8', number: 'E8', isAdvanced: false,
@@ -508,8 +505,8 @@ export const evaluationTools: ITool[] = [
         category: 'PAIN MANAGEMENT',
         title: 'Refers to physical therapy if available and appropriate' },
 
-      // INPATIENT MANAGEMENT — advanced competencies
-      { slug: 'sickle_cell-S34', number: 'S34', isAdvanced: true,
+      // INPATIENT MANAGEMENT
+      { slug: 'sickle_cell-S34', number: 'S34', isAdvanced: false,
         category: 'INPATIENT MANAGEMENT',
         title: 'Safely transitions between oral and intravenous opioid therapy during hospitalization' },
       { slug: 'sickle_cell-S35', number: 'S35', isAdvanced: true,
@@ -521,7 +518,7 @@ export const evaluationTools: ITool[] = [
       { slug: 'sickle_cell-S37', number: 'S37', isAdvanced: true,
         category: 'INPATIENT MANAGEMENT',
         title: 'Manages fever in inpatients with appropriate evaluation and antimicrobial treatment' },
-      { slug: 'sickle_cell-S38', number: 'S38', isAdvanced: true,
+      { slug: 'sickle_cell-S38', number: 'S38', isAdvanced: false,
         category: 'INPATIENT MANAGEMENT',
         title: 'Manages other complications such as priapism adequately' },
 
@@ -533,20 +530,20 @@ export const evaluationTools: ITool[] = [
         category: 'PATIENT EDUCATION',
         title: 'Recognizes the role and types of psychosocial support needed in SCD management' },
 
-      // MANAGEMENT OF SCD DURING AND BEFORE PREGNANCY — advanced competencies
-      { slug: 'sickle_cell-S41', number: 'S41', isAdvanced: true,
+      // MANAGEMENT OF SCD DURING AND BEFORE PREGNANCY
+      { slug: 'sickle_cell-S41', number: 'S41', isAdvanced: false,
         category: 'MANAGEMENT OF SCD DURING AND BEFORE PREGNANCY',
         title: 'Refers patients of childbearing age for family planning as needed and discusses risks of pregnancy in SCD' },
-      { slug: 'sickle_cell-S42', number: 'S42', isAdvanced: true,
+      { slug: 'sickle_cell-S42', number: 'S42', isAdvanced: false,
         category: 'MANAGEMENT OF SCD DURING AND BEFORE PREGNANCY',
         title: 'Re-starts HU during the second trimester if pain crisis, need of transfusion and/or other complications in agreement with patient' },
-      { slug: 'sickle_cell-S43', number: 'S43', isAdvanced: true,
+      { slug: 'sickle_cell-S43', number: 'S43', isAdvanced: false,
         category: 'MANAGEMENT OF SCD DURING AND BEFORE PREGNANCY',
         title: 'Initiates preventive therapies during pregnancy: aspirin 150 mg after week 12 and calcium 1.5 g daily' },
-      { slug: 'sickle_cell-S44', number: 'S44', isAdvanced: true,
+      { slug: 'sickle_cell-S44', number: 'S44', isAdvanced: false,
         category: 'MANAGEMENT OF SCD DURING AND BEFORE PREGNANCY',
         title: 'Ensures appropriate ANC follow-up schedule (every 4 weeks until week 28, every 2 weeks until week 36 and weekly after week 36)' },
-      { slug: 'sickle_cell-S45', number: 'S45', isAdvanced: true,
+      { slug: 'sickle_cell-S45', number: 'S45', isAdvanced: false,
         category: 'MANAGEMENT OF SCD DURING AND BEFORE PREGNANCY',
         title: 'Starts low molecular weight heparin (LMWH) in inpatient pregnant women or outpatient with history of thrombosis or known clotting disorder' },
     ],
@@ -567,7 +564,7 @@ export const evaluationTools: ITool[] = [
       { slug: 'respiratory-R3', number: 'R3', isAdvanced: false,
         category: 'ASTHMA — ASSESSMENT AND DIAGNOSIS',
         title: 'Differentiates asthma from other causes of chronic respiratory symptoms such as COPD, post-tuberculosis lung diseases, heart failure or infection' },
-      { slug: 'respiratory-R4', number: 'R4', isAdvanced: false,
+      { slug: 'respiratory-R4', number: 'R4', isAdvanced: true,
         category: 'ASTHMA — ASSESSMENT AND DIAGNOSIS',
         title: 'Understands and performs spirometry (if available) as a diagnostic tool and differentiates between obstruction and restriction' },
       { slug: 'respiratory-R5', number: 'R5', isAdvanced: false,
@@ -632,10 +629,10 @@ export const evaluationTools: ITool[] = [
       { slug: 'respiratory-R22', number: 'R22', isAdvanced: false,
         category: 'ASSESSMENT AND DIAGNOSIS — COPD AND POST-TUBERCULOSIS LUNG DISEASE',
         title: 'Recognizes clinical features of COPD including chronic cough, sputum production, and progressive dyspnoea' },
-      { slug: 'respiratory-R23', number: 'R23', isAdvanced: false,
+      { slug: 'respiratory-R23', number: 'R23', isAdvanced: true,
         category: 'ASSESSMENT AND DIAGNOSIS — COPD AND POST-TUBERCULOSIS LUNG DISEASE',
         title: 'Recognizes common post-TB patterns on chest X-ray' },
-      { slug: 'respiratory-R24', number: 'R24', isAdvanced: false,
+      { slug: 'respiratory-R24', number: 'R24', isAdvanced: true,
         category: 'ASSESSMENT AND DIAGNOSIS — COPD AND POST-TUBERCULOSIS LUNG DISEASE',
         title: 'Differentiates obstructive and restrictive respiratory patterns using spirometry when available' },
 
@@ -837,10 +834,10 @@ export const evaluationTools: ITool[] = [
       { slug: 'epilepsy-E4', number: 'E4', isAdvanced: false,
         category: 'ASSESSMENT AND DIAGNOSIS',
         title: 'Classifies seizures into generalized vs focal based on clinical history' },
-      { slug: 'epilepsy-E5', number: 'E5', isAdvanced: false,
+      { slug: 'epilepsy-E5', number: 'E5', isAdvanced: true,
         category: 'ASSESSMENT AND DIAGNOSIS',
         title: 'Differentiates epileptic seizures from common mimics such as syncope, febrile seizures, psychogenic non-epileptic events' },
-      { slug: 'epilepsy-E6', number: 'E6', isAdvanced: false,
+      { slug: 'epilepsy-E6', number: 'E6', isAdvanced: true,
         category: 'ASSESSMENT AND DIAGNOSIS',
         title: 'Performs a focused neurological examination to identify focal neurological deficits or other signs suggesting secondary causes' },
       { slug: 'epilepsy-E7', number: 'E7', isAdvanced: false,
@@ -876,14 +873,14 @@ export const evaluationTools: ITool[] = [
         category: 'PATIENT EDUCATION',
         title: 'Counsels patients on adherence to medication and avoidance of known seizure triggers and to keep a seizure diary' },
 
-      // PREGNANCY AND EPILEPSY — advanced competencies
-      { slug: 'epilepsy-E17', number: 'E17', isAdvanced: true,
+      // PREGNANCY AND EPILEPSY
+      { slug: 'epilepsy-E17', number: 'E17', isAdvanced: false,
         category: 'PREGNANCY AND EPILEPSY',
         title: 'Provides counselling to women of childbearing age regarding pregnancy planning and epilepsy management' },
-      { slug: 'epilepsy-E18', number: 'E18', isAdvanced: true,
+      { slug: 'epilepsy-E18', number: 'E18', isAdvanced: false,
         category: 'PREGNANCY AND EPILEPSY',
         title: 'Avoids sodium valproate in women of childbearing age when other alternatives are available' },
-      { slug: 'epilepsy-E19', number: 'E19', isAdvanced: true,
+      { slug: 'epilepsy-E19', number: 'E19', isAdvanced: false,
         category: 'PREGNANCY AND EPILEPSY',
         title: 'Provides counselling about contraception and refers to the contraception units when necessary' },
     ],
@@ -977,10 +974,10 @@ export const evaluationTools: ITool[] = [
       { slug: 'liver-L8', number: 'L8', isAdvanced: false,
         category: 'GENERAL MANAGEMENT AND COMPLICATIONS',
         title: 'Initiates diuretics correctly when ascites or pedal oedema' },
-      { slug: 'liver-L9', number: 'L9', isAdvanced: true,
+      { slug: 'liver-L9', number: 'L9', isAdvanced: false,
         category: 'GENERAL MANAGEMENT AND COMPLICATIONS',
         title: 'Performs paracentesis when indicated (ascites refractory to diuretics)' },
-      { slug: 'liver-L10', number: 'L10', isAdvanced: false,
+      { slug: 'liver-L10', number: 'L10', isAdvanced: true,
         category: 'GENERAL MANAGEMENT AND COMPLICATIONS',
         title: 'Titrates diuretics correctly up and down with electrolyte and kidney function monitoring' },
       { slug: 'liver-L11', number: 'L11', isAdvanced: false,
@@ -989,13 +986,13 @@ export const evaluationTools: ITool[] = [
       { slug: 'liver-L12', number: 'L12', isAdvanced: false,
         category: 'GENERAL MANAGEMENT AND COMPLICATIONS',
         title: 'Identifies when to refer for admission when the patient shows signs of decompensation' },
-      { slug: 'liver-L13', number: 'L13', isAdvanced: true,
+      { slug: 'liver-L13', number: 'L13', isAdvanced: false,
         category: 'GENERAL MANAGEMENT AND COMPLICATIONS',
         title: 'Gives beta blockers for patients with previous oesophageal varices bleeding' },
-      { slug: 'liver-L14', number: 'L14', isAdvanced: true,
+      { slug: 'liver-L14', number: 'L14', isAdvanced: false,
         category: 'GENERAL MANAGEMENT AND COMPLICATIONS',
         title: 'Titrates beta blockers correctly to achieve benefit (lowering HR to at least 55 bpm)' },
-      { slug: 'liver-L15', number: 'L15', isAdvanced: true,
+      { slug: 'liver-L15', number: 'L15', isAdvanced: false,
         category: 'GENERAL MANAGEMENT AND COMPLICATIONS',
         title: 'Gives antibiotics for secondary prophylaxis of spontaneous bacterial peritonitis' },
     ],

@@ -166,16 +166,19 @@ selected disease tool.
 `isAdvanced: true` marks grey/paper advanced competencies. These are not required
 for `basic_competent`, but they should remain reportable.
 
-Known items currently marked advanced in `evaluationItemData.ts`:
+Items marked advanced in `evaluationItemData.ts`:
 
-- Diabetes pregnancy: D35-D37
-- Cardiac pregnancy: C32-C36
-- Sickle cell inpatient/pregnancy: S34-S38 and S41-S45
-- Epilepsy pregnancy: E17-E19
-- CKD palliative: H15
-- Liver procedures: L9, L13-L15
+- Diabetes: none
+- Heart diseases: C14-C15, C19, C32-C36
+- Echocardiogram: E7
+- Sickle cell: S35-S37
+- Respiratory: R4, R23-R24
+- Epilepsy: E5-E6
+- CKD: H15
+- Chronic liver disease: L10
 
-Verify grey shading with the clinical team before go-live.
+The grey-shaded PDF rows are rendered in charcoal in the plan and observation
+screens. Confirm clinical interpretation of these markings before go-live.
 
 ### Source document quirks
 
@@ -427,16 +430,16 @@ Still needed in reporting/:
 | Tool slug | Label | Items | Notes |
 | --- | --- | --- | --- |
 | `counselling` | General Counselling Competencies | DC1-DC9 (9) | Cross-cutting, every session |
-| `diabetes` | Diabetes Mellitus | D1-D37 (37) | D35-D37 advanced |
+| `diabetes` | Diabetes Mellitus | D1-D37 (37) | all basic |
 | `cardiac` | Heart Diseases | C1-C36 (36) | C32-C36 advanced |
-| `echo` | Echocardiogram | E1-E10 (9, no E9) | all basic |
-| `sickle_cell` | Sickle Cell Disease | S1-S45 (45) | S34-S38, S41-S45 advanced |
+| `echo` | Echocardiogram | E1-E10 (9, no E9) | E7 advanced |
+| `sickle_cell` | Sickle Cell Disease | S1-S45 (45) | S35-S37 advanced |
 | `respiratory` | Respiratory Diseases | R1-R26 (26) | all basic |
 | `hypertension` | Severe Hypertension | H1-H19 (19) | all basic |
 | `ckd` | Chronic Kidney Disease & Nephrotic Syndrome | H1-H25 (25) | H15 advanced |
-| `epilepsy` | Epilepsy | E1-E19 (18, no E14) | E17-E19 advanced |
+| `epilepsy` | Epilepsy | E1-E19 (18, no E14) | E5-E6 advanced |
 | `palliative` | Palliative Care | P1-P13 (13) | P9 is second P8 in doc |
-| `liver` | Chronic Liver Disease | L1-L15 (15) | L9, L13-L15 advanced |
+| `liver` | Chronic Liver Disease | L1-L15 (15) | L10 advanced |
 
 Exports in `evaluationItemData.ts`:
 

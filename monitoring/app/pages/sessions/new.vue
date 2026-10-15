@@ -160,6 +160,10 @@ const allGroups = computed<ItemGroup[]>(() => {
 
 const selectedToolItems = computed(() => selectedItemSlugs.value.length)
 const selectedCounsellingCount = computed(() => selectedCounsellingSlugs.value.length)
+const advancedItemCount = computed(() => tool.value?.items.filter(item => item.isAdvanced).length ?? 0)
+const selectedAdvancedCount = computed(() =>
+  tool.value?.items.filter(item =>
+    item.isAdvanced && selectedItemSlugs.value.includes(item.slug)).length ?? 0)
 const activeRound = computed(() => rounds[activeRoundIndex.value])
 
 const dateBeforeReopenedJourney = computed(() =>
@@ -668,6 +672,25 @@ function viewEvaluation() {
         </div>
       </section>
 
+      <div
+        v-if="advancedItemCount > 0"
+        role="status"
+        aria-live="polite"
+        class="flex items-start gap-3 rounded-lg border border-gray-400 bg-gray-200 px-3 py-2.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+      >
+        <span class="shrink-0 rounded bg-gray-700 px-2 py-0.5 text-[10px] font-semibold uppercase text-white">
+          Advanced
+        </span>
+        <div>
+          <p class="font-medium">
+            Advanced competencies are not required to be achieved to be considered a competent provider.
+          </p>
+          <p class="mt-0.5 text-xs text-gray-700 dark:text-gray-300">
+            {{ selectedAdvancedCount }} of {{ advancedItemCount }} advanced competencies selected.
+          </p>
+        </div>
+      </div>
+
       <section v-if="activeStep === 'plan'" class="space-y-4">
         <div class="flex flex-wrap items-end justify-between gap-2">
           <div>
@@ -707,19 +730,24 @@ function viewEvaluation() {
             <label
               v-for="item in group.items"
               :key="item.slug"
-              class="flex cursor-pointer items-start gap-3 px-3 py-3"
-              :class="item.isAdvanced ? 'bg-gray-100 dark:bg-gray-800/70' : ''"
+              class="flex cursor-pointer items-start gap-3 border-l-4 border-transparent px-3 py-3"
+              :class="item.isAdvanced ? 'border-gray-600 bg-gray-200 dark:border-gray-500 dark:bg-gray-800' : ''"
             >
               <UCheckbox
                 :model-value="isSelected(item)"
                 class="mt-0.5"
                 @update:model-value="toggleItem(item)"
               />
-              <span class="inline-flex min-w-9 shrink-0 items-center justify-center rounded bg-gray-100 px-2 py-1 text-xs font-bold text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+              <span
+                class="inline-flex min-w-9 shrink-0 items-center justify-center rounded px-2 py-1 text-xs font-bold"
+                :class="item.isAdvanced
+                  ? 'bg-gray-700 text-white dark:bg-gray-600'
+                  : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200'"
+              >
                 {{ item.number }}
               </span>
-              <span class="flex-1 text-sm text-gray-800 dark:text-gray-200">{{ item.title }}</span>
-              <span v-if="item.isAdvanced" class="shrink-0 rounded-full bg-gray-300 px-2 py-0.5 text-[10px] font-semibold uppercase text-gray-700 dark:bg-gray-700 dark:text-gray-200">
+              <span class="flex-1 text-sm text-gray-900 dark:text-gray-100">{{ item.title }}</span>
+              <span v-if="item.isAdvanced" class="shrink-0 rounded-full bg-gray-700 px-2 py-0.5 text-[10px] font-semibold uppercase text-white dark:bg-gray-600">
                 Advanced
               </span>
             </label>

@@ -418,7 +418,15 @@ const isValid = computed(() => !!phase.value && !!evalDateStr.value && !dateBefo
       <ScoreDistribution :counts="scoreCounts" />
 
       <section v-if="reviewRoundGroups.length" class="space-y-4">
-        <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Round-by-round review</h2>
+        <div>
+          <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Round-by-round review</h2>
+          <div class="mt-2 flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2.5 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100">
+            <UIcon name="i-heroicons-information-circle" class="mt-0.5 h-4 w-4 shrink-0" />
+            <p>
+              Each section shows the scores recorded in that observation round only. Compare rounds to see how observations differed during this visit.
+            </p>
+          </div>
+        </div>
         <article
           v-for="round in reviewRoundGroups"
           :key="round.key"
@@ -444,6 +452,12 @@ const isValid = computed(() => !!phase.value && !!evalDateStr.value && !dateBefo
       </section>
 
       <!-- Latest non-null score per planned item -->
+      <div class="flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2.5 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100">
+        <UIcon name="i-heroicons-information-circle" class="mt-0.5 h-4 w-4 shrink-0" />
+        <p>
+          The session summary combines all rounds from this visit. For each competency, it shows the most recent score recorded; competencies not scored in any round have no score here.
+        </p>
+      </div>
       <ItemScoresList
         :title="`${previewData.toolLabel} · session summary`"
         :items="toolItemsData"
