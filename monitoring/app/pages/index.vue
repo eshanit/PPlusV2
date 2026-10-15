@@ -109,7 +109,7 @@ function phaseColor(phase: MentorshipPhase | null): 'info' | 'success' | 'warnin
               :label="formatPhase(session.phase)"
               :color="phaseColor(session.phase)"
               variant="soft"
-              size="sm"
+              size="md"
             />
           </div>
         </li>

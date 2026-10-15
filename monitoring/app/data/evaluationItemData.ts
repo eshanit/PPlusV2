@@ -19,6 +19,29 @@ export const SCORE_COLORS: Record<1 | 2 | 3 | 4 | 5 | 0, string> = {
   0: '#cbd5e1',
 }
 
+/**
+ * Text colour to place on each SCORE_COLORS background.
+ * White fails contrast on amber, yellow and light green, so those use near-black.
+ */
+export const SCORE_TEXT_COLORS: Record<1 | 2 | 3 | 4 | 5 | 0, string> = {
+  1: '#ffffff',
+  2: '#111827',
+  3: '#111827',
+  4: '#111827',
+  5: '#ffffff',
+  0: '#111827',
+}
+
+export function scoreBackground(score: number | null | undefined): string {
+  if (score === null || score === undefined) return SCORE_COLORS[0]
+  return SCORE_COLORS[score as 1 | 2 | 3 | 4 | 5] ?? SCORE_COLORS[0]
+}
+
+export function scoreTextColor(score: number | null | undefined): string {
+  if (score === null || score === undefined) return SCORE_TEXT_COLORS[0]
+  return SCORE_TEXT_COLORS[score as 1 | 2 | 3 | 4 | 5] ?? SCORE_TEXT_COLORS[0]
+}
+
 const DEFAULT_TOOL_THEME: IToolTheme = {
   primary: '#475569',
   headerBg: '#e2e8f0',
@@ -34,7 +57,7 @@ const TOOL_THEMES: Record<string, IToolTheme> = {
   respiratory: { primary: '#10b981', headerBg: '#d1fae5', headerText: '#064e3b', accent: '#059669' },
   hypertension: { primary: '#f97316', headerBg: '#ffedd5', headerText: '#7c2d12', accent: '#ea580c' },
   ckd: { primary: '#3b82f6', headerBg: '#dbeafe', headerText: '#1e3a8a', accent: '#2563eb' },
-  epilepsy: { primary: '#a855f7', headerBg: '#f3e8ff', headerText: '#4c1d95', accent: '#9333ea' },
+  epilepsy: { primary: '#6366f1', headerBg: '#e0e7ff', headerText: '#312e81', accent: '#4f46e5' },
   palliative: { primary: '#f472b6', headerBg: '#fce7f3', headerText: '#831843', accent: '#db2777' },
   liver: { primary: '#f59e0b', headerBg: '#fef3c7', headerText: '#78350f', accent: '#d97706' },
   counselling: { primary: '#64748b', headerBg: '#f8fafc', headerText: '#0f172a', accent: '#475569' },

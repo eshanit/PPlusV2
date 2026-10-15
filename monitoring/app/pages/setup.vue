@@ -3,6 +3,15 @@
     <!-- Header -->
     <div class="bg-primary-600 dark:bg-primary-800 text-white px-6 pt-12 pb-8">
       <div class="max-w-md mx-auto">
+        <UButton
+          v-if="userStore.isIdentified"
+          variant="soft"
+          color="neutral"
+          icon="i-heroicons-arrow-left"
+          label="Back"
+          class="mb-6 -ml-1"
+          @click="goBack"
+        />
         <div class="flex items-center gap-3 mb-4">
           <UIcon name="i-heroicons-heart" class="size-7" />
           <span class="text-xl font-bold tracking-wide">PenPlus NCD</span>
@@ -108,6 +117,7 @@ definePageMeta({ layout: 'setup' })
 const userStore = useUserStore()
 const syncStore = useSyncStore()
 const router = useRouter()
+const { goBack } = useBackNavigation()
 
 const search = ref('')
 const currentUser = computed(() => userStore.currentUser)

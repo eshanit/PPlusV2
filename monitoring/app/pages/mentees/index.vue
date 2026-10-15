@@ -267,7 +267,7 @@ onMounted(() => {
         <UButton
           color="warning"
           icon="i-heroicons-arrow-path"
-          size="sm"
+          size="lg"
           :loading="syncing"
           @click="doSync"
         >
@@ -276,7 +276,7 @@ onMounted(() => {
         <UButton
           color="primary"
           icon="i-heroicons-plus"
-          size="sm"
+          size="lg"
           @click="openCreate"
         >
           Add
@@ -363,7 +363,7 @@ onMounted(() => {
               :label="`${openGaps(mentee.id)} gap${openGaps(mentee.id) > 1 ? 's' : ''}`"
               color="warning"
               variant="soft"
-              size="xs"
+              size="md"
             />
             <UIcon name="i-heroicons-chevron-right" class="size-4 text-gray-400" />
           </div>
@@ -373,7 +373,7 @@ onMounted(() => {
           <UButton
             variant="ghost"
             color="neutral"
-            size="xs"
+            size="md"
             icon="i-heroicons-pencil-square"
             :aria-label="`Edit ${mentee.firstname} ${mentee.lastname}`"
             @click="openEdit(mentee)"
@@ -381,7 +381,7 @@ onMounted(() => {
           <UButton
             variant="ghost"
             color="error"
-            size="xs"
+            size="md"
             icon="i-heroicons-trash"
             :aria-label="`Delete ${mentee.firstname} ${mentee.lastname}`"
             @click="confirmDelete(mentee)"

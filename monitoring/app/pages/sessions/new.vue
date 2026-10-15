@@ -652,8 +652,8 @@ function viewEvaluation() {
 
 <template>
   <div class="pb-8">
-    <header class="sticky top-0 z-20 border-b border-gray-200 bg-white px-4 py-3 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-      <div class="mx-auto flex max-w-3xl items-center justify-between gap-3">
+    <header class="sticky top-14 z-30 border-b border-gray-200 bg-white px-4 py-3 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+      <div class="mx-auto flex max-w-4xl items-center justify-between gap-3">
         <div class="min-w-0">
           <p class="truncate text-sm font-semibold text-gray-900 dark:text-white">{{ menteeName }}</p>
           <p class="truncate text-xs text-gray-500 dark:text-gray-400">{{ tool?.label }}</p>
@@ -670,7 +670,7 @@ function viewEvaluation() {
       </div>
     </header>
 
-    <main class="mx-auto max-w-3xl space-y-5 px-4 py-5">
+    <main class="mx-auto max-w-4xl space-y-5 px-4 py-5">
       <section
         v-if="tool"
         class="rounded-xl border px-4 py-3"
@@ -718,7 +718,7 @@ function viewEvaluation() {
         aria-live="polite"
         class="flex items-start gap-3 rounded-lg border border-gray-400 bg-gray-200 px-3 py-2.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
       >
-        <span class="shrink-0 rounded bg-gray-700 px-2 py-0.5 text-[10px] font-semibold uppercase text-white">
+        <span class="shrink-0 rounded bg-gray-700 px-2 py-0.5 text-xs font-semibold uppercase text-white">
           Advanced
         </span>
         <div>
@@ -756,21 +756,21 @@ function viewEvaluation() {
               : {}"
           >
             <div>
-              <h3 class="text-xs font-bold uppercase tracking-wide">{{ group.label }}</h3>
-              <p class="mt-0.5 text-[11px] opacity-75">
+              <h3 class="text-sm font-bold uppercase tracking-wide">{{ group.label }}</h3>
+              <p class="mt-0.5 text-xs opacity-75">
                 {{ group.items.filter(isSelected).length }} of {{ group.items.length }} selected
               </p>
             </div>
             <div class="flex gap-1">
-              <UButton size="xs" variant="soft" color="neutral" @click="setGroupSelection(group, true)">Select all</UButton>
-              <UButton size="xs" variant="ghost" color="neutral" @click="setGroupSelection(group, false)">Clear</UButton>
+              <UButton size="md" variant="soft" color="neutral" @click="setGroupSelection(group, true)">Select all</UButton>
+              <UButton size="md" variant="ghost" color="neutral" @click="setGroupSelection(group, false)">Clear</UButton>
             </div>
           </header>
           <div class="divide-y divide-gray-100 dark:divide-gray-800">
             <label
               v-for="item in group.items"
               :key="item.slug"
-              class="flex cursor-pointer items-start gap-3 border-l-4 border-transparent px-3 py-3"
+              class="flex min-h-14 cursor-pointer items-start gap-3 border-l-4 border-transparent px-3 py-3.5"
               :class="item.isAdvanced ? 'border-gray-600 bg-gray-200 dark:border-gray-500 dark:bg-gray-800' : ''"
             >
               <UCheckbox
@@ -786,8 +786,8 @@ function viewEvaluation() {
               >
                 {{ item.number }}
               </span>
-              <span class="flex-1 text-sm text-gray-900 dark:text-gray-100">{{ item.title }}</span>
-              <span v-if="item.isAdvanced" class="shrink-0 rounded-full bg-gray-700 px-2 py-0.5 text-[10px] font-semibold uppercase text-white dark:bg-gray-600">
+              <span class="flex-1 text-base leading-snug text-gray-900 dark:text-gray-100">{{ item.title }}</span>
+              <span v-if="item.isAdvanced" class="shrink-0 rounded-full bg-gray-700 px-2 py-0.5 text-xs font-semibold uppercase text-white dark:bg-gray-600">
                 Advanced
               </span>
             </label>
@@ -795,7 +795,7 @@ function viewEvaluation() {
         </section>
 
         <div class="sticky bottom-2 flex justify-end rounded-xl border border-gray-200 bg-white/95 p-3 shadow-lg backdrop-blur dark:border-gray-700 dark:bg-gray-900/95">
-          <UButton color="primary" :disabled="selectedToolItems === 0" @click="confirmPlan">
+          <UButton color="primary" size="xl" :disabled="selectedToolItems === 0" @click="confirmPlan">
             Confirm plan · {{ evaluationItemCount }} items
             <UIcon name="i-heroicons-arrow-right" class="ml-2 h-4 w-4" />
           </UButton>
@@ -810,7 +810,7 @@ function viewEvaluation() {
               {{ scoredInActiveRound }}/{{ evaluationItemCount }} scored in this round
             </p>
           </div>
-          <UButton size="sm" variant="soft" color="neutral" @click="activeStep = 'plan'">
+          <UButton size="lg" variant="soft" color="neutral" @click="activeStep = 'plan'">
             <UIcon name="i-heroicons-pencil-square" class="mr-1 h-4 w-4" />
             Edit plan
           </UButton>
@@ -822,7 +822,7 @@ function viewEvaluation() {
               v-for="(round, index) in rounds"
               :key="round.roundId"
               type="button"
-              class="flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium"
+              class="flex min-h-11 items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium"
               :class="activeRoundIndex === index
                 ? 'border-primary-500 bg-primary-50 text-primary-800 dark:bg-primary-950 dark:text-primary-200'
                 : 'border-gray-200 text-gray-600 dark:border-gray-700 dark:text-gray-300'"
@@ -830,13 +830,13 @@ function viewEvaluation() {
             >
               {{ round.label || `Round ${index + 1}` }}
             </button>
-            <UButton size="xs" variant="soft" color="primary" @click="addRound">
+            <UButton size="md" variant="soft" color="primary" @click="addRound">
               <UIcon name="i-heroicons-plus" class="mr-1 h-4 w-4" />
               Add round
             </UButton>
             <UButton
               v-if="rounds.length > 1"
-              size="xs"
+              size="md"
               variant="ghost"
               color="error"
               :aria-label="`Delete ${activeRound?.label}`"
@@ -865,7 +865,7 @@ function viewEvaluation() {
               ? { backgroundColor: tool.theme.headerBg, color: tool.theme.headerText, borderColor: tool.theme.accent }
               : {}"
           >
-            <h3 class="text-xs font-bold uppercase tracking-wide">{{ group.label }}</h3>
+            <h3 class="text-sm font-bold uppercase tracking-wide">{{ group.label }}</h3>
           </header>
           <div class="space-y-2 bg-gray-50 p-2 dark:bg-gray-950">
             <SessionScoreRow
@@ -938,11 +938,11 @@ function viewEvaluation() {
         </section>
 
         <div class="sticky bottom-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white/95 p-3 shadow-lg backdrop-blur dark:border-gray-700 dark:bg-gray-900/95">
-          <UButton variant="soft" color="neutral" @click="activeStep = 'plan'">
+          <UButton variant="soft" color="neutral" size="xl" @click="activeStep = 'plan'">
             <UIcon name="i-heroicons-arrow-left" class="mr-1 h-4 w-4" />
             Back to plan
           </UButton>
-          <UButton color="success" :disabled="!isValid" :loading="saving" @click="viewEvaluation">
+          <UButton color="success" size="xl" :disabled="!isValid" :loading="saving" @click="viewEvaluation">
             Review session
             <UIcon name="i-heroicons-eye" class="ml-2 h-4 w-4" />
           </UButton>

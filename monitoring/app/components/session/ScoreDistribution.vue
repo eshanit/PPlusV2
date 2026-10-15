@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { SCORE_COLORS } from '~/data/evaluationItemData'
+import { scoreBackground, scoreTextColor } from '~/data/evaluationItemData'
 
 interface Props {
   counts: Record<string, number>
@@ -15,16 +15,6 @@ const scoreItems: { score: number | null; label: string }[] = [
   { score: 5, label: '5' },
   { score: null, label: 'N/A' },
 ]
-
-function getScoreColor(score: number | null): string {
-  if (score === null) return 'text-gray-600'
-  return 'text-white'
-}
-
-function getScoreBackground(score: number | null): string {
-  if (score === null) return SCORE_COLORS[0]
-  return SCORE_COLORS[score as 1 | 2 | 3 | 4 | 5]
-}
 </script>
 
 <template>
@@ -36,8 +26,7 @@ function getScoreBackground(score: number | null): string {
       <div v-for="item in scoreItems" :key="item.label" class="text-center">
         <div
           class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm mx-auto"
-          :class="getScoreColor(item.score)"
-          :style="{ backgroundColor: getScoreBackground(item.score) }"
+          :style="{ backgroundColor: scoreBackground(item.score), color: scoreTextColor(item.score) }"
         >
           {{ item.label }}
         </div>

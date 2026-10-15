@@ -288,10 +288,6 @@ const reviewRoundGroups = computed(() => {
   })
 })
 
-function goBack() {
-  router.back()
-}
-
 // Same rule as the session form: a reopening session can't be backdated before
 // the session it corrects, or its lower scores wouldn't count as the latest.
 const latestJourneyDateStr = computed(() => {
@@ -333,18 +329,10 @@ const isValid = computed(() =>
 <template>
   <div>
     <!-- Header -->
-    <div class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-10">
-      <div class="max-w-2xl mx-auto px-4 py-3">
+    <div class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-14 z-30">
+      <div class="max-w-4xl mx-auto px-4 py-3">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-3">
-            <UButton
-              variant="soft"
-              color="neutral"
-              size="sm"
-              @click="goBack"
-            >
-              <UIcon name="i-heroicons-arrow-left" class="w-4 h-4" />
-            </UButton>
             <div>
               <h1 class="font-semibold text-gray-900 dark:text-white">Evaluation Overview</h1>
               <p class="text-xs text-gray-500 dark:text-gray-400">
@@ -357,7 +345,7 @@ const isValid = computed(() =>
             <p class="text-sm font-medium text-gray-900 dark:text-white">
               {{ totalScored }}/{{ totalItems }} scored
             </p>
-            <p class="text-[10px] text-gray-500 dark:text-gray-400">
+            <p class="text-xs text-gray-500 dark:text-gray-400">
               {{ previewData?.rounds?.length ?? 1 }} round(s)
             </p>
           </div>
@@ -365,7 +353,7 @@ const isValid = computed(() =>
       </div>
     </div>
 
-    <div v-if="previewData" class="max-w-2xl mx-auto px-4 py-4 space-y-6">
+    <div v-if="previewData" class="max-w-4xl mx-auto px-4 py-4 space-y-6">
       <div class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
         Plan: {{ plannedItemCount }} tool items · {{ plannedCounsellingCount }} counselling items
       </div>
@@ -541,7 +529,7 @@ const isValid = computed(() =>
         <UButton
           color="success"
           block
-          size="lg"
+          size="xl"
           :loading="saving"
           :disabled="!isValid"
           @click="saveSession"

@@ -108,24 +108,16 @@ function phaseLabel(phase: string | null | undefined): string {
 <template>
   <div>
     <!-- Header -->
-    <div class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-10">
-      <div class="max-w-2xl mx-auto px-4 py-3">
+    <div class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-14 z-30">
+      <div class="max-w-4xl mx-auto px-4 py-3">
         <div class="flex items-center gap-3">
-          <UButton
-            variant="soft"
-            color="neutral"
-            size="sm"
-            @click="router.back()"
-          >
-            <UIcon name="i-heroicons-arrow-left" class="w-4 h-4" />
-          </UButton>
-          <div class="min-w-0">
+          <div class="min-w-0 flex-1">
             <h1 class="font-semibold text-gray-900 dark:text-white truncate">Session Details</h1>
             <p class="text-xs text-gray-500 dark:text-gray-400">{{ formatDate(session?.evalDate) }}</p>
           </div>
           <UButton
             v-if="session"
-            size="sm"
+            size="lg"
             color="primary"
             @click="router.push({
               path: '/sessions/new',
@@ -139,7 +131,7 @@ function phaseLabel(phase: string | null | undefined): string {
       </div>
     </div>
 
-    <div v-if="session" class="max-w-2xl mx-auto px-4 py-4 space-y-6">
+    <div v-if="session" class="max-w-4xl mx-auto px-4 py-4 space-y-6">
       <!-- Summary Card -->
       <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-4">
         <div class="grid grid-cols-2 gap-4 text-center sm:grid-cols-4">

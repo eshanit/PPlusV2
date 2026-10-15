@@ -30,6 +30,8 @@
   },
   "devDependencies": {
     "@capacitor/cli": "^8.5.0",
+    "@iconify-json/heroicons": "^1.2.3",
+    "@iconify-json/lucide": "^1.2.144",
     "@types/lodash-es": "^4.17.12",
     "@types/node": "^26.1.1",
     "@types/pouchdb": "^6.4.2",

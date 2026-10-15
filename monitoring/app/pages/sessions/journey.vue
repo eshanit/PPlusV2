@@ -207,17 +207,9 @@ async function confirmResolve() {
 <template>
   <div>
     <!-- Header -->
-    <div class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-10">
-      <div class="max-w-2xl mx-auto px-4 py-3">
+    <div class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-14 z-30">
+      <div class="max-w-4xl mx-auto px-4 py-3">
         <div class="flex items-center gap-3">
-          <UButton
-            variant="soft"
-            color="neutral"
-            size="sm"
-            @click="router.back()"
-          >
-            <UIcon name="i-heroicons-arrow-left" class="w-4 h-4" />
-          </UButton>
           <div class="min-w-0">
             <h1 class="font-semibold text-gray-900 dark:text-white truncate">{{ tool?.label }}</h1>
             <p class="text-xs text-gray-500 dark:text-gray-400">{{ sessions.length }} session{{ sessions.length !== 1 ? 's' : '' }}</p>
@@ -226,7 +218,7 @@ async function confirmResolve() {
       </div>
     </div>
 
-    <div class="max-w-2xl mx-auto px-4 py-4 space-y-4">
+    <div class="max-w-4xl mx-auto px-4 py-4 space-y-4">
       <!-- Summary Card -->
       <JourneySummaryCard
         v-if="sessions.length > 0"
@@ -338,11 +330,11 @@ async function confirmResolve() {
               :label="String(openGaps.length)"
               color="warning"
               variant="solid"
-              size="xs"
+              size="md"
             />
           </h2>
           <UButton
-            size="xs"
+            size="md"
             variant="soft"
             color="warning"
             icon="i-heroicons-plus"

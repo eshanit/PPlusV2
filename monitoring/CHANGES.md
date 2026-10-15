@@ -20,6 +20,10 @@ This document summarises the first implementation pass aligning the monitoring a
 - Laravel sync now stores planned slugs and per-round score rows; reporting uses a per-session effective-score view for session-level analyses, while the score export preserves each observation round.
 - Round-aware MySQL views now cover session numbering, session averages, day progress, and planned-item journey competency status.
 
+## Tablet UI pass
+
+Icons, text size, touch targets, layout width and score contrast were adjusted for tablet use. See `TABLET_UI.md` for details and open items.
+
 ## Notes
 
 - Legacy flat score arrays are retained as a session-level latest-non-null summary for existing consumers. The `rounds` arrays and selected-item slugs are authoritative for new sessions.

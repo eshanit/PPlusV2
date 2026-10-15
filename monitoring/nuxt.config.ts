@@ -18,6 +18,69 @@ export default defineNuxtConfig({
 
   css: ['~/assets/css/main.css'],
 
+  // Field tablets are often offline. Bundle every icon into the client so
+  // nothing is fetched from the Iconify API at runtime.
+  icon: {
+    provider: 'none',
+    fallbackToApi: false,
+    clientBundle: {
+      // Picks up every literal i-heroicons-* name used in app/.
+      scan: true,
+      // Icons Nuxt UI components use internally (not visible to the scanner).
+      icons: [
+        'lucide:arrow-down',
+        'lucide:arrow-left',
+        'lucide:arrow-right',
+        'lucide:arrow-up',
+        'lucide:arrow-up-right',
+        'lucide:check',
+        'lucide:chevron-down',
+        'lucide:chevron-left',
+        'lucide:chevron-right',
+        'lucide:chevron-up',
+        'lucide:chevrons-left',
+        'lucide:chevrons-right',
+        'lucide:circle-alert',
+        'lucide:circle-check',
+        'lucide:circle-x',
+        'lucide:copy',
+        'lucide:copy-check',
+        'lucide:ellipsis',
+        'lucide:eye',
+        'lucide:eye-off',
+        'lucide:file',
+        'lucide:folder',
+        'lucide:folder-open',
+        'lucide:grip-vertical',
+        'lucide:hash',
+        'lucide:info',
+        'lucide:lightbulb',
+        'lucide:loader-circle',
+        'lucide:menu',
+        'lucide:minus',
+        'lucide:monitor',
+        'lucide:moon',
+        'lucide:panel-left-close',
+        'lucide:panel-left-open',
+        'lucide:plus',
+        'lucide:rotate-ccw',
+        'lucide:search',
+        'lucide:square',
+        'lucide:sun',
+        'lucide:terminal',
+        'lucide:triangle-alert',
+        'lucide:upload',
+        'lucide:x',
+      ],
+    },
+  },
+
+  // Light mode reads better on glossy tablet screens in bright clinics.
+  colorMode: {
+    preference: 'light',
+    fallback: 'light',
+  },
+
   typescript: {
     strict: true,
     typeCheck: false,

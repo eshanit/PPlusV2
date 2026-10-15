@@ -38,7 +38,7 @@ function formatDate(ts: number | undefined): string {
         label="Resolved"
         color="success"
         variant="soft"
-        size="xs"
+        size="md"
         class="shrink-0"
       />
       <UBadge
@@ -46,7 +46,7 @@ function formatDate(ts: number | undefined): string {
         label="Open"
         color="warning"
         variant="soft"
-        size="xs"
+        size="md"
         class="shrink-0"
       />
     </div>
@@ -70,7 +70,7 @@ function formatDate(ts: number | undefined): string {
       </span>
       <UButton
         v-if="!gap.resolvedAt"
-        size="xs"
+        size="md"
         variant="soft"
         color="success"
         icon="i-heroicons-check"

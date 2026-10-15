@@ -1,2 +1,23 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
+
+/*
+ * Tablet scaling.
+ * Tailwind and Nuxt UI size text, spacing and controls in rem, so raising the
+ * root font size on tablet-width screens enlarges everything in proportion:
+ * text-xs 12px -> 13.5px, text-sm 14px -> 15.75px, a 40px button -> 45px.
+ * Phones keep the default 16px root.
+ */
+@media (min-width: 768px) {
+  html {
+    font-size: 112.5%;
+  }
+}
+
+/* Remove the 300ms tap delay and double-tap zoom on interactive elements. */
+button,
+a,
+label,
+[role="button"] {
+  touch-action: manipulation;
+}

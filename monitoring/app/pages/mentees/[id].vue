@@ -1,15 +1,7 @@
 <template>
   <div class="space-y-5">
-    <!-- Back + mentee header -->
+    <!-- Mentee header -->
     <div class="flex items-center gap-3">
-      <UButton
-        to="/mentees"
-        variant="ghost"
-        color="neutral"
-        icon="i-heroicons-arrow-left"
-        size="sm"
-        class="-ml-2"
-      />
       <div class="flex items-center gap-3 min-w-0">
         <div class="size-10 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-700 dark:text-primary-300 font-semibold text-sm shrink-0">
           {{ menteeInitials }}
@@ -58,28 +50,28 @@
                   label="Fully Competent"
                   color="success"
                   variant="solid"
-                  size="xs"
+                  size="md"
                 />
                 <UBadge
                   v-else-if="journey.competencyStatus === 'basic_competent'"
                   label="Basic Competent"
                   color="success"
                   variant="soft"
-                  size="xs"
+                  size="md"
                 />
                 <UBadge
                   v-else
                   :label="formatPhase(journey.latestPhase)"
                   :color="phaseColor(journey.latestPhase)"
                   variant="soft"
-                  size="xs"
+                  size="md"
                 />
                 <UBadge
                   v-if="journey.openGaps > 0"
                   :label="`${journey.openGaps} open gap${journey.openGaps > 1 ? 's' : ''}`"
                   color="warning"
                   variant="soft"
-                  size="xs"
+                  size="md"
                 />
               </div>
             </div>

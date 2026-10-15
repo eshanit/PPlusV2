@@ -402,7 +402,7 @@ Composables:
 
 Components:
 
-- `session/`: `EvalItemRow`, `ItemCard`, `ScoreButtons`, `ScorePill`, `PhaseSelector`, `SaveBar`, `ProgressBar`, `ScoreDistribution`, `ItemScoresList`, `ScoreLegend`
+- `session/`: `ScoreRow`, `ScorePill`, `PhaseSelector`, `RoundSelector`, `ScoreDistribution`, `ItemScoresList`, `ScoreLegend`
 - `journey/`: `SummaryCard`, `SessionCard`
 - `gap/`: `GapCard`, `GapForm` (UDrawer bottom sheet)
 
@@ -559,6 +559,17 @@ Exposed state: `cleanupRunning`, `lastCleanupAt`, `lastCleanupPurged`. Triggered
   selection" sentinel. Never add `{ value: '' }` items. For an optional select,
   use `ref<MyType | undefined>(undefined)` and set `placeholder="Not specified"`
   on the `USelect` instead of a blank item.
+- **Icons must be bundled for offline use**: `nuxt.config.ts` disables the
+  Iconify API (`provider: 'none'`, `fallbackToApi: false`). Write icon names as
+  full literals (`'i-heroicons-calendar'`) so the build scanner finds them.
+  Nuxt UI's internal Lucide icons are listed explicitly in `clientBundle.icons`.
+  See `monitoring/TABLET_UI.md`.
+- **Tablet sizing**: the root font is 112.5% at 768px+. Use rem-based Tailwind
+  utilities, never `px` text sizes such as `text-[10px]`. Put text on score
+  colours with `scoreTextColor()` from `evaluationItemData.ts`.
+- **Back navigation is centralised**: the app header shows the Back button on
+  every page except `/`. Do not add per-page back arrows. Register a new page's
+  fallback parent in `getParentRoute()` in `composables/useBackNavigation.ts`.
 - **Gaps are journey-scoped, not session-scoped**: `IGapEntry` links to
   `evaluationGroupId`, not to a session `_id`. Gap management belongs on
   `sessions/journey.vue`. Do not add gap sections to `sessions/session.vue`.

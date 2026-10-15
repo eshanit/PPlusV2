@@ -7,7 +7,6 @@ import { useSessionStore } from '~/stores/sessionStore'
 import { useDistrictStore } from '~/stores/districtStore'
 import { useSyncStore } from '~/stores/syncStore'
 
-const router = useRouter()
 const toast = useToast()
 const { usersDb, sessionsDb, districtsDb } = useDb()
 
@@ -138,14 +137,8 @@ async function doCleanup() {
 </script>
 
 <template>
-  <div class="max-w-2xl mx-auto px-4 py-6 space-y-6">
+  <div class="max-w-4xl mx-auto px-4 py-6 space-y-6">
     <div class="flex items-center gap-3 mb-6">
-      <UButton
-        variant="ghost"
-        color="neutral"
-        icon="i-heroicons-arrow-left"
-        @click="router.back()"
-      />
       <h1 class="text-xl font-bold text-gray-900 dark:text-white">Sync Data</h1>
     </div>
 

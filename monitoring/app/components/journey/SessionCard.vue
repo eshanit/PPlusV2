@@ -28,13 +28,13 @@ function getPhaseColor(phase: string): BadgeColor {
           Session {{ sessionNumber }}
           <span
             v-if="roundLabel"
-            class="text-[10px] font-semibold uppercase tracking-wide text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 rounded-full px-1.5 py-0.5"
+            class="text-xs font-semibold uppercase tracking-wide text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 rounded-full px-1.5 py-0.5"
           >
             {{ roundLabel }}
           </span>
           <span
             v-if="reopenReason"
-            class="text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/30 rounded-full px-1.5 py-0.5"
+            class="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/30 rounded-full px-1.5 py-0.5"
             :title="`Reopened: ${reopenReason}`"
           >
             Reopened
@@ -50,10 +50,10 @@ function getPhaseColor(phase: string): BadgeColor {
           :label="phase"
           :color="getPhaseColor(phase)"
           variant="soft"
-          size="sm"
+          size="md"
         />
         <UButton
-          size="xs"
+          size="md"
           variant="soft"
           color="neutral"
           @click.stop="emit('edit')"
