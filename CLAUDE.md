@@ -573,6 +573,13 @@ Exposed state: `cleanupRunning`, `lastCleanupAt`, `lastCleanupPurged`. Triggered
 - **Tablet sizing**: the root font is 112.5% at 768px+. Use rem-based Tailwind
   utilities, never `px` text sizes such as `text-[10px]`. Put text on score
   colours with `scoreTextColor()` from `evaluationItemData.ts`.
+- **Only evaluators can be picked as the device identity**: roles are assigned
+  in the reporting dashboard (`roles` table: admin, district_admin, evaluator).
+  `CouchDbUserPushService` writes the role name into the CouchDB user doc as
+  `role`. `userStore.evaluators` filters on `EVALUATOR_ROLES`, and `setup.vue`
+  lists only those. Device edits keep the existing `role`, and
+  `SyncCouchDb::processUser()` never clears `role_id` when a doc has no role.
+  Run `php artisan couchdb:push-users` after assigning roles in bulk.
 - **Back navigation is centralised**: the app header shows the Back button on
   every page except `/`. Do not add per-page back arrows. Register a new page's
   fallback parent in `getParentRoute()` in `composables/useBackNavigation.ts`.

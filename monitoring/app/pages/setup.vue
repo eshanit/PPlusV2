@@ -17,7 +17,7 @@
           <span class="text-xl font-bold tracking-wide">PenPlus NCD</span>
         </div>
         <h1 class="text-2xl font-semibold">Who are you?</h1>
-        <p class="mt-1 text-primary-100 text-sm">Select your name to get started</p>
+        <p class="mt-1 text-primary-100 text-sm">Select your name to get started. Only evaluators are listed.</p>
       </div>
     </div>
 
@@ -60,12 +60,33 @@
           </UButton>
         </div>
 
+        <!-- Users synced, but none has the Evaluator role -->
+        <div
+          v-else-if="userStore.evaluators.length === 0"
+          class="py-12 text-center text-gray-400 px-6"
+        >
+          <UIcon name="i-heroicons-lock-closed" class="size-10 mx-auto mb-3 text-gray-300" />
+          <p class="text-sm font-medium text-gray-500">No evaluators found</p>
+          <p class="text-sm mt-1">
+            Only users with the Evaluator role can record sessions. Ask an administrator to assign the role in the reporting dashboard, then sync.
+          </p>
+          <UButton
+            class="mt-4"
+            variant="soft"
+            icon="i-heroicons-arrow-path"
+            :loading="userStore.pulling"
+            @click="syncStore.pullUsers()"
+          >
+            Retry sync
+          </UButton>
+        </div>
+
         <!-- Empty search result -->
         <div
           v-else-if="filtered.length === 0"
           class="py-10 text-center text-gray-400 text-sm"
         >
-          No clinician matches "{{ search }}"
+          No evaluator matches "{{ search }}"
         </div>
 
         <!-- User list -->
@@ -124,8 +145,8 @@ const currentUser = computed(() => userStore.currentUser)
 
 const filtered = computed(() => {
   const q = search.value.trim().toLowerCase()
-  if (!q) return userStore.allUsers
-  return userStore.allUsers.filter(u =>
+  if (!q) return userStore.evaluators
+  return userStore.evaluators.filter(u =>
     u.firstname.toLowerCase().includes(q) ||
     u.lastname.toLowerCase().includes(q) ||
     u.username.toLowerCase().includes(q)

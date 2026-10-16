@@ -19,7 +19,7 @@ class CouchDbUserPushService
 {
     public function push(User $user): void
     {
-        $user->loadMissing(['district', 'facility']);
+        $user->loadMissing(['district', 'facility', 'role']);
 
         $doc = [
             'type' => 'user',
@@ -29,6 +29,8 @@ class CouchDbUserPushService
             'profession' => $user->profession,
             'facility' => $user->facility?->name,
             'district' => $user->district?->name,
+            // Monitoring devices only offer users with an evaluator role as identities.
+            'role' => $user->role?->name,
             'updatedAt' => (int) round($user->updated_at?->valueOf() ?? now()->valueOf()),
             'createdAt' => (int) round($user->created_at?->valueOf() ?? now()->valueOf()),
         ];

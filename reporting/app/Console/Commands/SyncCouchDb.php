@@ -335,7 +335,7 @@ class SyncCouchDb extends Command
         $districtId = $this->resolveDistrictId($doc['district'] ?? null);
         $facilityId = $this->resolveFacilityId($districtId, $doc['facility'] ?? null);
 
-        DB::table('users')->upsert([
+        $row = [
             'id' => $doc['_id'],
             'firstname' => $doc['firstname'],
             'lastname' => $doc['lastname'],
@@ -347,7 +347,8 @@ class SyncCouchDb extends Command
             'created_at' => now(),
             'updated_at' => $this->msToDatetime($doc['updatedAt'] ?? null) ?? now(),
             'synced_at' => now(),
-        ], uniqueBy: ['id'], update: [
+        ];
+        $update = [
             'firstname',
             'lastname',
             'username',
@@ -357,7 +358,20 @@ class SyncCouchDb extends Command
             'couchdb_rev',
             'updated_at',
             'synced_at',
-        ]);
+        ];
+
+        // Roles are owned by the dashboard. Only apply one when the doc names a
+        // known role, so docs without a role never clear an assigned one.
+        $roleId = isset($doc['role']) && is_string($doc['role'])
+            ? DB::table('roles')->where('name', $doc['role'])->value('id')
+            : null;
+
+        if ($roleId !== null) {
+            $row['role_id'] = $roleId;
+            $update[] = 'role_id';
+        }
+
+        DB::table('users')->upsert([$row], uniqueBy: ['id'], update: $update);
     }
 
     private function processDistrict(array $doc): void

@@ -8,6 +8,12 @@ const FALLBACK_ID_RADIX = 16
 const FALLBACK_ID_SUFFIX_LENGTH = 12
 const FALLBACK_RANDOM_MAX = 0xffffffffffff
 
+/**
+ * Roles that may record sessions on a device. Roles are assigned in the
+ * reporting dashboard and pushed to CouchDB with the user document.
+ */
+export const EVALUATOR_ROLES: ReadonlySet<string> = new Set(['evaluator'])
+
 interface IStoredUser {
   _id: string
   _rev?: string
@@ -18,6 +24,8 @@ interface IStoredUser {
   profession?: string
   facility?: string
   district?: string
+  /** Role name from the reporting dashboard, e.g. 'evaluator'. Absent for mentees. */
+  role?: string
   syncStatus?: 'pending' | 'synced' | 'failed'
   syncedAt?: number
   createdAt?: number
@@ -76,6 +84,8 @@ export const useUserStore = defineStore('user', () => {
 
   const currentUser = ref<IUserRef | null>(null)
   const allUsers = ref<IUserRef[]>([])
+  // Role per user id, kept apart from IUserRef so roles never get embedded in session docs.
+  const userRoles = ref<Record<string, string>>({})
   const loadingUsers = ref(false)
   const pulling = ref(false)
   const pullError = ref<string | null>(null)
@@ -104,9 +114,11 @@ export const useUserStore = defineStore('user', () => {
     loadingUsers.value = true
     try {
       const result = await usersDb.allDocs<IStoredUser>({ include_docs: true })
-      allUsers.value = result.rows
+      const docs = result.rows
         .map(r => r.doc!)
         .filter(d => d.firstname && d.lastname)
+      userRoles.value = Object.fromEntries(docs.filter(d => d.role).map(d => [d._id, d.role!]))
+      allUsers.value = docs
         .map(toUserRef)
         .sort((a, b) => a.lastname.localeCompare(b.lastname) || a.firstname.localeCompare(b.firstname))
     } finally {
@@ -147,6 +159,8 @@ export const useUserStore = defineStore('user', () => {
       profession: profession || undefined,
       facility: cleanText(input.facility) || existing?.facility,
       district: cleanText(input.district) || existing?.district,
+      // Roles are managed in the reporting dashboard. Keep whatever it set.
+      role: existing?.role,
       syncStatus: 'pending',
       syncedAt: existing?.syncedAt,
       createdAt: existing?.createdAt ?? now,
@@ -200,6 +214,10 @@ export const useUserStore = defineStore('user', () => {
 
   const isIdentified = computed(() => currentUser.value !== null)
 
+  /** Users allowed to record sessions, for the identity picker. */
+  const evaluators = computed(() =>
+    allUsers.value.filter(user => EVALUATOR_ROLES.has(userRoles.value[user.id] ?? '')))
+
   const currentUserFullName = computed(() =>
     currentUser.value ? `${currentUser.value.firstname} ${currentUser.value.lastname}` : ''
   )
@@ -213,6 +231,7 @@ export const useUserStore = defineStore('user', () => {
   return {
     currentUser,
     allUsers,
+    evaluators,
     loadingUsers,
     pulling,
     pullError,
