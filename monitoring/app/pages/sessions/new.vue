@@ -9,6 +9,7 @@ import type { IEvalItem } from '~/interfaces/IEvalItem'
 import type { IRound, ISession, MentorshipPhase } from '~/interfaces/ISession'
 import SessionScoreRow from '~/components/session/ScoreRow.vue'
 import ScoreLegend from '~/components/session/ScoreLegend.vue'
+import { echoAccuracy } from '~/composables/useSessionCalculations'
 
 definePageMeta({
   middleware: [(to) => {
@@ -172,7 +173,7 @@ const echocardiogramsCorrectDiagnosis = computed(() => parseCount(echocardiogram
 const echoActivityError = computed(() => {
   if (tool.value?.slug !== 'echo') return undefined
   if (echocardiogramsPerformed.value === undefined || echocardiogramsCorrectDiagnosis.value === undefined) {
-    return 'Enter a whole-number count for both fields. Use 0 if none were performed.'
+    return 'Enter both echocardiogram counts. Use 0 if none were performed.'
   }
   if (echocardiogramsCorrectDiagnosis.value > echocardiogramsPerformed.value) {
     return 'The number with a correct final diagnosis cannot exceed the number performed.'
@@ -182,6 +183,44 @@ const echoActivityError = computed(() => {
 
 const dateBeforeReopenedJourney = computed(() =>
   !!latestJourneyDateStr.value && evalDateStr.value < latestJourneyDateStr.value)
+
+// Show the echo count errors once the mentor has tried to move on.
+const showEchoErrors = ref(false)
+
+const echoVisitAccuracy = computed(() =>
+  echoAccuracy(echocardiogramsPerformed.value, echocardiogramsCorrectDiagnosis.value))
+
+// E8 "Correctly identifies diagnosis according to the PEN-Plus protocol" is
+// the item the counts give direct evidence for. Information only: it never
+// sets or suggests a score.
+const ECHO_DIAGNOSIS_ITEM = 'echo-E8'
+
+function itemContext(slug: string): string | undefined {
+  if (slug !== ECHO_DIAGNOSIS_ITEM || tool.value?.slug !== 'echo') return undefined
+  const accuracy = echoVisitAccuracy.value
+  if (!accuracy || echoActivityError.value) {
+    return 'Diagnostic accuracy for this visit will show here once the echocardiogram counts are entered.'
+  }
+  return `This visit: ${accuracy.text} of supervised echocardiograms.`
+}
+
+type ReviewBlocker = { message: string; target: string }
+
+// Why Review is disabled, with the place to fix it. Ordered top to bottom.
+const reviewBlocker = computed<ReviewBlocker | undefined>(() => {
+  if (!evalDateStr.value) return { message: 'Choose an evaluation date', target: 'session-date' }
+  if (dateBeforeReopenedJourney.value) return { message: 'Fix the evaluation date', target: 'session-date' }
+  if (phase.value === null) return { message: 'Select a mentorship phase', target: 'session-phase' }
+  if (echoActivityError.value) return { message: 'Enter the echocardiogram counts', target: 'echo-activity' }
+  return undefined
+})
+
+function goToBlocker() {
+  const blocker = reviewBlocker.value
+  if (!blocker) return
+  if (blocker.target === 'echo-activity') showEchoErrors.value = true
+  document.getElementById(blocker.target)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
 
 const isValid = computed(() =>
   !!mentee.value
@@ -698,7 +737,7 @@ function viewEvaluation() {
       </div>
 
       <section class="grid gap-4 sm:grid-cols-2">
-        <div>
+        <div id="session-date" class="scroll-mt-36">
           <label class="mb-2 block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
             Evaluation date <span class="text-red-500">*</span>
           </label>
@@ -707,7 +746,7 @@ function viewEvaluation() {
             A reopening session can't be dated before {{ latestJourneyDateStr }}.
           </p>
         </div>
-        <div>
+        <div id="session-phase" class="scroll-mt-36">
           <SessionPhaseSelector v-model="phase" />
         </div>
       </section>
@@ -877,58 +916,19 @@ function viewEvaluation() {
               :previous-assessment="previousAssessment(item.slug)"
               :note="activeRound?.notes[item.slug]"
               :counselling="item.kind === 'counselling'"
+              :context="itemContext(item.slug)"
               @score="setScore(item.slug, $event)"
               @note="setItemNote(item.slug, $event)"
             />
           </div>
         </section>
 
-        <section
+        <SessionEchoActivityCounts
           v-if="tool?.slug === 'echo'"
-          class="space-y-3 rounded-xl border border-sky-200 bg-sky-50 p-4 dark:border-sky-900 dark:bg-sky-950/30"
-        >
-          <div>
-            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Echocardiogram activity</h3>
-            <p class="mt-1 text-xs text-gray-600 dark:text-gray-300">
-              Record the supervised echocardiogram counts for this visit. These activity counts are separate from competency ratings and do not affect competency status.
-            </p>
-          </div>
-          <div class="grid gap-3 sm:grid-cols-2">
-            <div>
-              <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">
-                Echocardiograms performed under supervision <span class="text-red-600">*</span>
-              </label>
-              <UInput
-                v-model="echocardiogramsPerformedInput"
-                type="number"
-                min="0"
-                step="1"
-                inputmode="numeric"
-                placeholder="Enter a whole number"
-                aria-label="Echocardiograms performed under supervision"
-                aria-required="true"
-              />
-            </div>
-            <div>
-              <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">
-                Echocardiograms with a correct final diagnosis <span class="text-red-600">*</span>
-              </label>
-              <UInput
-                v-model="echocardiogramsCorrectDiagnosisInput"
-                type="number"
-                min="0"
-                step="1"
-                inputmode="numeric"
-                placeholder="Enter a whole number"
-                aria-label="Echocardiograms with a correct final diagnosis"
-                aria-required="true"
-              />
-            </div>
-          </div>
-          <p v-if="echoActivityError" class="text-xs font-medium text-red-700 dark:text-red-300" role="alert">
-            {{ echoActivityError }}
-          </p>
-        </section>
+          v-model:performed="echocardiogramsPerformedInput"
+          v-model:correct="echocardiogramsCorrectDiagnosisInput"
+          :show-errors="showEchoErrors"
+        />
 
         <section class="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
           <label class="mb-2 block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
@@ -937,15 +937,29 @@ function viewEvaluation() {
           <UTextarea v-model="sessionNotes" :rows="3" placeholder="Overall observations or follow-up actions…" class="w-full" />
         </section>
 
-        <div class="sticky bottom-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white/95 p-3 shadow-lg backdrop-blur dark:border-gray-700 dark:bg-gray-900/95">
-          <UButton variant="soft" color="neutral" size="xl" @click="activeStep = 'plan'">
-            <UIcon name="i-heroicons-arrow-left" class="mr-1 h-4 w-4" />
-            Back to plan
-          </UButton>
-          <UButton color="success" size="xl" :disabled="!isValid" :loading="saving" @click="viewEvaluation">
-            Review session
-            <UIcon name="i-heroicons-eye" class="ml-2 h-4 w-4" />
-          </UButton>
+        <div class="sticky bottom-2 rounded-xl border border-gray-200 bg-white/95 p-3 shadow-lg backdrop-blur dark:border-gray-700 dark:bg-gray-900/95">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <UButton variant="soft" color="neutral" size="xl" @click="activeStep = 'plan'">
+              <UIcon name="i-heroicons-arrow-left" class="mr-1 h-4 w-4" />
+              Back to plan
+            </UButton>
+            <UButton color="success" size="xl" :disabled="!isValid" :loading="saving" @click="viewEvaluation">
+              Review session
+              <UIcon name="i-heroicons-eye" class="ml-2 h-4 w-4" />
+            </UButton>
+          </div>
+          <div v-if="reviewBlocker" class="mt-2 flex justify-end">
+            <UButton
+              variant="link"
+              color="warning"
+              icon="i-heroicons-arrow-down"
+              trailing
+              class="px-0 text-right"
+              @click="goToBlocker"
+            >
+              {{ reviewBlocker.message }}
+            </UButton>
+          </div>
         </div>
       </section>
     </main>

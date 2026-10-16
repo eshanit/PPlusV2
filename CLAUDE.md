@@ -176,6 +176,12 @@ review. Both must be non-negative whole numbers, and correct diagnoses cannot
 exceed the number performed. Counts are stored on the session document, sync to
 nullable `evaluation_sessions` columns, and do not affect competency status.
 
+The counts are one total per visit, not per round. The form uses stepper
+buttons (`EchoActivityCounts`), the review and session pages show diagnostic
+accuracy (`EchoActivitySummary`), and the journey page shows totals and a
+per-visit trend (`EchoActivityCard`). Item E8 shows the visit's accuracy as
+information only; it never sets a score. See `monitoring/TABLET_UI.md`.
+
 ### Advanced items
 
 `isAdvanced: true` marks grey/paper advanced competencies. These are not required
@@ -402,8 +408,8 @@ Composables:
 
 Components:
 
-- `session/`: `ScoreRow`, `ScorePill`, `PhaseSelector`, `RoundSelector`, `ScoreDistribution`, `ItemScoresList`, `ScoreLegend`
-- `journey/`: `SummaryCard`, `SessionCard`
+- `session/`: `ScoreRow`, `ScoreChip`, `EchoActivityCounts`, `EchoActivitySummary`, `PhaseSelector`, `RoundSelector`, `ScoreDistribution`, `ItemScoresList`, `ScoreLegend`
+- `journey/`: `SummaryCard`, `SessionCard`, `EchoActivityCard`
 - `gap/`: `GapCard`, `GapForm` (UDrawer bottom sheet)
 
 Still needed:

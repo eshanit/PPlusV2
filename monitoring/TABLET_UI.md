@@ -83,6 +83,11 @@ colour. The score background hex values themselves are unchanged.
 - uses 48px buttons with bold `text-base` labels,
 - keeps unselected buttons at full opacity with a visible grey border,
 - shows the item title at `text-base`,
+- shows the selected score's meaning as a bold chip, such as
+  "3 · Demonstrates satisfactory competency". The chip uses the legend colour
+  as its background with the same text colour as the selected button. Coloured
+  text on white was rejected because amber, yellow and light green are
+  unreadable as text,
 - on tablets, places the six score buttons to the right of the item title
   instead of below it, which shortens long forms.
 
@@ -135,6 +140,96 @@ rules. It exits the app only from home, or from setup before anyone has signed
 in. **When adding a page**, add its parent to `getParentRoute()` if it is not a
 child of home.
 
+### Review session page
+
+The review page at `sessions/preview.vue` was reworked so that every score
+carries its meaning and the page answers the mentor's main question before
+saving: is this mentee competent yet, and where are the gaps?
+
+- **Competency outcome card** at the top. It applies the journey rule to the
+  session as it would be saved, and updates if the date changes. It says
+  "Saving will mark this journey Basic Competent", "Journey stays ...", or
+  "Not yet competent", and lists the items still below 4. Long lists show six
+  items with a "Show all" toggle.
+- **Score chips everywhere.** Every item shows "4 · Demonstrates advanced
+  competency" instead of a bare number, so the separate legend box was removed.
+- **Not scored is distinct from N/A.** Planned items that were never scored
+  used to disappear from the review. They now appear with a dashed "Not scored"
+  chip, and the summary row counts them.
+- **Averages show meaning.** Each average reads like "3.4 / 5 · Satisfactory"
+  and its tile takes the colour of the nearest score band.
+- **Neutral summary row.** Items scored, marked N/A, tool average and
+  counselling average replace the five colour-coded tiles.
+- **Change since last session** on each item: Improved, Regressed or No change,
+  with the previous score.
+- **Advanced items marked** with the same grey card and badge as the scoring
+  screen.
+- **Grouped by section.** The session summary follows the tool's sections.
+  Round-by-round detail is a collapsed section, shown only when there is more
+  than one round.
+- **Sticky action bar** with Back to edit and Save Session. When Save is
+  disabled, the bar says why, for example "Select a mentorship phase to save."
+
+Supporting code:
+
+- `components/session/ScoreChip.vue` is the shared score-with-meaning chip. The
+  scoring screen uses it too.
+- `components/session/ItemScoresList.vue` gained advanced styling, not-scored
+  rows and previous-score changes. The session detail page benefits as well.
+- `getCompetencyBreakdown()` in `composables/useCompetency.ts` returns the
+  status plus the items holding it back. `getCompetencyStatus()` now reads its
+  status from it, so the two cannot drift apart.
+- `SCORE_SHORT_LABELS`, `COMPETENT_SCORE` and `scoreBand()` in
+  `data/evaluationItemData.ts`. `getScoreChangeDisplay()` and `averageValue()`
+  in `composables/useSessionCalculations.ts`.
+
+The session detail page also had a bug fixed. Its counselling summary was given
+the tool's item list, so counselling rows showed slugs instead of titles.
+
+### Echocardiogram activity counts
+
+The paper tool's two "#" rows record, per visit, how many echocardiograms the
+mentee performed under supervision and how many reached a correct final
+diagnosis. The data model and validation were already right. This pass changed
+how they are entered and shown.
+
+**Entering counts** uses `components/session/EchoActivityCounts.vue` on the
+session form:
+
+- The section is titled "whole visit" and says to enter one total across all
+  rounds, so mentors don't enter counts per round.
+- Each count has large minus and plus buttons around the number, so the
+  on-screen keyboard is not needed. Typing still works for larger numbers.
+- The plus button on "correct final diagnosis" stops at the number performed,
+  so the two counts cannot conflict when using the buttons.
+- Errors only show after a field is left empty, or after the mentor taps the
+  reason in the action bar. They no longer show the moment the page opens.
+- A live line shows "Diagnostic accuracy this visit: 5 of 6 correct (83%)".
+
+**Why Review is disabled** now shows in the sticky action bar, for example
+"Enter the echocardiogram counts", "Select a mentorship phase" or "Choose an
+evaluation date". Tapping it scrolls to the field that needs fixing.
+
+**E8 context.** Item E8, "Correctly identifies diagnosis according to the
+PEN-Plus protocol", shows this visit's accuracy under its title while scoring.
+This is information only. It never sets or suggests a score. Remove the
+`ECHO_DIAGNOSIS_ITEM` context in `sessions/new.vue` if the clinical team
+prefers mentors to score E8 without it.
+
+**Showing counts**:
+
+- The review and session detail pages use
+  `components/session/EchoActivitySummary.vue`, with performed, correct and
+  diagnostic accuracy.
+- The journey page shows `components/journey/EchoActivityCard.vue` for
+  Echocardiogram journeys. It gives totals across the journey, overall
+  accuracy, and a per-visit list oldest first, so the trend is visible.
+  Sessions saved before the counts existed are skipped and counted separately.
+
+`echoAccuracy()` in `composables/useSessionCalculations.ts` is the shared
+calculation. With zero performed, accuracy shows as "None performed" rather
+than 0%.
+
 ### Removed components
 
 These components were not referenced anywhere and were deleted:
@@ -142,12 +237,17 @@ These components were not referenced anywhere and were deleted:
 - `components/session/ItemCard.vue`, which also used a conflicting score palette
   where 3 was blue and 5 was teal,
 - `components/session/SaveBar.vue`,
-- `components/session/ProgressBar.vue`.
+- `components/session/ProgressBar.vue`,
+- `components/session/ScorePill.vue`, replaced by `ScoreChip.vue`.
 
 ## Verification
 
 - `pnpm build` succeeds.
 - Every icon name used in the app exists in the installed local collections.
+- `vue-tsc` type check passes for all files changed in this pass. Three older
+  errors remain in `sessions/new.vue`, from code last changed on 11 October.
+- The competency breakdown was checked against sample journeys. It matched the
+  original status rule in every case.
 - The pages have not yet been checked visually on a physical tablet.
 
 ## Open items

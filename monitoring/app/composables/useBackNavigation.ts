@@ -1,4 +1,8 @@
-import type { RouteLocationNormalizedLoaded, RouteLocationRaw, Router } from 'vue-router'
+import type { RouteLocationRaw } from 'vue-router'
+
+// Use the router types Nuxt actually provides, so they match useRouter()/useRoute().
+type AppRouter = ReturnType<typeof useRouter>
+type AppRoute = ReturnType<typeof useRoute>
 
 /** Pages that are top-level destinations and never show a Back button. */
 const ROOT_PATHS = new Set(['/'])
@@ -11,7 +15,7 @@ function queryString(value: unknown): string | undefined {
  * The logical parent of a page. Used when there is no in-app history to go
  * back to, for example after a reload, a cold start or a deep link.
  */
-export function getParentRoute(route: RouteLocationNormalizedLoaded): RouteLocationRaw {
+export function getParentRoute(route: AppRoute): RouteLocationRaw {
   const menteeId = queryString(route.query.menteeId)
   const toolSlug = queryString(route.query.toolSlug)
 
@@ -31,7 +35,7 @@ export function getParentRoute(route: RouteLocationNormalizedLoaded): RouteLocat
   }
 }
 
-export function isRootRoute(route: RouteLocationNormalizedLoaded): boolean {
+export function isRootRoute(route: AppRoute): boolean {
   return ROOT_PATHS.has(route.path)
 }
 
@@ -46,12 +50,12 @@ function hasInAppHistory(): boolean {
  * the page's logical parent. Route-leave guards (such as the unsaved-session
  * prompt on the session form) still run either way.
  */
-export function navigateBack(router: Router, route: RouteLocationNormalizedLoaded) {
+export function navigateBack(router: AppRouter, route: AppRoute): void {
   if (hasInAppHistory()) {
     router.back()
     return
   }
-  return router.replace(getParentRoute(route))
+  void router.replace(getParentRoute(route))
 }
 
 export function useBackNavigation() {
@@ -60,8 +64,8 @@ export function useBackNavigation() {
 
   const canGoBack = computed(() => !isRootRoute(route))
 
-  function goBack() {
-    return navigateBack(router, route)
+  function goBack(): void {
+    navigateBack(router, route)
   }
 
   return { canGoBack, goBack }

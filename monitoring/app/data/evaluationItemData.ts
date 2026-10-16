@@ -10,6 +10,24 @@ export const SCORE_LABELS: Record<1 | 2 | 3 | 4 | 5, string> = {
 
 export const NA_LABEL = 'The competency cannot be evaluated'
 
+/** One-word names for each score, for tight spaces such as averages. */
+export const SCORE_SHORT_LABELS: Record<1 | 2 | 3 | 4 | 5, string> = {
+  1: 'Not demonstrated',
+  2: 'Basic',
+  3: 'Satisfactory',
+  4: 'Advanced',
+  5: 'Exceptional',
+}
+
+/** Minimum score that counts as competent for an item. */
+export const COMPETENT_SCORE = 4
+
+/** The score band (1-5) an average falls nearest to, or null when there is no average. */
+export function scoreBand(average: number | null | undefined): 1 | 2 | 3 | 4 | 5 | null {
+  if (average === null || average === undefined || Number.isNaN(average) || average <= 0) return null
+  return Math.min(5, Math.max(1, Math.round(average))) as 1 | 2 | 3 | 4 | 5
+}
+
 export const SCORE_COLORS: Record<1 | 2 | 3 | 4 | 5 | 0, string> = {
   1: '#ef4444',
   2: '#f59e0b',

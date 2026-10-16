@@ -260,6 +260,8 @@ async function confirmResolve() {
         </div>
       </div>
 
+      <JourneyEchoActivityCard v-if="toolSlug === 'echo' && sessions.length > 0" :sessions="sessions" />
+
       <!-- Sessions List -->
       <div v-if="sessions.length > 0" class="space-y-4">
         <h2 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">

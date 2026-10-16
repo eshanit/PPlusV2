@@ -2,6 +2,8 @@
 import { format } from 'date-fns'
 import type { IEvalItem } from '~/interfaces/IEvalItem'
 import { NA_LABEL, SCORE_LABELS, scoreBackground, scoreTextColor } from '~/data/evaluationItemData'
+import { getScoreChangeDisplay } from '~/composables/useSessionCalculations'
+import ScoreChip from './ScoreChip.vue'
 
 type ScoreValue = 1 | 2 | 3 | 4 | 5 | null
 
@@ -19,6 +21,8 @@ const props = defineProps<{
   previousAssessment?: PreviousAssessment
   note?: string
   counselling?: boolean
+  /** Supporting information shown under the title, e.g. echo accuracy next to E8. */
+  context?: string
 }>()
 
 const emit = defineEmits<{
@@ -49,32 +53,9 @@ const selectedScoreLabel = computed(() => {
   return props.score === null ? NA_LABEL : SCORE_LABELS[props.score]
 })
 
-const scoreChange = computed(() => {
-  const previousScore = props.previousAssessment?.score
-  if (
-    !props.isScored
-    || props.score === null
-    || previousScore === null
-    || previousScore === undefined
-  ) return undefined
-
-  if (props.score > previousScore) return 'improved'
-  if (props.score < previousScore) return 'regressed'
-  return 'unchanged'
-})
-
-const scoreChangeDisplay = computed(() => {
-  if (scoreChange.value === 'improved') {
-    return { icon: 'i-heroicons-arrow-trending-up', label: 'Improved', class: 'text-green-700 dark:text-green-400' }
-  }
-  if (scoreChange.value === 'regressed') {
-    return { icon: 'i-heroicons-arrow-trending-down', label: 'Regressed', class: 'text-red-700 dark:text-red-400' }
-  }
-  if (scoreChange.value === 'unchanged') {
-    return { icon: 'i-heroicons-minus', label: 'No change', class: 'text-gray-500 dark:text-gray-400' }
-  }
-  return undefined
-})
+const scoreChangeDisplay = computed(() => props.isScored
+  ? getScoreChangeDisplay(props.score, props.previousAssessment?.score)
+  : undefined)
 </script>
 
 <template>
@@ -96,6 +77,13 @@ const scoreChangeDisplay = computed(() => {
         </span>
         <div class="min-w-0 flex-1">
           <p class="text-base leading-snug text-gray-900 dark:text-gray-100">{{ item.title }}</p>
+          <p
+            v-if="context"
+            class="mt-1.5 flex items-start gap-1.5 rounded-md bg-sky-50 px-2 py-1 text-sm text-sky-900 dark:bg-sky-950/40 dark:text-sky-100"
+          >
+            <UIcon name="i-heroicons-information-circle" class="mt-0.5 size-4 shrink-0" />
+            <span>{{ context }}</span>
+          </p>
           <div v-if="item.isAdvanced || counselling" class="mt-1 flex flex-wrap gap-1.5">
             <span
               v-if="item.isAdvanced"
@@ -137,10 +125,8 @@ const scoreChangeDisplay = computed(() => {
       </div>
     </div>
 
-    <div v-if="selectedScoreLabel" class="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-      <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
-        {{ selectedScoreLabel }}
-      </p>
+    <div v-if="selectedScoreLabel" class="mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+      <ScoreChip :score="score" />
       <span
         v-if="scoreChangeDisplay"
         class="inline-flex items-center gap-1 text-sm font-semibold"

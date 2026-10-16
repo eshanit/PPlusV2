@@ -1,5 +1,6 @@
 import type { ISession } from '~/interfaces/ISession'
 import type { ITool } from '~/interfaces/ITool'
+import type { IEvalItem } from '~/interfaces/IEvalItem'
 
 export type CompetencyStatus = 'fully_competent' | 'basic_competent' | 'in_progress'
 
@@ -45,34 +46,63 @@ function sortSessions(sessions: ISession[]): ISession[] {
   )
 }
 
+export interface ItemBelowThreshold {
+  item: IEvalItem
+  /** Latest non-null score in the most recent session, or undefined if not scored there. */
+  latestScore: number | undefined
+}
+
+export interface CompetencyBreakdown {
+  status: CompetencyStatus
+  /** Non-advanced planned items still below the competent score. These block basic competency. */
+  basicBelow: ItemBelowThreshold[]
+  /** Advanced planned items still below the competent score. These block full competency only. */
+  advancedBelow: ItemBelowThreshold[]
+  plannedCount: number
+}
+
+/**
+ * Competency status plus the planned items holding it back.
+ * Rule: every item planned anywhere in the journey must score 4 or 5 in the
+ * most recent session. Advanced items are needed for full competency only.
+ */
+export function getCompetencyBreakdown(
+  sessions: ISession[],
+  tool: ITool | null | undefined,
+): CompetencyBreakdown {
+  const empty: CompetencyBreakdown = { status: 'in_progress', basicBelow: [], advancedBelow: [], plannedCount: 0 }
+  if (!tool || sessions.length === 0) return empty
+
+  const orderedSessions = sortSessions(sessions)
+  const latestSession = orderedSessions[orderedSessions.length - 1]
+  if (!latestSession) return empty
+
+  const planned = new Set(orderedSessions.flatMap(sessionPlannedItems))
+  const plannedItems = tool.items.filter(item => planned.has(item.slug))
+  if (plannedItems.length === 0) return empty
+
+  const latestScores = latestScoresForSession(latestSession)
+  const below = plannedItems
+    .map(item => ({ item, latestScore: latestScores.get(item.slug) }))
+    .filter(entry => entry.latestScore === undefined || entry.latestScore < 4)
+
+  const basicBelow = below.filter(entry => !entry.item.isAdvanced)
+  const advancedBelow = below.filter(entry => entry.item.isAdvanced)
+  const hasBasicItems = plannedItems.some(item => !item.isAdvanced)
+
+  let status: CompetencyStatus = 'in_progress'
+  if (below.length === 0) status = 'fully_competent'
+  else if (hasBasicItems && basicBelow.length === 0) status = 'basic_competent'
+
+  return { status, basicBelow, advancedBelow, plannedCount: plannedItems.length }
+}
+
 // Pure function — safe to call inside computed()
 export function getCompetencyStatus(
   sessions: ISession[],
   tool: ITool | null | undefined,
 ): CompetencyStatus {
-  if (!tool || sessions.length === 0) return 'in_progress'
-
-  const orderedSessions = sortSessions(sessions)
-  const latestSession = orderedSessions[orderedSessions.length - 1]
-  if (!latestSession) return 'in_progress'
-
-  const planned = new Set(orderedSessions.flatMap(sessionPlannedItems))
-  const plannedItems = tool.items.filter(item => planned.has(item.slug))
-  if (plannedItems.length === 0) return 'in_progress'
-
-  const latestScores = latestScoresForSession(latestSession)
-  const itemsCompetent = (items: typeof plannedItems): boolean =>
-    items.length > 0 && items.every(item => {
-      const score = latestScores.get(item.slug)
-      return score !== undefined && score >= 4
-    })
-
-  if (itemsCompetent(plannedItems)) return 'fully_competent'
-
-  const basicItems = plannedItems.filter(item => !item.isAdvanced)
-  if (itemsCompetent(basicItems)) return 'basic_competent'
-
-  return 'in_progress'
+  return getCompetencyBreakdown(sessions, tool).status
 }
 
 // Reactive composable for single-journey views
