@@ -197,6 +197,15 @@ const gapStore = useGapStore()
 const menteeId = computed(() => route.params.id as string)
 const showToolPicker = ref(false)
 
+// Arriving from "New Session" on the home screen opens the tool picker
+// straight away. The flag is dropped from the URL so Back doesn't reopen it.
+onMounted(() => {
+  if (route.query.startSession === '1') {
+    showToolPicker.value = true
+    router.replace({ path: route.path })
+  }
+})
+
 const mentee = computed(() => userStore.allUsers.find(u => u.id === menteeId.value))
 const menteeName = computed(() => mentee.value ? `${mentee.value.firstname} ${mentee.value.lastname}` : '…')
 const menteeInitials = computed(() =>

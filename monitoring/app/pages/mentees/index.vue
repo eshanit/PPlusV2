@@ -7,6 +7,11 @@ import { useGapStore } from '~/stores/gapStore'
 import { useSyncStore } from '~/stores/syncStore'
 import type { IUserRef } from '~/interfaces/IUserRef'
 
+// Opened from the home screen's New Session button: tapping a mentee goes
+// straight to their profile with the tool picker open.
+const route = useRoute()
+const pickingForSession = computed(() => route.query.intent === 'new-session')
+
 type FormMode = 'create' | 'edit'
 
 interface MenteeForm {
@@ -258,9 +263,12 @@ onMounted(() => {
     <!-- Header -->
     <div class="flex items-center justify-between gap-3">
       <div>
-        <h1 class="text-xl font-bold text-gray-900 dark:text-white">Mentees</h1>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-          {{ mentees.length }} active profile{{ mentees.length !== 1 ? 's' : '' }}
+        <h1 class="text-xl font-bold text-gray-900 dark:text-white">
+          {{ pickingForSession ? 'New session: choose a mentee' : 'Mentees' }}
+        </h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+          <template v-if="pickingForSession">Tap a mentee, then choose the tool.</template>
+          <template v-else>{{ mentees.length }} active profile{{ mentees.length !== 1 ? 's' : '' }}</template>
         </p>
       </div>
       <div class="flex gap-2">
@@ -335,7 +343,9 @@ onMounted(() => {
         class="flex items-stretch gap-2 bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800"
       >
         <NuxtLink
-          :to="`/mentees/${mentee.id}`"
+          :to="pickingForSession
+            ? { path: `/mentees/${mentee.id}`, query: { startSession: '1' } }
+            : `/mentees/${mentee.id}`"
           class="flex min-w-0 flex-1 items-center gap-3 px-4 py-3.5 rounded-l-xl hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
         >
           <!-- Avatar -->
@@ -348,10 +358,10 @@ onMounted(() => {
             <p class="font-medium text-gray-900 dark:text-white truncate">
               {{ mentee.firstname }} {{ mentee.lastname }}
             </p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+            <p class="text-sm text-gray-600 dark:text-gray-300 mt-0.5 truncate">
               {{ metaText(mentee) }}
             </p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            <p class="text-sm text-gray-600 dark:text-gray-300 mt-0.5">
               {{ summaryText(mentee.id) }}
             </p>
           </div>
@@ -369,7 +379,7 @@ onMounted(() => {
           </div>
         </NuxtLink>
 
-        <div class="flex shrink-0 flex-col justify-center gap-1 border-l border-gray-100 dark:border-gray-800 px-1.5">
+        <div v-if="!pickingForSession" class="flex shrink-0 flex-col justify-center gap-1 border-l border-gray-100 dark:border-gray-800 px-1.5">
           <UButton
             variant="ghost"
             color="neutral"

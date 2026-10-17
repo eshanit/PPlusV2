@@ -230,6 +230,29 @@ prefers mentors to score E8 without it.
 calculation. With zero performed, accuracy shows as "None performed" rather
 than 0%.
 
+### Home screen
+
+The two main buttons used to open the same mentee list. They now do different
+jobs:
+
+- **New Session** opens the mentee list in a picking mode, titled "New session:
+  choose a mentee". Tapping a mentee opens their profile with the tool picker
+  already showing, so home to session form takes three taps. The edit and
+  delete buttons are hidden in this mode.
+- **My Mentees** opens the normal list for browsing profiles, journeys and gaps.
+
+The home screen also gained:
+
+- **Continue where you left off**: up to five in-progress journeys this mentor
+  has recorded, newest first, each with a **Start next session** button.
+- **Open gaps to follow up**: gaps this mentor logged that are still open,
+  oldest first, each linking to its journey.
+- **Tappable recent sessions** that open the session details, with the tool's
+  name instead of its internal code.
+- **An honest sync line**: "Up to date", "Syncing · 3 items waiting to sync",
+  "Offline" or "Sync failed", based on items not yet confirmed on the server.
+  Tapping it opens the sync page.
+
 ### Removed components
 
 These components were not referenced anywhere and were deleted:

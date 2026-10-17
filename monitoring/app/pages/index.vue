@@ -1,13 +1,20 @@
-
 <script setup lang="ts">
 import { useUserStore } from '~/stores/userStore'
 import { useSessionStore } from '~/stores/sessionStore'
+import { useGapStore } from '~/stores/gapStore'
 import { useSyncStore } from '~/stores/syncStore'
-import type { MentorshipPhase } from '~/interfaces/ISession'
+import { getToolBySlug } from '~/data/evaluationItemData'
+import { getCompetencyStatus } from '~/composables/useCompetency'
+import type { ISession, MentorshipPhase } from '~/interfaces/ISession'
 
 const userStore = useUserStore()
 const sessionStore = useSessionStore()
+const gapStore = useGapStore()
 const syncStore = useSyncStore()
+
+const CONTINUE_LIMIT = 5
+const RECENT_LIMIT = 8
+const GAPS_LIMIT = 5
 
 const greeting = computed(() => {
   const h = new Date().getHours()
@@ -16,12 +23,15 @@ const greeting = computed(() => {
   return 'Good evening,'
 })
 
-const recentSessions = computed(() =>
-  sessionStore.sessions
-    .filter(s => s.evaluator.id === userStore.currentUser?.id)
-    .sort((a, b) => b.evalDate - a.evalDate)
-    .slice(0, 10)
-)
+const myId = computed(() => userStore.currentUser?.id)
+
+function toolLabel(slug: string): string {
+  return getToolBySlug(slug)?.label ?? slug
+}
+
+function menteeName(session: ISession): string {
+  return `${session.mentee.firstname} ${session.mentee.lastname}`
+}
 
 function formatDate(ts: number): string {
   return new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
@@ -42,28 +52,131 @@ function phaseColor(phase: MentorshipPhase | null): 'info' | 'success' | 'warnin
   if (phase === 'supervision') return 'warning'
   return 'neutral'
 }
+
+function sessionLink(session: ISession) {
+  return {
+    path: '/sessions/session',
+    query: { sessionId: session._id, menteeId: session.mentee.id, toolSlug: session.toolSlug },
+  }
+}
+
+function journeyLink(menteeId: string, toolSlug: string) {
+  return { path: '/sessions/journey', query: { menteeId, toolSlug } }
+}
+
+// ── Recent sessions recorded by this mentor ──────────────────────────────────
+const mySessions = computed(() =>
+  sessionStore.sessions.filter(s => s.evaluator.id === myId.value))
+
+const recentSessions = computed(() =>
+  [...mySessions.value]
+    .sort((a, b) => b.evalDate - a.evalDate || b.createdAt - a.createdAt)
+    .slice(0, RECENT_LIMIT))
+
+// ── Journeys to continue: in progress, where this mentor has recorded a visit ─
+const openGapsByGroup = computed(() => {
+  const counts = new Map<string, number>()
+  for (const gap of gapStore.gaps) {
+    if (gap.resolvedAt) continue
+    counts.set(gap.evaluationGroupId, (counts.get(gap.evaluationGroupId) ?? 0) + 1)
+  }
+  return counts
+})
+
+const continueJourneys = computed(() => {
+  const myGroups = new Set(mySessions.value.map(s => s.evaluationGroupId))
+  return [...myGroups]
+    .map((groupId) => {
+      const sessions = sessionStore.sessionsForGroup(groupId)
+      const latest = [...sessions].sort((a, b) => b.evalDate - a.evalDate || b.createdAt - a.createdAt)[0]
+      if (!latest) return null
+      const status = getCompetencyStatus(sessions, getToolBySlug(latest.toolSlug))
+      if (status !== 'in_progress') return null
+      return {
+        groupId,
+        menteeId: latest.mentee.id,
+        menteeName: menteeName(latest),
+        toolSlug: latest.toolSlug,
+        toolLabel: toolLabel(latest.toolSlug),
+        sessionCount: sessions.length,
+        lastDate: latest.evalDate,
+        openGaps: openGapsByGroup.value.get(groupId) ?? 0,
+      }
+    })
+    .filter(journey => journey !== null)
+    .sort((a, b) => b.lastDate - a.lastDate)
+    .slice(0, CONTINUE_LIMIT)
+})
+
+// ── Open gaps this mentor logged ─────────────────────────────────────────────
+const myOpenGaps = computed(() =>
+  gapStore.gaps
+    .filter(g => !g.resolvedAt && g.evaluatorId === myId.value)
+    .sort((a, b) => a.identifiedAt - b.identifiedAt))
+
+const gapRows = computed(() => myOpenGaps.value.slice(0, GAPS_LIMIT).map((gap) => {
+  const mentee = userStore.allUsers.find(u => u.id === gap.menteeId)
+  return {
+    id: gap._id,
+    description: gap.description,
+    menteeId: gap.menteeId,
+    menteeName: mentee ? `${mentee.firstname} ${mentee.lastname}` : 'Unknown mentee',
+    toolSlug: gap.toolSlug,
+    toolLabel: toolLabel(gap.toolSlug),
+    identifiedAt: gap.identifiedAt,
+  }
+}))
+
+// ── Sync status: say what the mentor needs to know, not just "online" ───────
+const pendingCount = computed(() =>
+  sessionStore.sessions.filter(s => s.syncStatus === 'pending').length
+  + gapStore.gaps.filter(g => g.syncStatus === 'pending').length)
+
+const syncLine = computed(() => {
+  const pending = pendingCount.value
+  const waiting = `${pending} item${pending === 1 ? '' : 's'} waiting to sync`
+  if (syncStore.hasError) {
+    return {
+      dot: 'bg-red-500',
+      text: pending ? `Sync failed · ${waiting}` : 'Sync failed',
+      class: 'text-red-700 dark:text-red-400',
+    }
+  }
+  if (!syncStore.isOnline) {
+    return {
+      dot: 'bg-gray-400',
+      text: pending ? `Offline · ${waiting}` : 'Offline',
+      class: 'text-gray-600 dark:text-gray-300',
+    }
+  }
+  if (pending) {
+    return { dot: 'bg-amber-500', text: `Syncing · ${waiting}`, class: 'text-amber-700 dark:text-amber-400' }
+  }
+  return { dot: 'bg-green-500', text: 'Up to date', class: 'text-green-700 dark:text-green-400' }
+})
 </script>
 
 <template>
   <div class="space-y-6">
     <!-- Greeting -->
     <div>
-      <p class="text-sm text-gray-500 dark:text-gray-400">{{ greeting }}</p>
+      <p class="text-base text-gray-500 dark:text-gray-400">{{ greeting }}</p>
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white mt-0.5">
         {{ userStore.currentUserFullName }}
       </h1>
     </div>
 
-    <!-- Quick actions -->
+    <!-- Quick actions: New Session is a guided start, My Mentees is browsing -->
     <div class="grid grid-cols-2 gap-3">
       <UButton
-        to="/mentees"
+        :to="{ path: '/mentees', query: { intent: 'new-session' } }"
         color="primary"
         size="xl"
-        class="flex-col h-28 rounded-2xl"
+        class="h-28 flex-col justify-center rounded-2xl"
         icon="i-heroicons-plus-circle"
       >
-        <span class="mt-1 text-sm font-semibold">New Session</span>
+        <span class="mt-1 text-base font-semibold">New Session</span>
+        <span class="text-sm font-normal opacity-90">Choose a mentee to start</span>
       </UButton>
 
       <UButton
@@ -71,38 +184,100 @@ function phaseColor(phase: MentorshipPhase | null): 'info' | 'success' | 'warnin
         color="neutral"
         variant="outline"
         size="xl"
-        class="flex-col h-28 rounded-2xl"
+        class="h-28 flex-col justify-center rounded-2xl"
         icon="i-heroicons-users"
       >
-        <span class="mt-1 text-sm font-semibold">My Mentees</span>
+        <span class="mt-1 text-base font-semibold">My Mentees</span>
+        <span class="text-sm font-normal text-gray-500 dark:text-gray-400">Profiles, journeys and gaps</span>
       </UButton>
     </div>
 
+    <!-- Continue where you left off -->
+    <section v-if="continueJourneys.length">
+      <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">
+        Continue where you left off
+      </h2>
+      <ul class="space-y-2">
+        <li
+          v-for="journey in continueJourneys"
+          :key="journey.groupId"
+          class="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-gray-900 sm:flex-row sm:items-center"
+        >
+          <NuxtLink :to="journeyLink(journey.menteeId, journey.toolSlug)" class="min-w-0 flex-1">
+            <p class="truncate text-base font-semibold text-gray-900 dark:text-white">{{ journey.menteeName }}</p>
+            <p class="truncate text-sm text-gray-600 dark:text-gray-300">
+              {{ journey.toolLabel }} · {{ journey.sessionCount }} session{{ journey.sessionCount === 1 ? '' : 's' }}
+              · last {{ formatDate(journey.lastDate) }}
+            </p>
+            <p v-if="journey.openGaps" class="mt-0.5 text-sm font-medium text-amber-700 dark:text-amber-400">
+              {{ journey.openGaps }} open gap{{ journey.openGaps === 1 ? '' : 's' }}
+            </p>
+          </NuxtLink>
+          <UButton
+            :to="{ path: '/sessions/new', query: { menteeId: journey.menteeId, toolSlug: journey.toolSlug } }"
+            color="primary"
+            variant="soft"
+            icon="i-heroicons-plus"
+            class="shrink-0 justify-center"
+          >
+            Start next session
+          </UButton>
+        </li>
+      </ul>
+    </section>
+
+    <!-- Open gaps to follow up -->
+    <section v-if="myOpenGaps.length">
+      <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">
+        Open gaps to follow up
+        <span class="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+          {{ myOpenGaps.length }}
+        </span>
+      </h2>
+      <ul class="space-y-2">
+        <li v-for="gap in gapRows" :key="gap.id">
+          <NuxtLink
+            :to="journeyLink(gap.menteeId, gap.toolSlug)"
+            class="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900 dark:bg-amber-950/30"
+          >
+            <UIcon name="i-heroicons-exclamation-triangle" class="size-5 shrink-0 text-amber-600 dark:text-amber-400" />
+            <div class="min-w-0 flex-1">
+              <p class="line-clamp-2 text-base text-gray-900 dark:text-white">{{ gap.description }}</p>
+              <p class="truncate text-sm text-gray-600 dark:text-gray-300">
+                {{ gap.menteeName }} · {{ gap.toolLabel }} · since {{ formatDate(gap.identifiedAt) }}
+              </p>
+            </div>
+            <UIcon name="i-heroicons-chevron-right" class="size-5 shrink-0 text-gray-400" />
+          </NuxtLink>
+        </li>
+      </ul>
+      <p v-if="myOpenGaps.length > GAPS_LIMIT" class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+        Showing the {{ GAPS_LIMIT }} oldest. Open a mentee's journey to see the rest.
+      </p>
+    </section>
+
     <!-- Recent sessions -->
-    <div>
-      <h2 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
-        Recent Sessions
+    <section>
+      <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">
+        Recent sessions
       </h2>
 
-      <div v-if="recentSessions.length === 0" class="text-center py-10 text-gray-400">
-        <UIcon name="i-heroicons-clipboard-document-list" class="size-10 mx-auto mb-2 text-gray-300" />
-        <p class="text-sm">No sessions recorded yet.</p>
-        <p class="text-xs mt-1">Tap "New Session" to start.</p>
+      <div v-if="recentSessions.length === 0" class="py-10 text-center text-gray-500 dark:text-gray-400">
+        <UIcon name="i-heroicons-clipboard-document-list" class="mx-auto mb-2 size-10 text-gray-300" />
+        <p class="text-base">No sessions recorded yet.</p>
+        <p class="mt-1 text-sm">Tap "New Session" to start.</p>
       </div>
 
       <ul v-else class="space-y-2">
-        <li
-          v-for="session in recentSessions"
-          :key="session._id"
-          class="bg-white dark:bg-gray-900 rounded-xl px-4 py-3 shadow-sm border border-gray-100 dark:border-gray-800"
-        >
-          <div class="flex items-center justify-between">
-            <div class="min-w-0">
-              <p class="font-medium text-gray-900 dark:text-white text-sm truncate">
-                {{ session.mentee.firstname }} {{ session.mentee.lastname }}
-              </p>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                {{ session.toolSlug }} · {{ formatDate(session.evalDate) }}
+        <li v-for="session in recentSessions" :key="session._id">
+          <NuxtLink
+            :to="sessionLink(session)"
+            class="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 transition-colors hover:border-primary-300 dark:border-gray-800 dark:bg-gray-900"
+          >
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-base font-medium text-gray-900 dark:text-white">{{ menteeName(session) }}</p>
+              <p class="mt-0.5 truncate text-sm text-gray-600 dark:text-gray-300">
+                {{ toolLabel(session.toolSlug) }} · {{ formatDate(session.evalDate) }}
               </p>
             </div>
             <UBadge
@@ -110,22 +285,25 @@ function phaseColor(phase: MentorshipPhase | null): 'info' | 'success' | 'warnin
               :color="phaseColor(session.phase)"
               variant="soft"
               size="md"
+              class="shrink-0"
             />
-          </div>
+            <UIcon name="i-heroicons-chevron-right" class="size-5 shrink-0 text-gray-400" />
+          </NuxtLink>
         </li>
       </ul>
-    </div>
+    </section>
 
     <!-- Sync status -->
-    <div class="flex items-center justify-center gap-2 text-xs text-gray-400 pt-2">
-      <span
-        class="size-2 rounded-full"
-        :class="syncStore.isOnline ? 'bg-green-400' : 'bg-gray-300'"
-      />
-      <span>{{ syncStore.isOnline ? 'Syncing' : 'Offline' }}</span>
-      <span v-if="syncStore.lastSyncedAt">
-        · Last sync {{ formatDate(syncStore.lastSyncedAt) }}
+    <NuxtLink
+      to="/sync"
+      class="flex items-center justify-center gap-2 pt-2 text-sm font-medium"
+      :class="syncLine.class"
+    >
+      <span class="size-2.5 rounded-full" :class="syncLine.dot" />
+      <span>{{ syncLine.text }}</span>
+      <span v-if="syncStore.lastSyncedAt" class="font-normal text-gray-500 dark:text-gray-400">
+        · last sync {{ formatDate(syncStore.lastSyncedAt) }}
       </span>
-    </div>
+    </NuxtLink>
   </div>
 </template>

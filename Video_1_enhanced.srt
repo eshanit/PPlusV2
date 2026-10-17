@@ -1,0 +1,874 @@
+1
+00:00:00,350 --> 00:00:02,850
+Welcome to the PEN-Plus
+NCD Monitoring App.
+
+2
+00:00:06,380 --> 00:00:13,040
+Mentors use this app to observe
+and assess their mentees.
+
+3
+00:00:15,379 --> 00:00:22,500
+This is the home screen, the first
+thing you see after opening the app.
+
+4
+00:00:23,900 --> 00:00:32,500
+The app is designed for tablets, but it works
+on any device: a computer, laptop or phone.
+
+5
+00:00:34,160 --> 00:00:38,700
+It also works offline, without
+an internet connection.
+
+6
+00:00:39,760 --> 00:00:51,640
+Once you're connected, it syncs
+automatically, or you can sync manually.
+
+7
+00:00:51,640 --> 00:01:00,340
+At the top are the two main buttons.
+
+8
+00:01:03,500 --> 00:01:06,740
+This one starts a new session.
+
+9
+00:01:09,520 --> 00:01:18,500
+This outlined one shows all
+the mentees available to you.
+
+10
+00:01:22,620 --> 00:01:30,940
+Below them, "Continue where you left
+off" lists your journeys in progress,
+
+11
+00:01:33,520 --> 00:01:39,680
+so you can quickly start another
+session or round with a mentee.
+
+12
+00:01:40,780 --> 00:01:49,720
+Next are the open gaps that
+need to be followed up.
+
+13
+00:01:50,820 --> 00:01:54,400
+Then come your most recent sessions.
+
+14
+00:01:56,260 --> 00:02:05,140
+A good place to start is My
+Mentees, the button on the right.
+
+15
+00:02:05,780 --> 00:02:11,320
+This is the list of all the
+mentees available to you.
+
+16
+00:02:12,680 --> 00:02:29,200
+Each card shows the mentee's
+name, profession and district,
+
+17
+00:02:29,200 --> 00:02:32,100
+their facility, and
+the number of sessions.
+
+18
+00:02:32,120 --> 00:02:43,740
+Tapping a mentee opens their profile.
+
+19
+00:02:47,440 --> 00:02:51,960
+It lists the mentee's evaluation journeys.
+
+20
+00:02:52,480 --> 00:03:05,560
+A journey is one mentee's progress
+on one clinical tool over time,
+
+21
+00:03:05,560 --> 00:03:08,320
+and each mentorship visit
+is recorded as a session.
+
+22
+00:03:09,440 --> 00:03:16,380
+Demo Mentee 002 has four journeys so far,
+
+23
+00:03:16,380 --> 00:03:21,900
+meaning they've been evaluated
+on four different tools.
+
+24
+00:03:22,760 --> 00:03:30,600
+This Epilepsy journey has six
+sessions, and this one has four.
+
+25
+00:03:36,680 --> 00:03:44,740
+A journey is the path to
+basic competency on a tool.
+
+26
+00:03:45,840 --> 00:03:48,540
+That's why we call it a journey.
+
+27
+00:03:49,900 --> 00:04:01,860
+In Respiratory Diseases, this mentee is now
+fully competent: they've reached the destination.
+
+28
+00:04:02,060 --> 00:04:14,340
+Every competency item in that
+journey now scores 4 or 5.
+
+29
+00:04:16,140 --> 00:04:20,600
+To go back, use the Back
+button in the header.
+
+30
+00:04:22,600 --> 00:04:35,820
+Now let's run a session with a
+mentee who hasn't had one yet.
+
+31
+00:04:36,220 --> 00:04:40,260
+I've created Demo Mentee XYZ,
+so I'll search for them here.
+
+32
+00:04:40,860 --> 00:04:47,880
+Demo Mentee XYZ has no sessions
+yet, so let's assess them.
+
+33
+00:04:49,220 --> 00:04:56,140
+Their profile opens, with the
+green Start New Session button.
+
+34
+00:04:57,200 --> 00:05:00,100
+Let's tap it.
+
+35
+00:05:02,940 --> 00:05:11,660
+Here we choose the clinical
+tool for the evaluation.
+
+36
+00:05:12,880 --> 00:05:19,800
+Let's go with Diabetes Mellitus.
+
+37
+00:05:20,820 --> 00:05:24,720
+Selecting it takes us
+to the planning step,
+
+38
+00:05:24,780 --> 00:05:27,340
+where we plan today's mentoring.
+
+39
+00:05:28,040 --> 00:05:34,860
+The app shows we're in step one: planning.
+
+40
+00:05:35,160 --> 00:05:40,140
+Here we choose the items
+we want to observe today.
+
+41
+00:05:41,240 --> 00:05:46,840
+The mentee's name and the
+tool are shown at the top.
+
+42
+00:05:47,800 --> 00:05:53,200
+This is the date. It defaults to today,
+
+43
+00:05:54,080 --> 00:06:05,060
+but you can choose any date, for example when entering
+a session after it took place rather than live.
+
+44
+00:06:06,620 --> 00:06:09,360
+The app supports both.
+
+45
+00:06:10,800 --> 00:06:15,460
+We'll keep today's date, then
+choose the mentorship phase.
+
+46
+00:06:18,100 --> 00:06:21,760
+As this is the first session,
+we'll choose Initial Intensive.
+
+47
+00:06:23,040 --> 00:06:34,000
+These are all the competency
+items for Diabetes Mellitus.
+
+48
+00:06:34,720 --> 00:06:43,680
+They're grouped into the same
+sections as the paper tool.
+
+49
+00:06:44,620 --> 00:06:49,760
+Patient Assessment and Classification,
+for example, has three items,
+
+50
+00:06:50,160 --> 00:06:59,740
+and Treatment Adjustment and
+Individualization for Type 1 DM has eight.
+
+51
+00:07:01,680 --> 00:07:14,600
+When planning, Select all picks
+every item in a section in one tap.
+
+52
+00:07:17,120 --> 00:07:22,540
+But you don't need to observe
+everything in one day.
+
+53
+00:07:24,640 --> 00:07:30,300
+So you can clear a section and
+select only the items you need.
+
+54
+00:07:30,860 --> 00:07:39,600
+Let's choose one item here, two
+here, and skip the other sections.
+
+55
+00:07:39,740 --> 00:07:43,100
+In Patient Education,
+we'll choose a couple.
+
+56
+00:07:44,900 --> 00:07:48,920
+Next are the general
+counselling competencies.
+
+57
+00:07:49,600 --> 00:07:59,780
+They appear on every tool, not just
+Diabetes, whichever tool you choose.
+
+58
+00:07:59,880 --> 00:08:05,040
+If you don't want to assess
+them, just clear them.
+
+59
+00:08:05,160 --> 00:08:15,060
+You can select all of them, or only
+some. Here, we'll assess three.
+
+60
+00:08:16,800 --> 00:08:20,440
+We've now selected eight
+Diabetes Mellitus items.
+
+61
+00:08:22,040 --> 00:08:29,540
+If we're happy with today's
+plan, we tap Confirm plan.
+
+62
+00:08:30,280 --> 00:08:35,220
+This takes us to step two: observation.
+
+63
+00:08:36,500 --> 00:08:43,980
+The items we selected in the
+plan are now ready to be scored.
+
+64
+00:08:46,960 --> 00:08:54,400
+The date and the Initial Intensive
+phase are set, and here are the rounds.
+
+65
+00:08:56,780 --> 00:09:00,780
+A session can include as many
+observation rounds as needed.
+
+66
+00:09:01,320 --> 00:09:08,180
+For example, you might observe the
+mentee in a round in the morning,
+
+67
+00:09:09,080 --> 00:09:13,760
+then do one or two more
+rounds in the afternoon,
+
+68
+00:09:13,820 --> 00:09:17,640
+and another in the evening
+when a new patient arrives.
+
+69
+00:09:18,840 --> 00:09:23,880
+For the first round, the app
+selects Round 1 automatically.
+
+70
+00:09:26,640 --> 00:09:31,660
+The score legend guides the scoring.
+
+71
+00:09:32,460 --> 00:09:38,720
+1 is red, 2 is orange,
+3 is yellow, and so on,
+
+72
+00:09:38,880 --> 00:09:42,840
+and the legend explains
+what each score means.
+
+73
+00:09:45,580 --> 00:09:47,520
+Now let's score.
+
+74
+00:09:48,880 --> 00:09:51,100
+This item gets a 3.
+
+75
+00:09:51,780 --> 00:10:01,960
+When you tap a score, the app shows
+the score given and what it means.
+
+76
+00:10:02,780 --> 00:10:13,060
+A 4, for example, means the mentee
+demonstrates advanced competency.
+
+77
+00:10:15,560 --> 00:10:18,780
+Next: "Safely titrates
+insulin for Ramadan".
+
+78
+00:10:21,240 --> 00:10:23,300
+We'll give a 1. They didn't do well.
+
+79
+00:10:23,860 --> 00:10:25,640
+You can also add a note to any item.
+
+80
+00:10:36,800 --> 00:10:42,560
+The items are still grouped
+by section, as in the plan.
+
+81
+00:10:43,900 --> 00:10:51,420
+To save time, let's give the general
+counselling items quick scores.
+
+82
+00:10:52,340 --> 00:10:54,060
+This one gets a 2.
+
+83
+00:10:54,420 --> 00:10:56,440
+If you choose N/A, meaning not applicable,
+
+84
+00:10:59,980 --> 00:11:03,360
+add a note explaining why
+it couldn't be evaluated.
+
+85
+00:11:03,940 --> 00:11:11,420
+For example: "The facility doesn't
+have the required equipment."
+
+86
+00:11:14,500 --> 00:11:24,310
+When you've finished scoring, you can
+add overall notes for the whole session.
+
+87
+00:11:26,140 --> 00:11:29,320
+For example: "All went well."
+
+88
+00:11:30,740 --> 00:11:36,260
+When you're done, tap Review session.
+
+89
+00:11:38,280 --> 00:11:45,960
+At this point, the session
+has not been saved yet.
+
+90
+00:11:47,440 --> 00:11:53,340
+That gives you a chance to check
+for mistakes and go back to edit.
+
+91
+00:11:55,060 --> 00:12:04,500
+The review gives an overview
+of the session and its rounds.
+
+92
+00:12:05,060 --> 00:12:14,340
+Here, three required items need a
+score of 4 or 5, but are below that.
+
+93
+00:12:14,660 --> 00:12:20,740
+The review lists them,
+with the scores given.
+
+94
+00:12:22,440 --> 00:12:32,620
+It also shows how many items were scored,
+how many were marked N/A, and the averages.
+
+95
+00:12:35,980 --> 00:12:40,400
+Everything looks right.
+These are the scores we gave.
+
+96
+00:12:43,620 --> 00:12:50,360
+If you spot a wrong score,
+say on D32, you can go back.
+
+97
+00:12:53,080 --> 00:13:01,640
+Open D32 and change the score.
+They did better, so we'll give a 5.
+
+98
+00:13:02,720 --> 00:13:05,100
+Then return to Review session.
+
+99
+00:13:06,580 --> 00:13:13,040
+D32 is no longer listed as
+below 4, and now shows a 5.
+
+100
+00:13:14,900 --> 00:13:21,000
+Everything is correct,
+so we tap Save Session.
+
+101
+00:13:21,620 --> 00:13:24,740
+The session is now saved.
+
+102
+00:13:26,340 --> 00:13:33,540
+Once synced to the server, it can be analysed in
+the reporting platform, which we'll cover later.
+
+103
+00:13:35,440 --> 00:13:42,420
+This is the session we've just recorded,
+now a journey for Demo Mentee XYZ.
+
+104
+00:13:42,560 --> 00:13:46,840
+Earlier there were no
+journeys. Now there is one.
+
+105
+00:13:48,720 --> 00:13:55,060
+So that's how a session works:
+plan first, then observe,
+
+106
+00:13:56,560 --> 00:14:03,440
+then review, and if
+everything is right, save.
+
+107
+00:14:05,840 --> 00:14:12,540
+Coming back days or even months later,
+you can check on Demo Mentee XYZ.
+
+108
+00:14:13,640 --> 00:14:20,660
+Just tap the journey to see what happened.
+
+109
+00:14:20,900 --> 00:14:30,740
+The summary shows one session, an average
+score of 3.4, recorded on 17 October.
+
+110
+00:14:30,860 --> 00:14:42,140
+To edit a session, open it and tap Edit.
+
+111
+00:14:46,040 --> 00:14:49,300
+Let's change this score to a 2.
+
+112
+00:14:50,340 --> 00:14:52,040
+Review the session again,
+
+113
+00:14:54,840 --> 00:14:59,020
+check the 2 we just gave,
+and tap Save Session.
+
+114
+00:15:02,960 --> 00:15:08,260
+Now let's log a gap: an area
+the mentee needs to work on.
+
+115
+00:15:09,140 --> 00:15:16,240
+Open the journey and tap Log
+Gap, and this form appears.
+
+116
+00:15:17,500 --> 00:15:19,180
+Here's how to log a gap.
+
+117
+00:15:20,240 --> 00:15:28,880
+Description: "Did not
+perform titration well."
+
+118
+00:15:30,360 --> 00:15:32,780
+Domain: clinical skills.
+
+119
+00:15:34,620 --> 00:15:39,120
+Was it addressed in this session?
+No, it will be covered later.
+
+120
+00:15:39,120 --> 00:15:57,900
+Target timeline: the next
+session, on 24 October 2026.
+
+121
+00:16:06,220 --> 00:16:08,200
+Then tap Log Gap.
+
+122
+00:16:09,340 --> 00:16:15,040
+That completes the session.
+
+123
+00:16:19,420 --> 00:16:24,700
+Tap here to return to the home screen.
+
+124
+00:16:27,580 --> 00:16:36,940
+The journey now appears here,
+along with the gap we just logged.
+
+125
+00:16:37,120 --> 00:16:44,580
+Next, another tool that's worth showing.
+
+126
+00:16:44,580 --> 00:16:57,320
+From My Mentees, let's choose
+a mentee for Echocardiogram.
+
+127
+00:16:58,060 --> 00:17:04,240
+This mentee already has two
+Echocardiogram sessions.
+
+128
+00:17:04,339 --> 00:17:08,760
+We start a new session
+and choose Echocardiogram.
+
+129
+00:17:10,980 --> 00:17:13,220
+You can see the two previous sessions.
+
+130
+00:17:14,319 --> 00:17:16,020
+Again, we begin with planning.
+
+131
+00:17:16,720 --> 00:17:27,660
+We'll choose the Ongoing phase. Choose Supervision or
+Initial Intensive if that matches the mentee's phase.
+
+132
+00:17:30,560 --> 00:17:33,000
+This tool includes advanced competencies.
+
+133
+00:17:33,560 --> 00:17:38,940
+These are not required for a mentee
+to be considered a competent provider.
+
+134
+00:17:40,980 --> 00:17:48,100
+You can choose whether to assess them.
+
+135
+00:17:48,220 --> 00:17:57,980
+They don't affect whether the
+mentee is classified as competent.
+
+136
+00:18:02,320 --> 00:18:07,620
+Advanced competencies are shaded grey,
+
+137
+00:18:08,920 --> 00:18:13,120
+just as in the paper tool.
+
+138
+00:18:15,500 --> 00:18:20,700
+Let's choose a couple of items,
+
+139
+00:18:22,560 --> 00:18:28,740
+and this one, and skip the rest.
+
+140
+00:18:30,480 --> 00:18:33,140
+With three items chosen,
+we tap Confirm plan.
+
+141
+00:18:35,920 --> 00:18:39,760
+We've already covered these steps.
+
+142
+00:18:43,540 --> 00:18:53,500
+This mentee has been assessed before,
+so each item shows its previous score.
+
+143
+00:18:53,840 --> 00:18:58,700
+Last time, this item scored 1:
+competency not demonstrated.
+
+144
+00:18:59,300 --> 00:19:04,220
+Say they've improved this time, to a 4.
+
+145
+00:19:05,600 --> 00:19:09,680
+The app flags that they've improved,
+
+146
+00:19:10,720 --> 00:19:15,180
+compared with their score on 16 October.
+
+147
+00:19:16,800 --> 00:19:20,840
+E3 scored 4 last time.
+
+148
+00:19:21,200 --> 00:19:23,200
+Say it's now a 2.
+
+149
+00:19:23,740 --> 00:19:27,880
+The app flags that they've
+regressed, with a down arrow.
+
+150
+00:19:30,140 --> 00:19:32,400
+This is the advanced item.
+
+151
+00:19:32,500 --> 00:19:37,120
+Say it scored 2 last
+time, and still scores 2.
+
+152
+00:19:38,360 --> 00:19:41,080
+The app shows there's no change.
+
+153
+00:19:43,480 --> 00:19:50,160
+I chose Echocardiogram because it has
+this extra section, in the blue card.
+
+154
+00:19:51,600 --> 00:20:00,300
+It's part of the paper tool,
+
+155
+00:20:00,480 --> 00:20:05,000
+so the app includes it too, to match
+the document as closely as possible.
+
+156
+00:20:05,940 --> 00:20:16,140
+The first count is the number of
+echocardiograms performed under supervision.
+
+157
+00:20:18,740 --> 00:20:21,840
+Tap the plus button to add.
+
+158
+00:20:22,000 --> 00:20:24,160
+Let's say they performed two.
+
+159
+00:20:26,580 --> 00:20:29,400
+Of those two, how many were correct?
+
+160
+00:20:30,840 --> 00:20:33,920
+That is, how many reached
+the correct final diagnosis?
+
+161
+00:20:34,620 --> 00:20:35,680
+Let's say one.
+
+162
+00:20:37,800 --> 00:20:45,220
+Use minus to decrease a count,
+and plus to increase it.
+
+163
+00:20:49,380 --> 00:20:51,300
+Session notes are optional.
+
+164
+00:20:52,320 --> 00:20:55,060
+That's how the counts are recorded.
+
+165
+00:20:58,240 --> 00:21:01,020
+Then tap Review session, below.
+
+166
+00:21:01,400 --> 00:21:08,880
+The review lists the items that
+haven't reached competency yet,
+
+167
+00:21:08,880 --> 00:21:12,980
+including items from earlier plans that
+weren't scored today, marked "Not scored".
+
+168
+00:21:17,180 --> 00:21:22,160
+Below that are some basic statistics.
+
+169
+00:21:26,120 --> 00:21:28,700
+Everything looks right,
+so we tap Save Session.
+
+170
+00:21:34,420 --> 00:21:42,400
+The mentee now has three sessions:
+the two from before, plus this one.
+
+171
+00:21:43,260 --> 00:21:47,480
+That's how monitoring works in the app.
+
+172
+00:21:50,760 --> 00:21:53,800
+Let's go back.
+
+173
+00:21:54,760 --> 00:21:59,660
+Next, I'd like to show syncing.
+
+174
+00:22:00,740 --> 00:22:09,980
+We'll often be working in areas
+with poor internet, or none at all.
+
+175
+00:22:13,320 --> 00:22:23,140
+Once you're connected, the app syncs
+automatically, or you can sync yourself.
+
+176
+00:22:25,020 --> 00:22:35,060
+It does sync automatically, but it's good
+practice to also sync manually, just to be sure.
+
+177
+00:22:35,400 --> 00:22:41,320
+Tap the arrows in the header
+to open the sync page.
+
+178
+00:22:43,560 --> 00:22:51,700
+To sync only users, for example after
+adding new mentees, tap Sync Users.
+
+179
+00:22:51,700 --> 00:22:58,100
+After a session or evaluation,
+sync sessions here.
+
+180
+00:22:58,100 --> 00:23:01,360
+After adding a district,
+tap Sync Districts.
+
+181
+00:23:01,940 --> 00:23:04,460
+We'll tap Sync All.
+
+182
+00:23:07,300 --> 00:23:19,700
+It shows "Synced successfully" once the data is
+on the server, where administrators can see it.
+
+183
+00:23:21,520 --> 00:23:34,880
+From then on, even if you lose your phone,
+tablet or laptop, the data is safe on the server.
+
+184
+00:23:36,840 --> 00:23:49,400
+Over time, you may record hundreds of
+evaluations, and the device may slow down.
+
+185
+00:23:49,620 --> 00:23:52,020
+If so, you can run Storage Cleanup here.
+
+186
+00:23:53,060 --> 00:24:00,620
+It frees space on the device by removing old
+sessions that are already safely on the server.
+
+187
+00:24:03,320 --> 00:24:17,160
+It only clears completed journeys, and keeps
+each journey's latest session on the device.
+
+188
+00:24:24,600 --> 00:24:34,620
+Thank you for watching. If you have
+any questions, please get in touch.

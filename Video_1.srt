@@ -1,0 +1,2083 @@
+1
+00:00:00,350 --> 00:00:02,850
+(Transcribed by TurboScribe. Go Unlimited to remove this message.) Welcome to the Pen Plus Monitoring App.
+
+2
+00:00:06,380 --> 00:00:10,180
+This app is used by the field workers
+
+3
+00:00:10,180 --> 00:00:13,040
+to observe their mentees.
+
+4
+00:00:15,379 --> 00:00:17,820
+This is basically the home page.
+
+5
+00:00:18,720 --> 00:00:21,700
+This is what you see after you've just
+
+6
+00:00:21,700 --> 00:00:22,500
+logged in.
+
+7
+00:00:23,900 --> 00:00:28,160
+The app is designed for tablets but it
+
+8
+00:00:28,160 --> 00:00:30,140
+works on any device whether it's a computer,
+
+9
+00:00:30,140 --> 00:00:32,500
+whether it's a laptop or a phone.
+
+10
+00:00:34,160 --> 00:00:36,740
+It works offline.
+
+11
+00:00:37,260 --> 00:00:38,700
+It can work without a connection.
+
+12
+00:00:39,760 --> 00:00:47,800
+Once you are connected to the internet, you
+
+13
+00:00:47,800 --> 00:00:50,920
+can sync it manually or it can sync
+
+14
+00:00:50,920 --> 00:00:51,640
+on its own.
+
+15
+00:00:51,640 --> 00:00:57,980
+All right, so the first thing you see
+
+16
+00:00:57,980 --> 00:01:00,340
+is these green buttons here.
+
+17
+00:01:03,500 --> 00:01:05,560
+It's the right one which you can use
+
+18
+00:01:05,560 --> 00:01:06,740
+to start a new session.
+
+19
+00:01:09,520 --> 00:01:15,120
+And then this one, the clear button, it
+
+20
+00:01:15,120 --> 00:01:18,060
+shows a list of all mentees available to
+
+21
+00:01:18,060 --> 00:01:18,500
+you.
+
+22
+00:01:19,360 --> 00:01:21,260
+The user was logged in.
+
+23
+00:01:22,620 --> 00:01:24,600
+All right, and then just after that, below
+
+24
+00:01:24,600 --> 00:01:30,460
+here, it shows the latest five sessions you
+
+25
+00:01:30,460 --> 00:01:30,940
+have done.
+
+26
+00:01:33,520 --> 00:01:35,780
+So you can continue from where you left
+
+27
+00:01:35,780 --> 00:01:37,820
+off if you want to do another session
+
+28
+00:01:37,820 --> 00:01:39,680
+or another round on the mentee.
+
+29
+00:01:40,780 --> 00:01:47,240
+And then below that, it shows open gaps
+
+30
+00:01:47,240 --> 00:01:49,720
+which needs to be followed up.
+
+31
+00:01:50,820 --> 00:01:53,200
+And then below that, we have the most
+
+32
+00:01:53,200 --> 00:01:54,400
+recent sessions.
+
+33
+00:01:56,260 --> 00:01:59,820
+All right, so the best place to start,
+
+34
+00:02:00,420 --> 00:02:02,120
+let's go to my mentees.
+
+35
+00:02:03,060 --> 00:02:05,140
+The button on the right.
+
+36
+00:02:05,780 --> 00:02:08,520
+So here we've got a list of all
+
+37
+00:02:08,520 --> 00:02:11,320
+the mentees which are available to you.
+
+38
+00:02:12,680 --> 00:02:19,520
+All right, so they have these cards, these
+
+39
+00:02:19,520 --> 00:02:25,320
+mentee cards, which shows the mentee name, their
+
+40
+00:02:25,320 --> 00:02:29,200
+profession, the district where they come from, the
+
+41
+00:02:29,200 --> 00:02:32,100
+facility, and also the number of sessions.
+
+42
+00:02:32,120 --> 00:02:39,380
+So if you click on the mentee, let's
+
+43
+00:02:39,380 --> 00:02:43,740
+do that, it shows the mentee profile.
+
+44
+00:02:47,440 --> 00:02:51,960
+The number of evaluation journeys they have done.
+
+45
+00:02:52,480 --> 00:03:01,140
+All right, so a journey is one mentee's
+
+46
+00:03:01,140 --> 00:03:05,560
+progress on one clinical tool over time, and
+
+47
+00:03:05,560 --> 00:03:08,320
+each mentorship visit is recorded as a session.
+
+48
+00:03:09,440 --> 00:03:13,740
+So for demo mentee number two, there are
+
+49
+00:03:13,740 --> 00:03:16,380
+four journeys they have gone through so far,
+
+50
+00:03:16,380 --> 00:03:21,380
+um, meaning they've been evaluated on four different
+
+51
+00:03:21,380 --> 00:03:21,900
+tools.
+
+52
+00:03:22,760 --> 00:03:27,080
+All right, so this journey, this epilepsy journey,
+
+53
+00:03:27,260 --> 00:03:29,520
+it's got six sessions, and this one has
+
+54
+00:03:29,520 --> 00:03:30,600
+got four sessions.
+
+55
+00:03:32,680 --> 00:03:35,700
+Right, etc, etc.
+
+56
+00:03:36,680 --> 00:03:40,220
+So basically, a journey is trying to get
+
+57
+00:03:40,220 --> 00:03:44,740
+the mentee to basic competency on a tool.
+
+58
+00:03:45,840 --> 00:03:48,540
+So that's why we chose the term journey.
+
+59
+00:03:49,900 --> 00:03:54,660
+And once they are fully competent, like the
+
+60
+00:03:54,660 --> 00:03:58,700
+respiratory diseases for this demo mentee tool, they
+
+61
+00:03:58,700 --> 00:04:01,860
+have finally reached their destination of full competency,
+
+62
+00:04:02,060 --> 00:04:06,140
+meaning on respiratory disease, on all the competency
+
+63
+00:04:06,140 --> 00:04:09,080
+items, they now have at least a four,
+
+64
+00:04:09,220 --> 00:04:10,880
+so there are fours and fives on all
+
+65
+00:04:10,880 --> 00:04:14,340
+the competencies, right, the competence items.
+
+66
+00:04:16,140 --> 00:04:18,220
+Right, so if you want to go back,
+
+67
+00:04:18,320 --> 00:04:20,120
+you go to the header and then go
+
+68
+00:04:20,120 --> 00:04:20,600
+back.
+
+69
+00:04:22,600 --> 00:04:26,460
+So we want to do a session, we
+
+70
+00:04:26,460 --> 00:04:28,820
+want to do a session, let's choose, um,
+
+71
+00:04:30,720 --> 00:04:34,720
+let's choose a demo mentee who hasn't done
+
+72
+00:04:34,720 --> 00:04:35,820
+any sessions yet.
+
+73
+00:04:36,220 --> 00:04:38,320
+I've created x, y, z.
+
+74
+00:04:38,520 --> 00:04:40,260
+So I'm searching here on the search bar.
+
+75
+00:04:40,860 --> 00:04:42,960
+So demo mentee x, y, z, you can
+
+76
+00:04:42,960 --> 00:04:45,200
+see they have no sessions yet.
+
+77
+00:04:46,280 --> 00:04:47,880
+Right, we want to monitor them.
+
+78
+00:04:49,220 --> 00:04:51,020
+Right, so when you click on it, this
+
+79
+00:04:51,020 --> 00:04:52,020
+is what comes up.
+
+80
+00:04:52,480 --> 00:04:55,140
+And then we've got this green button, start
+
+81
+00:04:55,140 --> 00:04:56,140
+a new session.
+
+82
+00:04:57,200 --> 00:04:58,800
+So let's just do that.
+
+83
+00:04:58,800 --> 00:05:00,100
+Right.
+
+84
+00:05:02,940 --> 00:05:08,760
+This is where we choose a clinical tool
+
+85
+00:05:08,760 --> 00:05:11,660
+for our evaluation.
+
+86
+00:05:12,880 --> 00:05:16,500
+So let's choose, um, okay, let's go with
+
+87
+00:05:16,500 --> 00:05:17,400
+this one.
+
+88
+00:05:18,040 --> 00:05:19,800
+DM Diabetes Meritus.
+
+89
+00:05:20,820 --> 00:05:23,880
+Click on it, and then we go to
+
+90
+00:05:23,880 --> 00:05:24,720
+the planning phase.
+
+91
+00:05:24,780 --> 00:05:26,900
+Now we are planning to do our, our
+
+92
+00:05:26,900 --> 00:05:27,340
+mentoring.
+
+93
+00:05:28,040 --> 00:05:31,340
+You can see here, the app tells us
+
+94
+00:05:31,340 --> 00:05:33,780
+we are now in planning mode, step one,
+
+95
+00:05:34,140 --> 00:05:34,860
+we are planning.
+
+96
+00:05:35,160 --> 00:05:36,220
+So what are we planning?
+
+97
+00:05:36,340 --> 00:05:38,460
+We are planning on the items you want
+
+98
+00:05:38,460 --> 00:05:40,140
+to observe for, for today.
+
+99
+00:05:41,240 --> 00:05:44,800
+So yeah, we've got the name, right, we've
+
+100
+00:05:44,800 --> 00:05:46,840
+got the tool, right.
+
+101
+00:05:47,800 --> 00:05:49,400
+So this is the date.
+
+102
+00:05:50,200 --> 00:05:53,200
+It automatically picks today's date.
+
+103
+00:05:54,080 --> 00:05:56,420
+But you can choose it, you can choose
+
+104
+00:05:56,420 --> 00:05:59,280
+any date you want, depending on whether you
+
+105
+00:05:59,280 --> 00:06:02,720
+are recording the data after you've already done
+
+106
+00:06:02,720 --> 00:06:04,660
+the session or not, or you're doing it
+
+107
+00:06:04,660 --> 00:06:05,060
+live.
+
+108
+00:06:06,620 --> 00:06:09,360
+It's all possible using this app.
+
+109
+00:06:10,800 --> 00:06:12,940
+So we're going to keep it on today's
+
+110
+00:06:12,940 --> 00:06:15,460
+date, and then you choose the mentorship phase.
+
+111
+00:06:16,720 --> 00:06:17,360
+Right.
+
+112
+00:06:18,100 --> 00:06:20,640
+We're going to do since the first one,
+
+113
+00:06:20,740 --> 00:06:21,760
+initial intensive.
+
+114
+00:06:23,040 --> 00:06:29,260
+So you can see these are all the
+
+115
+00:06:29,260 --> 00:06:34,000
+competence items on DM Diabetes Meritus.
+
+116
+00:06:34,720 --> 00:06:38,740
+They are grouped by their classifications, which are
+
+117
+00:06:38,740 --> 00:06:43,020
+in the document to which, which have been
+
+118
+00:06:43,020 --> 00:06:43,680
+sent to us.
+
+119
+00:06:44,620 --> 00:06:48,060
+I can see patient and assessment classification, we've
+
+120
+00:06:48,060 --> 00:06:49,760
+got three competence items.
+
+121
+00:06:50,160 --> 00:06:54,140
+And we've got treatment adjustment and individualization type
+
+122
+00:06:54,140 --> 00:06:58,680
+one DM, we've got eight, and so forth,
+
+123
+00:06:58,880 --> 00:06:59,740
+and so forth.
+
+124
+00:07:01,680 --> 00:07:06,600
+So when planning to do an observation, you
+
+125
+00:07:06,600 --> 00:07:08,540
+can select all if you want, it's easy,
+
+126
+00:07:08,700 --> 00:07:11,680
+just click on select all, then it selects
+
+127
+00:07:11,680 --> 00:07:14,600
+all the items in the classification.
+
+128
+00:07:17,120 --> 00:07:18,880
+Pull that, right.
+
+129
+00:07:19,100 --> 00:07:21,520
+So it's, if it's not necessary for that
+
+130
+00:07:21,520 --> 00:07:22,540
+day to do everything.
+
+131
+00:07:24,640 --> 00:07:26,960
+Let's clear this, you can select the ones
+
+132
+00:07:26,960 --> 00:07:27,600
+which you like.
+
+133
+00:07:28,480 --> 00:07:30,300
+It's not a must to do all.
+
+134
+00:07:30,860 --> 00:07:33,660
+So let's choose one from this.
+
+135
+00:07:34,080 --> 00:07:36,520
+And then you can choose two from these
+
+136
+00:07:36,520 --> 00:07:37,400
+ones.
+
+137
+00:07:37,940 --> 00:07:39,600
+We skip the other ones.
+
+138
+00:07:39,740 --> 00:07:42,720
+Now we like patient education, we choose a
+
+139
+00:07:42,720 --> 00:07:43,100
+couple.
+
+140
+00:07:43,900 --> 00:07:44,540
+Right.
+
+141
+00:07:44,900 --> 00:07:47,920
+So we've got the general competencies, the general
+
+142
+00:07:47,920 --> 00:07:48,920
+counseling competencies.
+
+143
+00:07:49,600 --> 00:07:53,620
+These are found on all tools, not only
+
+144
+00:07:53,620 --> 00:07:56,300
+on diabetes, but on all tools.
+
+145
+00:07:56,520 --> 00:07:58,520
+So regardless of which tool you choose, you
+
+146
+00:07:58,520 --> 00:07:59,780
+always find these.
+
+147
+00:07:59,880 --> 00:08:02,540
+And then if you want to do, if
+
+148
+00:08:02,540 --> 00:08:04,040
+you don't want to do them, then you
+
+149
+00:08:04,040 --> 00:08:05,040
+can just clear them.
+
+150
+00:08:05,160 --> 00:08:07,060
+If you want to do all of them,
+
+151
+00:08:07,260 --> 00:08:08,840
+you just select or if you want to
+
+152
+00:08:08,840 --> 00:08:12,260
+do some of them, like we want to
+
+153
+00:08:12,260 --> 00:08:15,060
+do here, we just want to do three.
+
+154
+00:08:15,840 --> 00:08:16,280
+Right.
+
+155
+00:08:16,800 --> 00:08:19,900
+So we have selected eight items from Diabetes
+
+156
+00:08:19,900 --> 00:08:20,440
+Meritus.
+
+157
+00:08:22,040 --> 00:08:24,600
+So if we are good with the plan,
+
+158
+00:08:24,900 --> 00:08:29,540
+with today's plan, we click on confirm plan.
+
+159
+00:08:30,280 --> 00:08:32,600
+So once you click on that, you are
+
+160
+00:08:32,600 --> 00:08:35,220
+now in observation mode.
+
+161
+00:08:36,020 --> 00:08:36,120
+Right.
+
+162
+00:08:36,500 --> 00:08:39,880
+The competency items we have selected in the
+
+163
+00:08:39,880 --> 00:08:41,840
+planning mode, they are now here and then
+
+164
+00:08:41,840 --> 00:08:43,980
+are now ready for scoring.
+
+165
+00:08:45,020 --> 00:08:45,660
+Right.
+
+166
+00:08:46,960 --> 00:08:52,120
+So I've got the dates, we've chosen intensive,
+
+167
+00:08:52,420 --> 00:08:54,400
+everything, and we've got the rounds.
+
+168
+00:08:56,780 --> 00:08:59,480
+Remember, for a session, we can do as
+
+169
+00:08:59,480 --> 00:09:00,780
+many rounds as we want.
+
+170
+00:09:01,320 --> 00:09:05,720
+Like in the morning, you can do a
+
+171
+00:09:05,720 --> 00:09:08,180
+round, observe the mentee.
+
+172
+00:09:09,080 --> 00:09:12,420
+And in the afternoon, we do another round
+
+173
+00:09:12,420 --> 00:09:13,760
+or maybe two more rounds.
+
+174
+00:09:13,820 --> 00:09:16,520
+And then in the evening, when another patient
+
+175
+00:09:16,520 --> 00:09:17,640
+comes, we do another round.
+
+176
+00:09:18,840 --> 00:09:22,540
+So if it's the first time, it automatically
+
+177
+00:09:22,540 --> 00:09:23,880
+chooses round one.
+
+178
+00:09:25,740 --> 00:09:26,440
+Right.
+
+179
+00:09:26,640 --> 00:09:30,100
+So here we have the score legend, which
+
+180
+00:09:30,100 --> 00:09:31,660
+will guide us on our scoring.
+
+181
+00:09:32,460 --> 00:09:36,860
+We've got one in red and then we've
+
+182
+00:09:36,860 --> 00:09:38,720
+got two in orange, three.
+
+183
+00:09:38,880 --> 00:09:40,600
+And then what one means?
+
+184
+00:09:41,560 --> 00:09:42,840
+ETC, ETC.
+
+185
+00:09:44,580 --> 00:09:45,280
+Right.
+
+186
+00:09:45,580 --> 00:09:47,520
+So now we are scoring.
+
+187
+00:09:48,880 --> 00:09:51,100
+This one will give a three.
+
+188
+00:09:51,780 --> 00:09:55,540
+So when you click on a score, it
+
+189
+00:09:55,540 --> 00:09:59,140
+just shows you what you have given the
+
+190
+00:09:59,140 --> 00:10:01,960
+rating and what it means.
+
+191
+00:10:02,780 --> 00:10:08,220
+If you choose a four, it means they
+
+192
+00:10:08,220 --> 00:10:13,060
+demonstrate advanced competency.
+
+193
+00:10:13,940 --> 00:10:14,740
+Right.
+
+194
+00:10:15,560 --> 00:10:18,780
+Safely titrates insulin for Ramadan.
+
+195
+00:10:20,220 --> 00:10:20,880
+Right.
+
+196
+00:10:21,240 --> 00:10:22,320
+Give them a one.
+
+197
+00:10:22,500 --> 00:10:23,300
+They're not very good.
+
+198
+00:10:23,860 --> 00:10:25,640
+So we have an option to add notes.
+
+199
+00:10:26,180 --> 00:10:31,760
+I forgot some steps.
+
+200
+00:10:35,020 --> 00:10:36,020
+Right.
+
+201
+00:10:36,800 --> 00:10:40,280
+I can see they're still grouped in their
+
+202
+00:10:40,280 --> 00:10:42,560
+respective classifications.
+
+203
+00:10:43,580 --> 00:10:43,840
+Right.
+
+204
+00:10:43,900 --> 00:10:47,080
+Let's just give some random so that we
+
+205
+00:10:47,080 --> 00:10:51,420
+don't spend time here of the general counseling.
+
+206
+00:10:52,340 --> 00:10:53,260
+Right.
+
+207
+00:10:53,880 --> 00:10:54,060
+Two.
+
+208
+00:10:54,420 --> 00:10:56,440
+So if you choose not applicable.
+
+209
+00:10:57,780 --> 00:10:58,700
+Right.
+
+210
+00:10:59,980 --> 00:11:03,360
+Then give a note why it's not applicable.
+
+211
+00:11:03,940 --> 00:11:11,420
+Maybe we don't have smart facility.
+
+212
+00:11:13,220 --> 00:11:14,040
+Right.
+
+213
+00:11:14,500 --> 00:11:17,560
+And then after you have finished all your
+
+214
+00:11:17,560 --> 00:11:22,560
+scoring, you can give the overall observations for
+
+215
+00:11:22,560 --> 00:11:24,310
+the session as a whole.
+
+216
+00:11:25,510 --> 00:11:25,940
+Right.
+
+217
+00:11:26,140 --> 00:11:29,320
+Let's say all went well.
+
+218
+00:11:29,880 --> 00:11:30,320
+Right.
+
+219
+00:11:30,740 --> 00:11:34,600
+And then once you are done, click on
+
+220
+00:11:34,600 --> 00:11:36,260
+review session here.
+
+221
+00:11:37,300 --> 00:11:38,160
+Right.
+
+222
+00:11:38,280 --> 00:11:42,260
+When you click on all on review session,
+
+223
+00:11:42,840 --> 00:11:45,960
+it hasn't been saved yet to the database.
+
+224
+00:11:46,900 --> 00:11:47,220
+Right.
+
+225
+00:11:47,440 --> 00:11:49,800
+Because maybe you want to review, you've made
+
+226
+00:11:49,800 --> 00:11:52,260
+some mistakes or you want to go back
+
+227
+00:11:52,260 --> 00:11:53,340
+and edit something.
+
+228
+00:11:54,300 --> 00:11:54,840
+Right.
+
+229
+00:11:55,060 --> 00:11:58,340
+So here on preview, you can see that
+
+230
+00:11:59,160 --> 00:12:02,560
+it just gives an overall overview of the
+
+231
+00:12:02,560 --> 00:12:04,500
+session of the round.
+
+232
+00:12:05,060 --> 00:12:08,340
+So here we've got three required items which
+
+233
+00:12:08,340 --> 00:12:11,440
+need a score of four or five, but
+
+234
+00:12:11,440 --> 00:12:14,340
+they are below that.
+
+235
+00:12:14,660 --> 00:12:17,500
+So it shows you those ones.
+
+236
+00:12:18,620 --> 00:12:18,840
+All right.
+
+237
+00:12:18,900 --> 00:12:20,740
+And the scores you have given.
+
+238
+00:12:21,840 --> 00:12:22,420
+All right.
+
+239
+00:12:22,440 --> 00:12:27,260
+And then the number of scores of items
+
+240
+00:12:27,260 --> 00:12:30,020
+scored and the number of items marked not
+
+241
+00:12:30,020 --> 00:12:32,620
+applicable in some averages.
+
+242
+00:12:35,360 --> 00:12:35,980
+Right.
+
+243
+00:12:35,980 --> 00:12:37,760
+Everything looks good.
+
+244
+00:12:37,900 --> 00:12:40,400
+These are the marks we have given.
+
+245
+00:12:41,340 --> 00:12:41,640
+Right.
+
+246
+00:12:43,620 --> 00:12:47,340
+If let's say you see that I gave
+
+247
+00:12:47,340 --> 00:12:49,600
+a wrong mark on D32, you can always
+
+248
+00:12:49,600 --> 00:12:50,360
+go back.
+
+249
+00:12:52,160 --> 00:12:52,720
+Right.
+
+250
+00:12:53,080 --> 00:12:57,740
+And then go to D32 and say, no,
+
+251
+00:12:57,840 --> 00:12:59,540
+they did better.
+
+252
+00:12:59,800 --> 00:13:01,640
+Let's give them a five.
+
+253
+00:13:02,720 --> 00:13:05,100
+And then go back to review session.
+
+254
+00:13:05,600 --> 00:13:06,400
+All right.
+
+255
+00:13:06,580 --> 00:13:07,980
+See now it's not here.
+
+256
+00:13:09,720 --> 00:13:13,040
+And D32 now has a five.
+
+257
+00:13:13,500 --> 00:13:13,700
+Right.
+
+258
+00:13:14,900 --> 00:13:17,000
+So all is good.
+
+259
+00:13:17,240 --> 00:13:18,840
+We see that all is good.
+
+260
+00:13:18,960 --> 00:13:21,000
+We just go to save session.
+
+261
+00:13:21,620 --> 00:13:21,980
+Right.
+
+262
+00:13:22,400 --> 00:13:24,740
+Now we have sent it to the database.
+
+263
+00:13:26,340 --> 00:13:29,680
+We can analyze it in the reporting platform,
+
+264
+00:13:29,840 --> 00:13:31,020
+which I'm going to do.
+
+265
+00:13:32,620 --> 00:13:33,540
+A little bit later.
+
+266
+00:13:34,840 --> 00:13:35,280
+Right.
+
+267
+00:13:35,440 --> 00:13:38,580
+So you see, this is the session we've
+
+268
+00:13:38,580 --> 00:13:38,840
+done.
+
+269
+00:13:38,960 --> 00:13:41,500
+It's now recorded under XYZ.
+
+270
+00:13:41,680 --> 00:13:42,420
+It's now a journey.
+
+271
+00:13:42,560 --> 00:13:44,220
+Remember the last time there was no journeys
+
+272
+00:13:44,220 --> 00:13:44,760
+to be sure.
+
+273
+00:13:45,120 --> 00:13:46,840
+Now there is a journey here.
+
+274
+00:13:47,760 --> 00:13:48,200
+Right.
+
+275
+00:13:48,720 --> 00:13:52,140
+So this is how you do a session.
+
+276
+00:13:52,540 --> 00:13:54,440
+You plan first and then you do the
+
+277
+00:13:54,440 --> 00:13:55,060
+observation.
+
+278
+00:13:55,900 --> 00:13:56,240
+Right.
+
+279
+00:13:56,560 --> 00:13:58,040
+And then you do a review.
+
+280
+00:13:58,300 --> 00:14:00,260
+And then after reviewing, if everything is all
+
+281
+00:14:00,260 --> 00:14:02,260
+right, then click save.
+
+282
+00:14:02,620 --> 00:14:03,440
+And that is that.
+
+283
+00:14:04,960 --> 00:14:05,540
+Right.
+
+284
+00:14:05,840 --> 00:14:09,280
+So come back later, maybe two, three days
+
+285
+00:14:09,280 --> 00:14:11,200
+later, or maybe four months later, you want
+
+286
+00:14:11,200 --> 00:14:12,540
+to check on XYZ.
+
+287
+00:14:13,640 --> 00:14:18,340
+You can just click here and then you
+
+288
+00:14:18,340 --> 00:14:20,080
+see what went on.
+
+289
+00:14:20,080 --> 00:14:20,660
+Right.
+
+290
+00:14:20,900 --> 00:14:23,080
+Just gives an average of what went on.
+
+291
+00:14:23,260 --> 00:14:26,700
+They did one session, they did an average
+
+292
+00:14:26,700 --> 00:14:28,940
+of 3.4 and it was done on
+
+293
+00:14:28,940 --> 00:14:30,740
+the October 17th.
+
+294
+00:14:30,860 --> 00:14:34,380
+And if you want to edit the session,
+
+295
+00:14:34,920 --> 00:14:38,280
+you can always click here and then, you
+
+296
+00:14:38,280 --> 00:14:42,140
+know, you edit here.
+
+297
+00:14:43,080 --> 00:14:43,780
+Right.
+
+298
+00:14:46,040 --> 00:14:46,740
+Yeah.
+
+299
+00:14:47,860 --> 00:14:49,300
+Give them a tool.
+
+300
+00:14:50,340 --> 00:14:52,040
+You preview the session again.
+
+301
+00:14:54,840 --> 00:14:57,060
+Here is the tool which we've just gave
+
+302
+00:14:57,060 --> 00:14:59,020
+and then save session.
+
+303
+00:14:59,200 --> 00:15:00,120
+And that is that.
+
+304
+00:15:02,400 --> 00:15:02,960
+Right.
+
+305
+00:15:02,960 --> 00:15:05,740
+Let's say you want to add a gap.
+
+306
+00:15:05,980 --> 00:15:07,980
+You want to do a gap analysis on
+
+307
+00:15:07,980 --> 00:15:08,260
+them.
+
+308
+00:15:09,140 --> 00:15:12,280
+You click on the journey and then you
+
+309
+00:15:12,280 --> 00:15:13,500
+log this.
+
+310
+00:15:13,640 --> 00:15:16,240
+This appears and then you log the gap.
+
+311
+00:15:17,040 --> 00:15:17,420
+Right.
+
+312
+00:15:17,500 --> 00:15:19,180
+This is how you log the gap.
+
+313
+00:15:20,240 --> 00:15:28,880
+They didn't do well in titration.
+
+314
+00:15:30,360 --> 00:15:32,780
+It was a clinical skill.
+
+315
+00:15:34,620 --> 00:15:36,480
+Was it addressed in this session?
+
+316
+00:15:37,180 --> 00:15:39,120
+Just say no, we will cover later.
+
+317
+00:15:39,120 --> 00:15:43,940
+Maybe take timeline.
+
+318
+00:15:44,580 --> 00:15:45,700
+Okay.
+
+319
+00:15:45,900 --> 00:15:53,800
+Next session on the 24th.
+
+320
+00:15:53,820 --> 00:15:57,900
+October 2026.
+
+321
+00:15:59,100 --> 00:15:59,920
+Right.
+
+322
+00:16:03,540 --> 00:16:04,260
+Yeah.
+
+323
+00:16:06,220 --> 00:16:08,200
+Then you log the gap.
+
+324
+00:16:09,340 --> 00:16:09,820
+Right.
+
+325
+00:16:10,640 --> 00:16:12,360
+And that is that.
+
+326
+00:16:13,060 --> 00:16:15,040
+And you're done with the session.
+
+327
+00:16:18,700 --> 00:16:19,420
+Right.
+
+328
+00:16:19,420 --> 00:16:23,180
+Once done, just click on here and you're
+
+329
+00:16:23,180 --> 00:16:24,700
+taken back to the home screen.
+
+330
+00:16:26,980 --> 00:16:27,580
+Right.
+
+331
+00:16:27,580 --> 00:16:28,880
+So, here it is.
+
+332
+00:16:29,080 --> 00:16:29,840
+It appears here.
+
+333
+00:16:31,560 --> 00:16:33,020
+And here is the gap.
+
+334
+00:16:34,080 --> 00:16:35,500
+Here is the latest gap.
+
+335
+00:16:36,560 --> 00:16:36,940
+Okay.
+
+336
+00:16:37,120 --> 00:16:43,080
+So, I want to show another tool which
+
+337
+00:16:43,080 --> 00:16:44,580
+I think is worth showing.
+
+338
+00:16:44,580 --> 00:16:48,820
+Um, let's go to my MNDs.
+
+339
+00:16:48,860 --> 00:16:50,220
+I think it's echo.
+
+340
+00:16:52,660 --> 00:16:54,420
+Let's just do this one.
+
+341
+00:16:55,780 --> 00:16:57,320
+And let's just do...
+
+342
+00:16:58,060 --> 00:16:59,760
+So, you click on start.
+
+343
+00:17:00,040 --> 00:17:02,180
+This one has got two sessions already on
+
+344
+00:17:02,180 --> 00:17:02,960
+echocardiogram.
+
+345
+00:17:03,800 --> 00:17:04,240
+Okay.
+
+346
+00:17:04,339 --> 00:17:05,900
+So, we start a new session.
+
+347
+00:17:06,319 --> 00:17:08,760
+We click on echocardiogram.
+
+348
+00:17:09,460 --> 00:17:10,060
+Right.
+
+349
+00:17:10,980 --> 00:17:13,220
+So, you see there are two previous sessions.
+
+350
+00:17:14,319 --> 00:17:16,020
+Remember, we are on planning again.
+
+351
+00:17:16,720 --> 00:17:19,500
+So, this one, we can do just say
+
+352
+00:17:19,500 --> 00:17:19,940
+ongoing.
+
+353
+00:17:20,220 --> 00:17:22,119
+If it's on supervision, you click supervision.
+
+354
+00:17:22,560 --> 00:17:25,180
+If it's on initial intensive, just depending on
+
+355
+00:17:25,180 --> 00:17:27,660
+the phase, I'm going to go on ongoing.
+
+356
+00:17:28,600 --> 00:17:30,440
+So, um, right.
+
+357
+00:17:30,560 --> 00:17:33,000
+So, we know we've got advanced competencies.
+
+358
+00:17:33,560 --> 00:17:35,860
+These ones are competencies which are not required
+
+359
+00:17:35,860 --> 00:17:38,300
+to be achieved to be considered a competent
+
+360
+00:17:38,300 --> 00:17:38,940
+provider.
+
+361
+00:17:40,080 --> 00:17:40,760
+Right.
+
+362
+00:17:40,980 --> 00:17:47,100
+Meaning, um, yes, you can choose to monitor
+
+363
+00:17:47,100 --> 00:17:48,100
+them or not.
+
+364
+00:17:48,220 --> 00:17:49,820
+They are not going to have an impact
+
+365
+00:17:49,820 --> 00:17:56,200
+on the classification whether a mentee is now
+
+366
+00:17:56,200 --> 00:17:57,980
+considered competent or not.
+
+367
+00:17:58,160 --> 00:18:00,840
+This is from what I understand from the
+
+368
+00:18:00,840 --> 00:18:01,260
+document.
+
+369
+00:18:02,020 --> 00:18:02,320
+Okay.
+
+370
+00:18:02,320 --> 00:18:05,160
+So, these ones, the advanced competencies, they will
+
+371
+00:18:05,160 --> 00:18:07,620
+be marked in gray.
+
+372
+00:18:08,920 --> 00:18:11,940
+Just like in the, in the tool, in
+
+373
+00:18:11,940 --> 00:18:13,120
+the document.
+
+374
+00:18:14,640 --> 00:18:15,360
+Right.
+
+375
+00:18:15,500 --> 00:18:17,640
+So, let's choose one.
+
+376
+00:18:18,280 --> 00:18:20,700
+Just choose about two, a couple.
+
+377
+00:18:22,560 --> 00:18:23,840
+And then this one.
+
+378
+00:18:24,440 --> 00:18:28,740
+We don't need to do, you know, these.
+
+379
+00:18:29,860 --> 00:18:30,160
+Right.
+
+380
+00:18:30,480 --> 00:18:31,960
+We choose three and then go on to
+
+381
+00:18:31,960 --> 00:18:33,140
+confirm plan.
+
+382
+00:18:34,640 --> 00:18:35,200
+Right.
+
+383
+00:18:35,920 --> 00:18:38,180
+So, we've done this already.
+
+384
+00:18:38,780 --> 00:18:39,760
+We've done this already.
+
+385
+00:18:41,360 --> 00:18:41,920
+Right.
+
+386
+00:18:43,540 --> 00:18:46,860
+So, this one has got previous scores, which
+
+387
+00:18:46,860 --> 00:18:47,920
+has been done before.
+
+388
+00:18:48,600 --> 00:18:51,640
+So, you will see the previous score for
+
+389
+00:18:51,640 --> 00:18:53,500
+the competence item here.
+
+390
+00:18:53,840 --> 00:18:56,780
+The last time they had a one, they
+
+391
+00:18:56,780 --> 00:18:58,700
+did not demonstrate competence.
+
+392
+00:18:59,300 --> 00:19:01,900
+So, let's say this time around, they have
+
+393
+00:19:01,900 --> 00:19:03,260
+improved.
+
+394
+00:19:03,480 --> 00:19:04,220
+They have a four.
+
+395
+00:19:05,600 --> 00:19:07,420
+So, you see, it shows here.
+
+396
+00:19:07,800 --> 00:19:09,680
+It flags that they have improved.
+
+397
+00:19:10,720 --> 00:19:11,040
+Right.
+
+398
+00:19:11,360 --> 00:19:14,020
+Against the score which they had on the
+
+399
+00:19:14,020 --> 00:19:15,180
+16th of October.
+
+400
+00:19:16,240 --> 00:19:16,580
+Right.
+
+401
+00:19:16,800 --> 00:19:20,840
+So, E3, they had a four.
+
+402
+00:19:21,200 --> 00:19:23,200
+Let's say they now have a two.
+
+403
+00:19:23,740 --> 00:19:25,580
+You see, now it's flagged as they have
+
+404
+00:19:25,580 --> 00:19:26,140
+regressed.
+
+405
+00:19:26,940 --> 00:19:27,880
+The down arrow.
+
+406
+00:19:28,640 --> 00:19:29,060
+All right.
+
+407
+00:19:30,140 --> 00:19:32,400
+This is our advanced one.
+
+408
+00:19:32,500 --> 00:19:34,900
+Let's say they had a two in the
+
+409
+00:19:34,900 --> 00:19:36,840
+last time and now they still have a
+
+410
+00:19:36,840 --> 00:19:37,120
+two.
+
+411
+00:19:37,860 --> 00:19:38,220
+Right.
+
+412
+00:19:38,360 --> 00:19:41,080
+So, it tells you that there's no change.
+
+413
+00:19:42,460 --> 00:19:43,080
+Okay.
+
+414
+00:19:43,480 --> 00:19:45,760
+So, for ECO, I chose it because now
+
+415
+00:19:45,760 --> 00:19:50,160
+it has this section in the blue card.
+
+416
+00:19:51,600 --> 00:20:00,300
+So, from the document, it's included.
+
+417
+00:20:00,480 --> 00:20:02,600
+So, I chose to include it because I
+
+418
+00:20:02,600 --> 00:20:04,360
+want to align with the document as much
+
+419
+00:20:04,360 --> 00:20:05,000
+as possible.
+
+420
+00:20:05,940 --> 00:20:10,460
+So, the first one is the number of
+
+421
+00:20:10,460 --> 00:20:16,140
+ECO diagrams which have been performed under supervision.
+
+422
+00:20:18,140 --> 00:20:18,640
+Right.
+
+423
+00:20:18,740 --> 00:20:21,060
+So, you just click here on the plus
+
+424
+00:20:21,060 --> 00:20:21,840
+button to add.
+
+425
+00:20:22,000 --> 00:20:23,480
+So, we want to give them, let's say
+
+426
+00:20:23,480 --> 00:20:24,160
+they did two.
+
+427
+00:20:25,440 --> 00:20:25,940
+Right.
+
+428
+00:20:26,580 --> 00:20:29,400
+So, from those two, which ones were correct?
+
+429
+00:20:30,840 --> 00:20:31,420
+Right.
+
+430
+00:20:31,840 --> 00:20:33,920
+Which ones is the correct final diagnosis?
+
+431
+00:20:34,620 --> 00:20:35,680
+Let's say one.
+
+432
+00:20:36,440 --> 00:20:36,920
+Okay.
+
+433
+00:20:37,800 --> 00:20:42,780
+So, if you want to decrease this number,
+
+434
+00:20:42,980 --> 00:20:43,660
+you click on the minus.
+
+435
+00:20:43,960 --> 00:20:45,220
+If you want to increase.
+
+436
+00:20:45,960 --> 00:20:46,320
+Right.
+
+437
+00:20:47,320 --> 00:20:47,640
+See.
+
+438
+00:20:49,380 --> 00:20:51,300
+So, section notice is optional.
+
+439
+00:20:51,960 --> 00:20:52,160
+Right.
+
+440
+00:20:52,320 --> 00:20:55,060
+So, this is how we do it.
+
+441
+00:20:56,220 --> 00:20:56,560
+Right.
+
+442
+00:20:58,240 --> 00:21:01,020
+Then, you go to review session is below.
+
+443
+00:21:01,400 --> 00:21:03,800
+Then, it shows the number of items where
+
+444
+00:21:03,800 --> 00:21:08,880
+they have not been competent and the ones
+
+445
+00:21:08,880 --> 00:21:10,540
+which we did not choose in the planning,
+
+446
+00:21:10,720 --> 00:21:12,980
+they are there and marked as not scored.
+
+447
+00:21:14,860 --> 00:21:15,420
+Right.
+
+448
+00:21:17,180 --> 00:21:22,160
+This is just basic analysis, just basic statistics.
+
+449
+00:21:23,560 --> 00:21:23,680
+Right.
+
+450
+00:21:24,740 --> 00:21:25,300
+Right.
+
+451
+00:21:25,720 --> 00:21:25,820
+Right.
+
+452
+00:21:26,120 --> 00:21:27,620
+I'm good with this one and then you
+
+453
+00:21:27,620 --> 00:21:28,700
+go to save sessions.
+
+454
+00:21:30,080 --> 00:21:30,640
+Right.
+
+455
+00:21:30,720 --> 00:21:33,080
+So, that's how we do it.
+
+456
+00:21:34,420 --> 00:21:40,020
+So, now they have three sessions and remember
+
+457
+00:21:40,020 --> 00:21:41,520
+the last time there were two and we
+
+458
+00:21:41,520 --> 00:21:42,400
+did the third one.
+
+459
+00:21:43,260 --> 00:21:47,480
+So, this is how we do our monitoring.
+
+460
+00:21:50,760 --> 00:21:53,800
+Let's go to back.
+
+461
+00:21:54,760 --> 00:21:58,200
+Another thing I want to show you is
+
+462
+00:21:58,200 --> 00:21:59,660
+syncing.
+
+463
+00:22:00,380 --> 00:22:00,640
+Right.
+
+464
+00:22:00,740 --> 00:22:03,080
+Because we'll be working in areas where there
+
+465
+00:22:03,080 --> 00:22:09,240
+is bad internet or maybe you're not connected
+
+466
+00:22:09,240 --> 00:22:09,980
+at all.
+
+467
+00:22:13,320 --> 00:22:16,740
+Once you are connected, it can sync on
+
+468
+00:22:16,740 --> 00:22:19,860
+its own depending on the phone or depending
+
+469
+00:22:19,860 --> 00:22:22,220
+on where you are or you can sync
+
+470
+00:22:22,220 --> 00:22:23,140
+it on your own.
+
+471
+00:22:25,020 --> 00:22:27,860
+I recommend, you know, syncing manually.
+
+472
+00:22:28,140 --> 00:22:32,220
+Of course, it does it automatically but it's
+
+473
+00:22:32,220 --> 00:22:34,580
+good to do it manually also just to
+
+474
+00:22:34,580 --> 00:22:35,060
+make sure.
+
+475
+00:22:35,400 --> 00:22:39,260
+So, you click on these arrows here on
+
+476
+00:22:39,260 --> 00:22:40,060
+top on the header.
+
+477
+00:22:40,520 --> 00:22:41,320
+Click on sync.
+
+478
+00:22:42,440 --> 00:22:42,840
+Right.
+
+479
+00:22:43,560 --> 00:22:45,980
+And then, if you want to sync only
+
+480
+00:22:45,980 --> 00:22:49,000
+users, maybe you didn't monitor anyone but you
+
+481
+00:22:49,000 --> 00:22:51,700
+added new users, you can just click on
+
+482
+00:22:51,700 --> 00:22:55,040
+sync users or if you did a session
+
+483
+00:22:55,040 --> 00:22:58,100
+or evaluation, you can sync here or if
+
+484
+00:22:58,100 --> 00:23:00,840
+you just added a district, you can sync
+
+485
+00:23:00,840 --> 00:23:01,360
+districts.
+
+486
+00:23:01,940 --> 00:23:04,460
+We'll do sync all.
+
+487
+00:23:05,920 --> 00:23:06,520
+Right.
+
+488
+00:23:07,300 --> 00:23:11,500
+Then, it should show syncs successfully to show
+
+489
+00:23:11,500 --> 00:23:13,780
+that they've now been sent to the what?
+
+490
+00:23:13,920 --> 00:23:16,000
+To the database and they can now be
+
+491
+00:23:16,000 --> 00:23:19,700
+seen by the admins.
+
+492
+00:23:21,080 --> 00:23:21,440
+Right.
+
+493
+00:23:21,520 --> 00:23:23,660
+So, once this is done, even if you
+
+494
+00:23:23,660 --> 00:23:26,280
+lose your phone or if you lose your
+
+495
+00:23:26,280 --> 00:23:31,000
+tablet or your laptop, you haven't lost the
+
+496
+00:23:31,000 --> 00:23:33,620
+data because it's now in the savers, somewhere
+
+497
+00:23:33,620 --> 00:23:34,880
+in the savers in the database.
+
+498
+00:23:36,220 --> 00:23:36,720
+Right.
+
+499
+00:23:36,840 --> 00:23:40,380
+So, sometimes you have situations where you have
+
+500
+00:23:40,380 --> 00:23:44,100
+done hundreds of evaluations over maybe over the
+
+501
+00:23:44,100 --> 00:23:47,960
+years and now your phone is slow or
+
+502
+00:23:47,960 --> 00:23:49,400
+there's too much data in the phone.
+
+503
+00:23:49,620 --> 00:23:50,920
+You can just do a cleanup.
+
+504
+00:23:51,180 --> 00:23:52,020
+You click here.
+
+505
+00:23:53,060 --> 00:23:55,740
+It syncs everything to the database and then
+
+506
+00:23:55,740 --> 00:23:58,460
+it clears your phone and then you can
+
+507
+00:23:58,460 --> 00:24:00,620
+start over again.
+
+508
+00:24:01,520 --> 00:24:01,820
+Right.
+
+509
+00:24:03,320 --> 00:24:06,480
+So, it removes all the old sessions but
+
+510
+00:24:06,480 --> 00:24:09,220
+it keeps the last session you have done
+
+511
+00:24:09,220 --> 00:24:13,660
+because it makes sense because it's a recent
+
+512
+00:24:13,660 --> 00:24:14,100
+session.
+
+513
+00:24:15,120 --> 00:24:17,160
+You probably need it in your phone.
+
+514
+00:24:18,480 --> 00:24:21,020
+So, right.
+
+515
+00:24:21,380 --> 00:24:22,940
+This is it.
+
+516
+00:24:24,600 --> 00:24:29,660
+Thank you very much for watching the video
+
+517
+00:24:29,660 --> 00:24:33,820
+and if you have any questions, you can
+
+518
+00:24:33,820 --> 00:24:34,620
+get in touch.
+
+519
+00:24:35,700 --> 00:24:36,620
+Me.
+
+520
+00:24:37,920 --> 00:24:38,840
+Right.
+
+521
+00:24:39,300 --> 00:24:39,940
+Bye-bye.
