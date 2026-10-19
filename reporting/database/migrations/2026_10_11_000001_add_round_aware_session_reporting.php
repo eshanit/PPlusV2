@@ -9,17 +9,44 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('evaluation_sessions', function (Blueprint $table) {
-            $table->unsignedSmallInteger('round_count')->default(1)->after('day_round');
-            $table->json('selected_item_slugs')->nullable()->after('round_count');
-            $table->json('selected_counselling_slugs')->nullable()->after('selected_item_slugs');
-        });
+        // Each step is guarded so the migration can be re-run safely. MySQL
+        // cannot roll back DDL, so a failure in the view statements below
+        // would otherwise leave these columns behind and block a retry.
+        if (! Schema::hasColumn('evaluation_sessions', 'round_count')) {
+            Schema::table('evaluation_sessions', function (Blueprint $table) {
+                $table->unsignedSmallInteger('round_count')->default(1)->after('day_round');
+            });
+        }
 
-        Schema::table('session_item_scores', function (Blueprint $table) {
-            $table->unsignedSmallInteger('round_index')->default(1)->after('session_id');
-            $table->dropUnique('uq_score_session_item');
-            $table->unique(['session_id', 'item_id', 'round_index'], 'uq_score_session_item_round');
-        });
+        if (! Schema::hasColumn('evaluation_sessions', 'selected_item_slugs')) {
+            Schema::table('evaluation_sessions', function (Blueprint $table) {
+                $table->json('selected_item_slugs')->nullable()->after('round_count');
+            });
+        }
+
+        if (! Schema::hasColumn('evaluation_sessions', 'selected_counselling_slugs')) {
+            Schema::table('evaluation_sessions', function (Blueprint $table) {
+                $table->json('selected_counselling_slugs')->nullable()->after('selected_item_slugs');
+            });
+        }
+
+        if (! Schema::hasColumn('session_item_scores', 'round_index')) {
+            Schema::table('session_item_scores', function (Blueprint $table) {
+                $table->unsignedSmallInteger('round_index')->default(1)->after('session_id');
+            });
+        }
+
+        if (! Schema::hasIndex('session_item_scores', 'uq_score_session_item_round')) {
+            Schema::table('session_item_scores', function (Blueprint $table) {
+                $table->unique(['session_id', 'item_id', 'round_index'], 'uq_score_session_item_round');
+            });
+        }
+
+        if (Schema::hasIndex('session_item_scores', 'uq_score_session_item')) {
+            Schema::table('session_item_scores', function (Blueprint $table) {
+                $table->dropUnique('uq_score_session_item');
+            });
+        }
 
         if (DB::connection()->getDriverName() === 'sqlite') {
             $this->createSqliteSessionItemScoresView();
@@ -287,7 +314,7 @@ return new class extends Migration
             plan_to_date AS (
                 SELECT DISTINCT
                     current_session.evaluation_group_id,
-                    current_session.session_id,
+                    current_session.id AS session_id,
                     current_session.session_number,
                     current_session.mentee_id,
                     current_session.evaluator_id,
