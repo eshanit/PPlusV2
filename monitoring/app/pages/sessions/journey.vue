@@ -253,8 +253,8 @@ async function confirmResolve() {
           >
             {{
               competencyStatus === 'fully_competent'
-                ? 'All items (including advanced) scored 4 or 5. This journey is complete. If a score was given in error, reopen it from the mentee page.'
-                : 'All core items scored 4 or 5. This journey is closed. If a score was given in error, reopen it from the mentee page.'
+                ? 'Every item, including advanced ones, has reached 4 or 5. This journey is complete. If a score was given in error, reopen it from the mentee page.'
+                : 'Every required item has reached 4 or 5. This journey is closed. If a score was given in error, reopen it from the mentee page.'
             }}
           </p>
         </div>

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import PouchDB from 'pouchdb'
 import { useDb } from '~/composables/useDb'
-import { getCompetencyStatus } from '~/composables/useCompetency'
+import { getCompetencyStatus, getLatestItemScores } from '~/composables/useCompetency'
 import { getToolBySlug } from '~/data/evaluationItemData'
 import type { ISession } from '~/interfaces/ISession'
 import { useSessionStore } from './sessionStore'
@@ -94,7 +94,14 @@ export const useSyncStore = defineStore('sync', () => {
     const districtStore = useDistrictStore()
 
     sessionsSync = sessionsDb
-      .sync(remoteUrl('penplus_sessions'), { live: true, retry: true })
+      .sync(remoteUrl('penplus_sessions'), {
+        live: true,
+        retry: true,
+        // Storage Cleanup frees space on this device only. Its deletions are
+        // marked localPurge and must never be pushed, or the server copy of
+        // the session would be deleted too. User-initiated deletes still sync.
+        push: { filter: (doc: { _deleted?: boolean; localPurge?: boolean }) => !(doc._deleted && doc.localPurge) },
+      })
       .on('active', () => { sessionsState.value = 'active'; sessionsError.value = null })
       .on('paused', () => { sessionsState.value = 'paused'; lastSyncedAt.value = Date.now() })
       .on('error', (err: unknown) => { sessionsState.value = 'error'; sessionsError.value = err instanceof Error ? err.message : String(err) })
@@ -189,8 +196,15 @@ export const useSyncStore = defineStore('sync', () => {
         // Skip journeys still in progress
         if (status === 'in_progress') continue
 
-        // Keep the latest session — purge everything before it
-        const candidates = groupSessions.slice(0, -1)
+        // Keep the latest session, and every session that holds an item's
+        // most recent score. Competency is worked out from those scores, so
+        // removing them would make a closed journey look unfinished.
+        const keep = new Set<string>(
+          [...getLatestItemScores(groupSessions).values()].map(entry => entry.sessionId),
+        )
+        const latestSession = groupSessions[groupSessions.length - 1]
+        if (latestSession) keep.add(latestSession._id)
+        const candidates = groupSessions.filter(session => !keep.has(session._id))
 
         for (const session of candidates) {
           // 30-day floor: never purge recent data regardless of sync state
@@ -199,7 +213,9 @@ export const useSyncStore = defineStore('sync', () => {
           if (session.syncStatus !== 'synced') continue
 
           const doc = await sessionsDb.get(session._id)
-          await sessionsDb.remove(doc)
+          // Local-only deletion: the push filter in startSync() skips it, so
+          // the session stays on the server.
+          await sessionsDb.put({ _id: doc._id, _rev: doc._rev, _deleted: true, localPurge: true })
           purgedSessions++
         }
       }

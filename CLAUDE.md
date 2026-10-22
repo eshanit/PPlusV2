@@ -77,11 +77,21 @@ This key represents the full mentee+tool journey.
 
 ### Competency closure rule
 
-The recommended closure rule is:
+Decided 2026-10-22, matching the paper tool and field practice:
 
-- `basic_competent`: all non-advanced tool items have scores 4 or 5.
-- `fully_competent`: all tool items, including advanced items, have scores 4 or
-  5.
+- An item is **achieved** once its most recent score in the journey is 4 or 5.
+  Mentors don't re-rate achieved items, so that score can come from any earlier
+  session. A later lower re-rating makes it not achieved again. N/A never
+  replaces an earlier score. The latest score is the latest session's latest
+  round that rated the item.
+- `basic_competent`: every required (non-advanced) item **in the tool** is
+  achieved, not just items evaluated so far.
+- `fully_competent`: every item in the tool, including advanced items, is
+  achieved.
+
+Implemented in `getCompetencyBreakdown()` (`monitoring/app/composables/useCompetency.ts`)
+and in the `v_evaluation_group_status` view
+(`2026_10_22_000001_competency_from_latest_item_scores`). Keep the two in step.
 
 The app should default to closing on `basic_competent` because the paper tool
 says grey/advanced competencies are not required to be considered competent.
@@ -520,7 +530,7 @@ Processors:
 
 1. **Compact both DBs** (`sessionsDb.compact()` + `gapsDb.compact()`) — removes MVCC revision history, always safe.
 2. **Skip in-progress journeys** — any `evaluationGroupId` where `getCompetencyStatus` returns `'in_progress'` is left untouched.
-3. **Purge old sessions from closed journeys** — for journeys that are `basic_competent` or `fully_competent`, remove all sessions except the latest, provided `syncStatus === 'synced'` **and** older than 30 days.
+3. **Purge old sessions from closed journeys** — for journeys that are `basic_competent` or `fully_competent`, remove sessions except the latest and any session holding an item's most recent score (competency depends on those), provided `syncStatus === 'synced'` **and** older than 30 days. Deletions are written as `_deleted` + `localPurge: true` tombstones, and the sessions push filter in `startSync()` skips them, so the server copy is never deleted.
 4. **Reload the session store** if any documents were removed.
 
 Exposed state: `cleanupRunning`, `lastCleanupAt`, `lastCleanupPurged`. Triggered manually from `sync.vue`.
@@ -583,6 +593,15 @@ Exposed state: `cleanupRunning`, `lastCleanupAt`, `lastCleanupPurged`. Triggered
 - **Back navigation is centralised**: the app header shows the Back button on
   every page except `/`. Do not add per-page back arrows. Register a new page's
   fallback parent in `getParentRoute()` in `composables/useBackNavigation.ts`.
+- **Rounds choose their own competencies**: each `IRound` stores
+  `selectedItemSlugs` / `selectedCounsellingSlugs`. A session's own
+  `selectedItemSlugs` is the union of its rounds. Older sessions without
+  per-round lists fall back to the session list or to what each round scored.
+- **Advanced flags live in two places**: `monitoring/app/data/evaluationItemData.ts`
+  is the source of truth. `reporting/database/data/evaluation_items.json` is
+  generated from it for `ToolsAndItemsSeeder`; regenerate it whenever item data
+  changes, then re-run the seeder, or the dashboard will judge competency on
+  different advanced items than the app.
 - **Gaps are journey-scoped, not session-scoped**: `IGapEntry` links to
   `evaluationGroupId`, not to a session `_id`. Gap management belongs on
   `sessions/journey.vue`. Do not add gap sections to `sessions/session.vue`.

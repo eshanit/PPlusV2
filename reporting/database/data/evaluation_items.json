@@ -313,21 +313,21 @@
       {
         "slug": "diabetes-D35",
         "number": "D35",
-        "isAdvanced": true,
+        "isAdvanced": false,
         "category": "SPECIAL SITUATION: PREGNANCY",
         "title": "Integrates care with ANC services or Obstetrics/Gynaecology units"
       },
       {
         "slug": "diabetes-D36",
         "number": "D36",
-        "isAdvanced": true,
+        "isAdvanced": false,
         "category": "SPECIAL SITUATION: PREGNANCY",
         "title": "Programs frequent monitoring (every 2–4 weeks until week 30 and every 2 weeks until 38 weeks) and adjusts insulin regimen based on glucose logbook"
       },
       {
         "slug": "diabetes-D37",
         "number": "D37",
-        "isAdvanced": true,
+        "isAdvanced": false,
         "category": "SPECIAL SITUATION: PREGNANCY",
         "title": "Starts low dose aspirin (75–150 mg) in week 12"
       }
@@ -431,14 +431,14 @@
       {
         "slug": "cardiac-C14",
         "number": "C14",
-        "isAdvanced": false,
+        "isAdvanced": true,
         "category": "GENERAL MANAGEMENT OF HEART FAILURE",
         "title": "Performs and interprets basic ECG findings relevant to heart failure and valvular diseases"
       },
       {
         "slug": "cardiac-C15",
         "number": "C15",
-        "isAdvanced": false,
+        "isAdvanced": true,
         "category": "GENERAL MANAGEMENT OF HEART FAILURE",
         "title": "Identifies signs of heart failure in a chest X-ray"
       },
@@ -466,7 +466,7 @@
       {
         "slug": "cardiac-C19",
         "number": "C19",
-        "isAdvanced": false,
+        "isAdvanced": true,
         "category": "RHEUMATIC HEART DISEASES",
         "title": "Identifies atrial fibrillation on ECG and starts or indicates anticoagulation to prevent systemic embolic complications"
       },
@@ -640,7 +640,7 @@
       {
         "slug": "echo-E7",
         "number": "E7",
-        "isAdvanced": false,
+        "isAdvanced": true,
         "category": "ECHOCARDIOGRAM COMPETENCIES",
         "title": "Describes the echo features for the most common congenital heart diseases"
       },
@@ -898,7 +898,7 @@
       {
         "slug": "sickle_cell-S34",
         "number": "S34",
-        "isAdvanced": true,
+        "isAdvanced": false,
         "category": "INPATIENT MANAGEMENT",
         "title": "Safely transitions between oral and intravenous opioid therapy during hospitalization"
       },
@@ -926,7 +926,7 @@
       {
         "slug": "sickle_cell-S38",
         "number": "S38",
-        "isAdvanced": true,
+        "isAdvanced": false,
         "category": "INPATIENT MANAGEMENT",
         "title": "Manages other complications such as priapism adequately"
       },
@@ -947,35 +947,35 @@
       {
         "slug": "sickle_cell-S41",
         "number": "S41",
-        "isAdvanced": true,
+        "isAdvanced": false,
         "category": "MANAGEMENT OF SCD DURING AND BEFORE PREGNANCY",
         "title": "Refers patients of childbearing age for family planning as needed and discusses risks of pregnancy in SCD"
       },
       {
         "slug": "sickle_cell-S42",
         "number": "S42",
-        "isAdvanced": true,
+        "isAdvanced": false,
         "category": "MANAGEMENT OF SCD DURING AND BEFORE PREGNANCY",
         "title": "Re-starts HU during the second trimester if pain crisis, need of transfusion and/or other complications in agreement with patient"
       },
       {
         "slug": "sickle_cell-S43",
         "number": "S43",
-        "isAdvanced": true,
+        "isAdvanced": false,
         "category": "MANAGEMENT OF SCD DURING AND BEFORE PREGNANCY",
         "title": "Initiates preventive therapies during pregnancy: aspirin 150 mg after week 12 and calcium 1.5 g daily"
       },
       {
         "slug": "sickle_cell-S44",
         "number": "S44",
-        "isAdvanced": true,
+        "isAdvanced": false,
         "category": "MANAGEMENT OF SCD DURING AND BEFORE PREGNANCY",
         "title": "Ensures appropriate ANC follow-up schedule (every 4 weeks until week 28, every 2 weeks until week 36 and weekly after week 36)"
       },
       {
         "slug": "sickle_cell-S45",
         "number": "S45",
-        "isAdvanced": true,
+        "isAdvanced": false,
         "category": "MANAGEMENT OF SCD DURING AND BEFORE PREGNANCY",
         "title": "Starts low molecular weight heparin (LMWH) in inpatient pregnant women or outpatient with history of thrombosis or known clotting disorder"
       }
@@ -1009,7 +1009,7 @@
       {
         "slug": "respiratory-R4",
         "number": "R4",
-        "isAdvanced": false,
+        "isAdvanced": true,
         "category": "ASTHMA — ASSESSMENT AND DIAGNOSIS",
         "title": "Understands and performs spirometry (if available) as a diagnostic tool and differentiates between obstruction and restriction"
       },
@@ -1142,14 +1142,14 @@
       {
         "slug": "respiratory-R23",
         "number": "R23",
-        "isAdvanced": false,
+        "isAdvanced": true,
         "category": "ASSESSMENT AND DIAGNOSIS — COPD AND POST-TUBERCULOSIS LUNG DISEASE",
         "title": "Recognizes common post-TB patterns on chest X-ray"
       },
       {
         "slug": "respiratory-R24",
         "number": "R24",
-        "isAdvanced": false,
+        "isAdvanced": true,
         "category": "ASSESSMENT AND DIAGNOSIS — COPD AND POST-TUBERCULOSIS LUNG DISEASE",
         "title": "Differentiates obstructive and restrictive respiratory patterns using spirometry when available"
       },
@@ -1524,14 +1524,14 @@
       {
         "slug": "epilepsy-E5",
         "number": "E5",
-        "isAdvanced": false,
+        "isAdvanced": true,
         "category": "ASSESSMENT AND DIAGNOSIS",
         "title": "Differentiates epileptic seizures from common mimics such as syncope, febrile seizures, psychogenic non-epileptic events"
       },
       {
         "slug": "epilepsy-E6",
         "number": "E6",
-        "isAdvanced": false,
+        "isAdvanced": true,
         "category": "ASSESSMENT AND DIAGNOSIS",
         "title": "Performs a focused neurological examination to identify focal neurological deficits or other signs suggesting secondary causes"
       },
@@ -1601,21 +1601,21 @@
       {
         "slug": "epilepsy-E17",
         "number": "E17",
-        "isAdvanced": true,
+        "isAdvanced": false,
         "category": "PREGNANCY AND EPILEPSY",
         "title": "Provides counselling to women of childbearing age regarding pregnancy planning and epilepsy management"
       },
       {
         "slug": "epilepsy-E18",
         "number": "E18",
-        "isAdvanced": true,
+        "isAdvanced": false,
         "category": "PREGNANCY AND EPILEPSY",
         "title": "Avoids sodium valproate in women of childbearing age when other alternatives are available"
       },
       {
         "slug": "epilepsy-E19",
         "number": "E19",
-        "isAdvanced": true,
+        "isAdvanced": false,
         "category": "PREGNANCY AND EPILEPSY",
         "title": "Provides counselling about contraception and refers to the contraception units when necessary"
       }
@@ -1781,14 +1781,14 @@
       {
         "slug": "liver-L9",
         "number": "L9",
-        "isAdvanced": true,
+        "isAdvanced": false,
         "category": "GENERAL MANAGEMENT AND COMPLICATIONS",
         "title": "Performs paracentesis when indicated (ascites refractory to diuretics)"
       },
       {
         "slug": "liver-L10",
         "number": "L10",
-        "isAdvanced": false,
+        "isAdvanced": true,
         "category": "GENERAL MANAGEMENT AND COMPLICATIONS",
         "title": "Titrates diuretics correctly up and down with electrolyte and kidney function monitoring"
       },
@@ -1809,21 +1809,21 @@
       {
         "slug": "liver-L13",
         "number": "L13",
-        "isAdvanced": true,
+        "isAdvanced": false,
         "category": "GENERAL MANAGEMENT AND COMPLICATIONS",
         "title": "Gives beta blockers for patients with previous oesophageal varices bleeding"
       },
       {
         "slug": "liver-L14",
         "number": "L14",
-        "isAdvanced": true,
+        "isAdvanced": false,
         "category": "GENERAL MANAGEMENT AND COMPLICATIONS",
         "title": "Titrates beta blockers correctly to achieve benefit (lowering HR to at least 55 bpm)"
       },
       {
         "slug": "liver-L15",
         "number": "L15",
-        "isAdvanced": true,
+        "isAdvanced": false,
         "category": "GENERAL MANAGEMENT AND COMPLICATIONS",
         "title": "Gives antibiotics for secondary prophylaxis of spontaneous bacterial peritonitis"
       }

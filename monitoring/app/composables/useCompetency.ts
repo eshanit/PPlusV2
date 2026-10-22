@@ -1,10 +1,9 @@
 import type { ISession } from '~/interfaces/ISession'
 import type { ITool } from '~/interfaces/ITool'
 import type { IEvalItem } from '~/interfaces/IEvalItem'
+import { COMPETENT_SCORE } from '~/data/evaluationItemData'
 
 export type CompetencyStatus = 'fully_competent' | 'basic_competent' | 'in_progress'
-
-type ScoredItem = { itemSlug: string; menteeScore: 1 | 2 | 3 | 4 | 5 | null }
 
 function getSessionRounds(session: ISession) {
   const rounds = Array.isArray(session.rounds) && session.rounds.length > 0
@@ -19,25 +18,6 @@ function getSessionRounds(session: ISession) {
   return rounds
 }
 
-function sessionPlannedItems(session: ISession): string[] {
-  if (Array.isArray(session.selectedItemSlugs)) return session.selectedItemSlugs
-  return [...new Set(getSessionRounds(session).flatMap(round =>
-    (round.itemScores ?? []).map(score => score.itemSlug),
-  ))]
-}
-
-function latestScoresForSession(session: ISession): Map<string, number> {
-  const latest = new Map<string, number>()
-
-  for (const round of getSessionRounds(session)) {
-    for (const score of round.itemScores ?? []) {
-      if (score.menteeScore !== null) latest.set(score.itemSlug, score.menteeScore)
-    }
-  }
-
-  return latest
-}
-
 function sortSessions(sessions: ISession[]): ISession[] {
   return [...sessions].sort((a, b) =>
     a.evalDate - b.evalDate
@@ -46,55 +26,91 @@ function sortSessions(sessions: ISession[]): ISession[] {
   )
 }
 
+export interface LatestItemScore {
+  score: number
+  evalDate: number
+  sessionId: string
+}
+
+/**
+ * Each tool item's most recent recorded score across the whole journey:
+ * the latest session that scored it, and within that session its latest
+ * round. N/A never replaces an earlier score. Counselling items are ignored.
+ */
+export function getLatestItemScores(sessions: ISession[]): Map<string, LatestItemScore> {
+  const latest = new Map<string, LatestItemScore>()
+  for (const session of sortSessions(sessions)) {
+    for (const round of getSessionRounds(session)) {
+      for (const score of round.itemScores ?? []) {
+        if (score.menteeScore === null) continue
+        latest.set(score.itemSlug, { score: score.menteeScore, evalDate: session.evalDate, sessionId: session._id })
+      }
+    }
+  }
+  return latest
+}
+
 export interface ItemBelowThreshold {
   item: IEvalItem
-  /** Latest non-null score in the most recent session, or undefined if not scored there. */
+  /** Most recent recorded score for the item in this journey, or undefined if never scored. */
   latestScore: number | undefined
 }
 
 export interface CompetencyBreakdown {
   status: CompetencyStatus
-  /** Non-advanced planned items still below the competent score. These block basic competency. */
+  /** Required (non-advanced) tool items whose latest score is below 4, or never scored. These block basic competency. */
   basicBelow: ItemBelowThreshold[]
-  /** Advanced planned items still below the competent score. These block full competency only. */
+  /** Advanced tool items whose latest score is below 4, or never scored. These block full competency only. */
   advancedBelow: ItemBelowThreshold[]
-  plannedCount: number
+  /** Number of required (non-advanced) items in the tool. */
+  requiredCount: number
+  /** Required items whose latest score is 4 or 5. */
+  requiredAchieved: number
 }
 
 /**
- * Competency status plus the planned items holding it back.
- * Rule: every item planned anywhere in the journey must score 4 or 5 in the
- * most recent session. Advanced items are needed for full competency only.
+ * Competency status plus the items holding it back.
+ *
+ * Rule, matching the paper tool: an item counts as achieved once its most
+ * recent score in the journey is 4 or 5. Mentors don't need to re-rate it in
+ * later sessions, but a lower re-rating makes it not achieved again.
+ * - basic_competent: every required (non-advanced) item in the tool is achieved.
+ * - fully_competent: every item, including advanced ones, is achieved.
  */
 export function getCompetencyBreakdown(
   sessions: ISession[],
   tool: ITool | null | undefined,
 ): CompetencyBreakdown {
-  const empty: CompetencyBreakdown = { status: 'in_progress', basicBelow: [], advancedBelow: [], plannedCount: 0 }
+  const requiredItems = tool?.items.filter(item => !item.isAdvanced) ?? []
+  const empty: CompetencyBreakdown = {
+    status: 'in_progress',
+    basicBelow: requiredItems.map(item => ({ item, latestScore: undefined })),
+    advancedBelow: tool?.items.filter(item => item.isAdvanced).map(item => ({ item, latestScore: undefined })) ?? [],
+    requiredCount: requiredItems.length,
+    requiredAchieved: 0,
+  }
   if (!tool || sessions.length === 0) return empty
 
-  const orderedSessions = sortSessions(sessions)
-  const latestSession = orderedSessions[orderedSessions.length - 1]
-  if (!latestSession) return empty
-
-  const planned = new Set(orderedSessions.flatMap(sessionPlannedItems))
-  const plannedItems = tool.items.filter(item => planned.has(item.slug))
-  if (plannedItems.length === 0) return empty
-
-  const latestScores = latestScoresForSession(latestSession)
-  const below = plannedItems
-    .map(item => ({ item, latestScore: latestScores.get(item.slug) }))
-    .filter(entry => entry.latestScore === undefined || entry.latestScore < 4)
+  const latest = getLatestItemScores(sessions)
+  const below = tool.items
+    .map(item => ({ item, latestScore: latest.get(item.slug)?.score }))
+    .filter(entry => entry.latestScore === undefined || entry.latestScore < COMPETENT_SCORE)
 
   const basicBelow = below.filter(entry => !entry.item.isAdvanced)
   const advancedBelow = below.filter(entry => entry.item.isAdvanced)
-  const hasBasicItems = plannedItems.some(item => !item.isAdvanced)
 
   let status: CompetencyStatus = 'in_progress'
-  if (below.length === 0) status = 'fully_competent'
-  else if (hasBasicItems && basicBelow.length === 0) status = 'basic_competent'
+  if (requiredItems.length > 0 && basicBelow.length === 0) {
+    status = advancedBelow.length === 0 ? 'fully_competent' : 'basic_competent'
+  }
 
-  return { status, basicBelow, advancedBelow, plannedCount: plannedItems.length }
+  return {
+    status,
+    basicBelow,
+    advancedBelow,
+    requiredCount: requiredItems.length,
+    requiredAchieved: requiredItems.length - basicBelow.length,
+  }
 }
 
 // Pure function — safe to call inside computed()

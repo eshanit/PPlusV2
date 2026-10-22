@@ -50,6 +50,11 @@ class CouchDbUserPushService
             if ($current->successful()) {
                 $doc['_rev'] = $current->json('_rev');
                 $response = $this->put($user->id, $doc);
+            } elseif ($current->status() === 404) {
+                // The doc no longer exists in CouchDB (for example after the
+                // database was recreated), so the stored rev is stale. Create it fresh.
+                unset($doc['_rev']);
+                $response = $this->put($user->id, $doc);
             }
         }
 

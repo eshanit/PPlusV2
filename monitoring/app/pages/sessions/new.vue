@@ -3,7 +3,7 @@ import { format } from 'date-fns'
 import { useUserStore } from '~/stores/userStore'
 import { useSessionStore } from '~/stores/sessionStore'
 import { counsellingTool, getToolBySlug } from '~/data/evaluationItemData'
-import { getCompetencyStatus } from '~/composables/useCompetency'
+import { getCompetencyStatus, getLatestItemScores } from '~/composables/useCompetency'
 import type { IItemScore } from '~/interfaces/IItemScore'
 import type { IEvalItem } from '~/interfaces/IEvalItem'
 import type { IRound, ISession, MentorshipPhase } from '~/interfaces/ISession'
@@ -25,6 +25,9 @@ type ItemKind = 'tool' | 'counselling'
 interface DraftRound {
   roundId: string
   label: string
+  // Competencies chosen for this round. Each round can choose different items.
+  itemSlugs: string[]
+  counsellingSlugs: string[]
   scores: Record<string, ScoreValue>
   notes: Record<string, string>
   notesText: string
@@ -104,9 +107,33 @@ const echocardiogramsCorrectDiagnosisInput = ref('')
 const saving = ref(false)
 const activeStep = ref<'plan' | 'observe'>('plan')
 const activeRoundIndex = ref(0)
-const selectedItemSlugs = ref<string[]>([])
-const selectedCounsellingSlugs = ref(counsellingTool.items.map(item => item.slug))
 const rounds = reactive<DraftRound[]>([createDraftRound(1)])
+
+// The competency screen edits the active round's selection.
+const selectedItemSlugs = computed<string[]>({
+  get: () => rounds[activeRoundIndex.value]?.itemSlugs ?? [],
+  set: (slugs) => {
+    const round = rounds[activeRoundIndex.value]
+    if (round) round.itemSlugs = slugs
+  },
+})
+const selectedCounsellingSlugs = computed<string[]>({
+  get: () => rounds[activeRoundIndex.value]?.counsellingSlugs ?? [],
+  set: (slugs) => {
+    const round = rounds[activeRoundIndex.value]
+    if (round) round.counsellingSlugs = slugs
+  },
+})
+
+// Everything evaluated in any round of this session, in tool order.
+const sessionItemSlugs = computed(() => {
+  const chosen = new Set(rounds.flatMap(round => round.itemSlugs))
+  return (tool.value?.items ?? []).map(item => item.slug).filter(slug => chosen.has(slug))
+})
+const sessionCounsellingSlugs = computed(() => {
+  const chosen = new Set(rounds.flatMap(round => round.counsellingSlugs))
+  return counsellingTool.items.map(item => item.slug).filter(slug => chosen.has(slug))
+})
 
 function compareSessions(a: ISession, b: ISession): number {
   return a.evalDate - b.evalDate
@@ -138,6 +165,21 @@ const sessionsBeforeCurrent = computed(() => {
 })
 
 const currentSessionNumber = computed(() => sessionsBeforeCurrent.value.length + 1)
+
+// Items whose latest score in earlier sessions is already 4 or 5. Under the
+// competency rule they stay achieved, so mentors don't need to re-rate them.
+const achievedItems = computed(() => {
+  const achieved = new Map<string, { score: number; evalDate: number }>()
+  for (const [slug, entry] of getLatestItemScores(sessionsBeforeCurrent.value)) {
+    if (entry.score >= 4) achieved.set(slug, entry)
+  }
+  return achieved
+})
+
+function achievedLabel(slug: string): string | undefined {
+  const entry = achievedItems.value.get(slug)
+  return entry ? `Achieved · ${entry.score} on ${format(new Date(entry.evalDate), 'd MMM')}` : undefined
+}
 
 const allGroups = computed<ItemGroup[]>(() => {
   if (!tool.value) return []
@@ -230,7 +272,7 @@ const isValid = computed(() =>
   && !!evalDateStr.value
   && !dateBeforeReopenedJourney.value
   && !echoActivityError.value
-  && selectedItemSlugs.value.length > 0
+  && sessionItemSlugs.value.length > 0
   && rounds.length > 0)
 
 const evaluationItemCount = computed(() =>
@@ -255,15 +297,19 @@ const hasUnsavedChanges = computed(() => {
     || rounds.some(round => Object.keys(round.scores).length > 0
       || Object.values(round.notes).some(note => note.trim())
       || !!round.notesText.trim())
-    || selectedItemSlugs.value.length > 0
-    || selectedCounsellingSlugs.value.length !== counsellingTool.items.length
+    || rounds.some(round => round.itemSlugs.length > 0
+      || round.counsellingSlugs.length !== counsellingTool.items.length)
 })
 
 const allowNavigation = ref(false)
 const showLeaveConfirm = ref(false)
 let leaveResolver: ((value: boolean) => void) | null = null
 
-function createDraftRound(index: number, round?: IRound): DraftRound {
+function createDraftRound(
+  index: number,
+  round?: IRound,
+  selection?: { items: string[]; counselling: string[] },
+): DraftRound {
   const scores: Record<string, ScoreValue> = {}
   const notes: Record<string, string> = {}
 
@@ -277,6 +323,9 @@ function createDraftRound(index: number, round?: IRound): DraftRound {
   return {
     roundId: round?.roundId ?? `round-${crypto.randomUUID()}`,
     label: round?.label ?? `Round ${index}`,
+    itemSlugs: [...(selection?.items ?? round?.selectedItemSlugs ?? [])],
+    counsellingSlugs: [...(selection?.counselling ?? round?.selectedCounsellingSlugs
+      ?? counsellingTool.items.map(item => item.slug))],
     scores,
     notes,
     notesText: round?.notes ?? '',
@@ -355,9 +404,10 @@ const showRoundConfirm = ref(false)
 const pendingRoundIndex = ref<number | null>(null)
 
 function requestPlanChanges(changes: PlanChange[]) {
+  const round = rounds[activeRoundIndex.value]
   const scoredRemovals = changes.filter(change =>
-    !change.selected && rounds.some(round =>
-      hasScore(round, change.slug) || !!round.notes[change.slug]?.trim()))
+    !change.selected && !!round
+    && (hasScore(round, change.slug) || !!round.notes[change.slug]?.trim()))
 
   if (scoredRemovals.length) {
     pendingPlanChanges.value = changes
@@ -377,7 +427,8 @@ function applyPlanChanges(changes: PlanChange[]) {
       selected.value = [...selected.value, change.slug]
     } else if (!change.selected && selected.value.includes(change.slug)) {
       selected.value = selected.value.filter(slug => slug !== change.slug)
-      for (const round of rounds) {
+      const round = rounds[activeRoundIndex.value]
+      if (round) {
         delete round.scores[change.slug]
         delete round.notes[change.slug]
       }
@@ -422,8 +473,14 @@ function addRound() {
     const match = /^Round (\d+)$/.exec(round.label)
     return Math.max(highest, match ? Number(match[1]) : 0)
   }, 0)
-  rounds.push(createDraftRound(highestRoundNumber + 1))
+  const previous = rounds[activeRoundIndex.value]
+  rounds.push(createDraftRound(highestRoundNumber + 1, undefined, {
+    items: previous?.itemSlugs ?? [],
+    counselling: previous?.counsellingSlugs ?? counsellingTool.items.map(item => item.slug),
+  }))
   activeRoundIndex.value = rounds.length - 1
+  // Let the mentor confirm or change which competencies this round covers.
+  activeStep.value = 'plan'
 }
 
 function removeRound(index: number) {
@@ -470,7 +527,7 @@ function parseCount(value: string): number | undefined {
 }
 
 function roundScores(round: DraftRound, kind: ItemKind): IItemScore[] {
-  const selectedSlugs = kind === 'tool' ? selectedItemSlugs.value : selectedCounsellingSlugs.value
+  const selectedSlugs = kind === 'tool' ? round.itemSlugs : round.counsellingSlugs
   const itemOrder = kind === 'tool'
     ? (tool.value?.items.map(item => item.slug) ?? [])
     : counsellingTool.items.map(item => item.slug)
@@ -492,6 +549,8 @@ function buildReviewPayload() {
     label: round.label.trim() || `Round ${rounds.indexOf(round) + 1}`,
     itemScores: roundScores(round, 'tool'),
     counsellingScores: roundScores(round, 'counselling'),
+    selectedItemSlugs: [...round.itemSlugs],
+    selectedCounsellingSlugs: [...round.counsellingSlugs],
     notes: round.notesText.trim() || undefined,
     startedAt: round.startedAt,
     completedAt: Date.now(),
@@ -499,7 +558,9 @@ function buildReviewPayload() {
 
   const metadata = allGroups.value.flatMap(group => group.items)
   const items = metadata
-    .filter(item => isSelected(item))
+    .filter(item => item.kind === 'counselling'
+      ? sessionCounsellingSlugs.value.includes(item.slug)
+      : sessionItemSlugs.value.includes(item.slug))
     .map(item => {
       let evaluated = false
       let score: ScoreValue = null
@@ -532,8 +593,8 @@ function buildReviewPayload() {
     toolLabel: tool.value.label,
     items,
     rounds: reviewRounds,
-    selectedItemSlugs: [...selectedItemSlugs.value],
-    selectedCounsellingSlugs: [...selectedCounsellingSlugs.value],
+    selectedItemSlugs: [...sessionItemSlugs.value],
+    selectedCounsellingSlugs: [...sessionCounsellingSlugs.value],
     ...(tool.value.slug === 'echo'
       ? {
           echocardiogramsPerformed: echocardiogramsPerformed.value,
@@ -561,8 +622,6 @@ function snapshotDraft() {
     echocardiogramsCorrectDiagnosisInput: echocardiogramsCorrectDiagnosisInput.value,
     activeStep: activeStep.value,
     activeRoundIndex: activeRoundIndex.value,
-    selectedItemSlugs: selectedItemSlugs.value,
-    selectedCounsellingSlugs: selectedCounsellingSlugs.value,
     rounds,
   }))
 }
@@ -577,10 +636,11 @@ function hydrateDraft(draft: Record<string, unknown>): boolean {
   echocardiogramsPerformedInput.value = String(draft.echocardiogramsPerformedInput ?? '')
   echocardiogramsCorrectDiagnosisInput.value = String(draft.echocardiogramsCorrectDiagnosisInput ?? '')
   activeStep.value = draft.activeStep === 'observe' ? 'observe' : 'plan'
-  selectedItemSlugs.value = Array.isArray(draft.selectedItemSlugs)
+  // Drafts saved before per-round selection kept one session-wide list.
+  const legacyItems = Array.isArray(draft.selectedItemSlugs)
     ? draft.selectedItemSlugs.filter((slug): slug is string => typeof slug === 'string')
     : []
-  selectedCounsellingSlugs.value = Array.isArray(draft.selectedCounsellingSlugs)
+  const legacyCounselling = Array.isArray(draft.selectedCounsellingSlugs)
     ? draft.selectedCounsellingSlugs.filter((slug): slug is string => typeof slug === 'string')
     : counsellingTool.items.map(item => item.slug)
 
@@ -589,6 +649,8 @@ function hydrateDraft(draft: Record<string, unknown>): boolean {
     rounds.splice(0, rounds.length, ...storedRounds.map((round, index) => ({
       roundId: round.roundId,
       label: round.label || `Round ${index + 1}`,
+      itemSlugs: Array.isArray(round.itemSlugs) ? round.itemSlugs : legacyItems,
+      counsellingSlugs: Array.isArray(round.counsellingSlugs) ? round.counsellingSlugs : legacyCounselling,
       scores: round.scores ?? {},
       notes: round.notes ?? {},
       notesText: round.notesText ?? '',
@@ -618,12 +680,17 @@ function hydrateSession(session: ISession) {
     startedAt: session.createdAt,
   }]
 
-  selectedItemSlugs.value = session.selectedItemSlugs
-    ?? [...new Set(storedRounds.flatMap(round => round.itemScores.map(score => score.itemSlug)))]
-  selectedCounsellingSlugs.value = session.selectedCounsellingSlugs
-    ?? [...new Set(storedRounds.flatMap(round => round.counsellingScores.map(score => score.itemSlug)))]
-
-  rounds.splice(0, rounds.length, ...storedRounds.map((round, index) => createDraftRound(index + 1, round)))
+  // Older sessions stored one list for the whole session. A single-round
+  // session uses it; otherwise each round falls back to what it scored.
+  const singleRound = storedRounds.length === 1
+  rounds.splice(0, rounds.length, ...storedRounds.map((round, index) => createDraftRound(index + 1, round, {
+    items: round.selectedItemSlugs
+      ?? (singleRound && session.selectedItemSlugs ? session.selectedItemSlugs : round.itemScores.map(score => score.itemSlug)),
+    counselling: round.selectedCounsellingSlugs
+      ?? (singleRound && session.selectedCounsellingSlugs
+        ? session.selectedCounsellingSlugs
+        : round.counsellingScores.map(score => score.itemSlug)),
+  })))
   activeRoundIndex.value = 0
   activeStep.value = 'observe'
 }
@@ -677,7 +744,7 @@ onBeforeRouteLeave(() => {
 
 function viewEvaluation() {
   if (!isValid.value) {
-    if (!selectedItemSlugs.value.length) activeStep.value = 'plan'
+    if (!sessionItemSlugs.value.length) activeStep.value = 'plan'
     return
   }
   const payload = buildReviewPayload()
@@ -699,11 +766,11 @@ function viewEvaluation() {
         </div>
         <div class="flex shrink-0 items-center gap-1 text-xs">
           <span class="rounded-full px-2.5 py-1" :class="activeStep === 'plan' ? 'bg-primary-100 font-semibold text-primary-800 dark:bg-primary-900 dark:text-primary-200' : 'text-gray-500'">
-            1. Plan
+            1. Competencies
           </span>
           <span class="text-gray-300">›</span>
           <span class="rounded-full px-2.5 py-1" :class="activeStep === 'observe' ? 'bg-primary-100 font-semibold text-primary-800 dark:bg-primary-900 dark:text-primary-200' : 'text-gray-500'">
-            2. Observe
+            2. Scores
           </span>
         </div>
       </div>
@@ -773,9 +840,11 @@ function viewEvaluation() {
       <section v-if="activeStep === 'plan'" class="space-y-4">
         <div class="flex flex-wrap items-end justify-between gap-2">
           <div>
-            <h2 class="text-base font-semibold text-gray-900 dark:text-white">Plan today's observation</h2>
+            <h2 class="text-base font-semibold text-gray-900 dark:text-white">
+              Choose the competencies evaluated<template v-if="rounds.length > 1"> · {{ activeRound?.label }}</template>
+            </h2>
             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Select the competencies you expect to observe. You can choose a subset in each section.
+              Select the competencies you evaluated, based on all the patients seen with the mentee. Items the mentee has already achieved are marked.
             </p>
           </div>
           <p class="text-xs font-medium text-gray-600 dark:text-gray-300">
@@ -825,7 +894,16 @@ function viewEvaluation() {
               >
                 {{ item.number }}
               </span>
-              <span class="flex-1 text-base leading-snug text-gray-900 dark:text-gray-100">{{ item.title }}</span>
+              <span class="flex-1 text-base leading-snug text-gray-900 dark:text-gray-100">
+                {{ item.title }}
+                <span
+                  v-if="item.kind === 'tool' && achievedLabel(item.slug)"
+                  class="mt-1 flex w-fit items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800 dark:bg-green-900/40 dark:text-green-200"
+                >
+                  <UIcon name="i-heroicons-check-circle" class="size-4" />
+                  {{ achievedLabel(item.slug) }}
+                </span>
+              </span>
               <span v-if="item.isAdvanced" class="shrink-0 rounded-full bg-gray-700 px-2 py-0.5 text-xs font-semibold uppercase text-white dark:bg-gray-600">
                 Advanced
               </span>
@@ -835,7 +913,7 @@ function viewEvaluation() {
 
         <div class="sticky bottom-2 flex justify-end rounded-xl border border-gray-200 bg-white/95 p-3 shadow-lg backdrop-blur dark:border-gray-700 dark:bg-gray-900/95">
           <UButton color="primary" size="xl" :disabled="selectedToolItems === 0" @click="confirmPlan">
-            Confirm plan · {{ evaluationItemCount }} items
+            Continue to scoring · {{ evaluationItemCount }} items
             <UIcon name="i-heroicons-arrow-right" class="ml-2 h-4 w-4" />
           </UButton>
         </div>
@@ -844,14 +922,14 @@ function viewEvaluation() {
       <section v-else class="space-y-5">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h2 class="text-base font-semibold text-gray-900 dark:text-white">Observe selected competencies</h2>
+            <h2 class="text-base font-semibold text-gray-900 dark:text-white">Score the selected competencies</h2>
             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
               {{ scoredInActiveRound }}/{{ evaluationItemCount }} scored in this round
             </p>
           </div>
           <UButton size="lg" variant="soft" color="neutral" @click="activeStep = 'plan'">
             <UIcon name="i-heroicons-pencil-square" class="mr-1 h-4 w-4" />
-            Edit plan
+            Change competencies
           </UButton>
         </div>
 
@@ -941,7 +1019,7 @@ function viewEvaluation() {
           <div class="flex flex-wrap items-center justify-between gap-2">
             <UButton variant="soft" color="neutral" size="xl" @click="activeStep = 'plan'">
               <UIcon name="i-heroicons-arrow-left" class="mr-1 h-4 w-4" />
-              Back to plan
+              Back to competencies
             </UButton>
             <UButton color="success" size="xl" :disabled="!isValid" :loading="saving" @click="viewEvaluation">
               Review session

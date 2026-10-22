@@ -350,15 +350,15 @@ const breakdownAfter = computed(() => draftSession.value
 
 const outcome = computed(() => {
   const after = breakdownAfter.value
-  if (!after || after.plannedCount === 0) return null
+  if (!after || after.requiredCount === 0) return null
 
   if (after.status === 'in_progress') {
     const count = after.basicBelow.length
     return {
       competent: false,
       title: 'Not yet competent',
-      detail: `${count} required item${count === 1 ? '' : 's'} still need${count === 1 ? 's' : ''} a score of 4 or 5 in the latest session.`,
-      itemsHeading: 'Still below 4',
+      detail: `${after.requiredAchieved} of ${after.requiredCount} required items achieved. ${count} still need${count === 1 ? 's' : ''} a score of 4 or 5. Items already achieved in earlier sessions stay achieved.`,
+      itemsHeading: 'Not yet achieved',
       items: after.basicBelow,
     }
   }
@@ -370,9 +370,9 @@ const outcome = computed(() => {
     competent: true,
     title: unchanged ? `Journey stays ${label}` : `Saving will mark this journey ${label}`,
     detail: after.status === 'fully_competent'
-      ? 'Every planned item, including advanced ones, scores 4 or 5. The journey will close.'
-      : `Every required item scores 4 or 5, so the journey will close. ${advancedCount} advanced item${advancedCount === 1 ? ' is' : 's are'} below 4, which is not required.`,
-    itemsHeading: advancedCount ? 'Advanced items below 4 (not required)' : '',
+      ? 'Every item in the tool, including advanced ones, has reached 4 or 5. The journey will close.'
+      : `Every required item in the tool has reached 4 or 5, so the journey will close. ${advancedCount} advanced item${advancedCount === 1 ? ' has' : 's have'} not, which is not required.`,
+    itemsHeading: advancedCount ? 'Advanced items not yet achieved (not required)' : '',
     items: after.advancedBelow,
   }
 })

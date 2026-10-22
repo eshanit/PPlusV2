@@ -9,6 +9,10 @@ export interface IRound {
   label?: string
   itemScores: IItemScore[]
   counsellingScores: IItemScore[]
+  // Competencies chosen for this round. Rounds in one session can evaluate
+  // different items from the same tool. Absent on older sessions.
+  selectedItemSlugs?: string[]
+  selectedCounsellingSlugs?: string[]
   notes?: string
   startedAt: number
   completedAt?: number
