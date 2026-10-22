@@ -418,7 +418,7 @@ Pages built:
 - `mentees/[id].vue` — mentee detail: tool selection, per-tool journey cards with competency status; guards closed journeys (blocks new session with toast)
 - `sessions/new.vue` — session form: tool items + counselling scores, phase selector, notes
 - `sessions/preview.vue` — session preview before save (reads counselling metadata from `counsellingTool`, not hardcoded)
-- `sessions/journey.vue` — journey view: session list sorted by date, competency banner, full gap management (log gap via `GapForm` drawer, resolve via modal)
+- `sessions/journey.vue` — journey view: session list sorted by date, competency banner, full gap management (log gap via `GapForm` drawer, resolve via modal). A Sessions / Competency grid switch (`?view=grid`) shows `CompetencyGrid`: the paper tool's layout, competencies down the side, sessions across the top, each cell the session's latest score, plus Latest and Status columns from the competency rule; tapping a score shows its Mentee/Mentor meanings.
 - `sessions/session.vue` — individual session detail: score summary, score distribution, item scores, counselling scores, session notes
 - `sync.vue` — sync status page
 
@@ -430,7 +430,7 @@ Composables:
 Components:
 
 - `session/`: `ScoreRow`, `ScoreChip`, `EchoActivityCounts`, `EchoActivitySummary`, `PhaseSelector`, `RoundSelector`, `ScoreDistribution`, `ItemScoresList`, `ScoreLegend`
-- `journey/`: `SummaryCard`, `SessionCard`, `EchoActivityCard`
+- `journey/`: `SummaryCard`, `SessionCard`, `EchoActivityCard`, `CompetencyGrid`
 - `gap/`: `GapCard`, `GapForm` (UDrawer bottom sheet)
 
 Still needed:

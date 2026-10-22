@@ -9,6 +9,7 @@ import type { IGapEntry } from '~/interfaces/IGapEntry'
 import type { ISession } from '~/interfaces/ISession'
 import JourneySummaryCard from '~/components/journey/SummaryCard.vue'
 import JourneySessionCard from '~/components/journey/SessionCard.vue'
+import JourneyCompetencyGrid from '~/components/journey/CompetencyGrid.vue'
 import GapCard from '~/components/gap/GapCard.vue'
 import GapForm from '~/components/gap/GapForm.vue'
 
@@ -23,6 +24,14 @@ const menteeId = computed(() => route.query.menteeId as string)
 const toolSlug = computed(() => route.query.toolSlug as string)
 
 const tool = computed(() => getToolBySlug(toolSlug.value ?? ''))
+
+// Two views of the journey: the session list, or a paper-style competency grid.
+// Kept in the URL so Back and refresh return to the same view.
+type JourneyView = 'sessions' | 'grid'
+const view = computed<JourneyView>(() => route.query.view === 'grid' ? 'grid' : 'sessions')
+function setView(next: JourneyView) {
+  router.replace({ query: { ...route.query, view: next === 'grid' ? 'grid' : undefined } })
+}
 
 await Promise.all([sessionStore.loadAll(), gapStore.loadAll()])
 
@@ -262,8 +271,33 @@ async function confirmResolve() {
 
       <JourneyEchoActivityCard v-if="toolSlug === 'echo' && sessions.length > 0" :sessions="sessions" />
 
+      <!-- View switch -->
+      <div
+        v-if="sessions.length > 0"
+        class="flex gap-1 rounded-xl bg-gray-100 p-1 dark:bg-gray-800"
+        role="group"
+        aria-label="Journey view"
+      >
+        <button
+          v-for="option in ([['sessions', 'Sessions', 'i-heroicons-list-bullet'], ['grid', 'Competency grid', 'i-heroicons-table-cells']] as const)"
+          :key="option[0]"
+          type="button"
+          class="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg px-4 text-base font-semibold transition-colors"
+          :class="view === option[0]
+            ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-900 dark:text-white'
+            : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white'"
+          :aria-pressed="view === option[0]"
+          @click="setView(option[0])"
+        >
+          <UIcon :name="option[2]" class="size-5" />
+          {{ option[1] }}
+        </button>
+      </div>
+
+      <JourneyCompetencyGrid v-if="sessions.length > 0 && view === 'grid'" :sessions="sessions" :tool="tool" />
+
       <!-- Sessions List -->
-      <div v-if="sessions.length > 0" class="space-y-4">
+      <div v-if="sessions.length > 0 && view === 'sessions'" class="space-y-4">
         <h2 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
           Sessions (sorted by date)
         </h2>
@@ -317,7 +351,7 @@ async function confirmResolve() {
       </div>
 
       <!-- No sessions -->
-      <div v-else class="text-center py-10 text-gray-400">
+      <div v-else-if="sessions.length === 0" class="text-center py-10 text-gray-400">
         <UIcon name="i-heroicons-clipboard-document-list" class="size-10 mx-auto mb-2 text-gray-300" />
         <p class="text-sm">No sessions recorded for this tool yet.</p>
       </div>
