@@ -18,8 +18,8 @@ const props = defineProps<{
   score: ScoreValue
   isScored: boolean
   previousAssessment?: PreviousAssessment
-  note?: string
   counselling?: boolean
+  note?: string
   /** Supporting information shown under the title, e.g. echo accuracy next to E8. */
   context?: string
 }>()
@@ -145,10 +145,10 @@ const scoreChangeDisplay = computed(() => props.isScored
           {{ score === null ? 'N/A' : `Score ${score}` }}
         </p>
         <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 bg-white px-3 py-2 text-base dark:bg-gray-900">
-          <dt class="font-semibold text-gray-600 dark:text-gray-300">Mentee</dt>
+          <dt class="flex items-center font-semibold text-gray-600 dark:text-gray-300">Mentee<UIcon name="i-heroicons-arrow-right" class="mx-1 inline-block size-4 shrink-0 align-[-0.125em]" aria-hidden="true" /></dt>
           <dd class="text-gray-900 dark:text-gray-100">{{ selectedScoreLabel }}</dd>
           <template v-if="selectedMentorLabel">
-            <dt class="font-semibold text-gray-600 dark:text-gray-300">Mentor</dt>
+            <dt class="flex items-center font-semibold text-gray-600 dark:text-gray-300">Mentor<UIcon name="i-heroicons-arrow-right" class="mx-1 inline-block size-4 shrink-0 align-[-0.125em]" aria-hidden="true" /></dt>
             <dd class="text-gray-900 dark:text-gray-100">{{ selectedMentorLabel }}</dd>
           </template>
         </dl>
@@ -172,8 +172,8 @@ const scoreChangeDisplay = computed(() => props.isScored
       <span class="font-semibold">Previous score:</span>
       {{ previousAssessment.score === null ? 'N/A' : previousAssessment.score }}
       <template v-if="previousAssessment.score !== null">
-        <span class="mt-0.5 block"><span class="font-semibold">Mentee:</span> {{ SCORE_LABELS[previousAssessment.score] }}</span>
-        <span class="block"><span class="font-semibold">Mentor:</span> {{ MENTOR_LABELS[previousAssessment.score] }}</span>
+        <span class="mt-0.5 block"><span class="font-semibold">Mentee</span><UIcon name="i-heroicons-arrow-right" class="mx-1 inline-block size-4 shrink-0 align-[-0.125em]" aria-hidden="true" />{{ SCORE_LABELS[previousAssessment.score] }}</span>
+        <span class="block"><span class="font-semibold">Mentor</span><UIcon name="i-heroicons-arrow-right" class="mx-1 inline-block size-4 shrink-0 align-[-0.125em]" aria-hidden="true" />{{ MENTOR_LABELS[previousAssessment.score] }}</span>
       </template>
       <span class="mt-0.5 block text-gray-500 dark:text-gray-400">
         {{ format(new Date(previousAssessment.evalDate), 'd MMM yyyy') }}
@@ -182,12 +182,14 @@ const scoreChangeDisplay = computed(() => props.isScored
       </span>
     </div>
 
+    <!-- Notes are for scored items only. N/A needs no explanation (client request). -->
     <UTextarea
+      v-if="isScored && score !== null"
       :model-value="note ?? ''"
       class="mt-2 w-full"
       :rows="2"
       size="lg"
-      placeholder="Item notes (optional)"
+      placeholder="Notes (optional)"
       :aria-label="`Notes for ${item.number}`"
       @update:model-value="emit('note', String($event))"
     />

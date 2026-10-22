@@ -512,6 +512,8 @@ function setScore(slug: string, value: ScoreValue) {
       ...activeRound.value.scores,
       [slug]: value,
     }
+    // N/A has no notes field, so don't keep a hidden note from an earlier score.
+    if (value === null) delete activeRound.value.notes[slug]
   }
 }
 
@@ -992,11 +994,11 @@ function viewEvaluation() {
               :score="getScore(activeRound, item.slug)"
               :is-scored="!!activeRound && hasScore(activeRound, item.slug)"
               :previous-assessment="previousAssessment(item.slug)"
-              :note="activeRound?.notes[item.slug]"
               :counselling="item.kind === 'counselling'"
               :context="itemContext(item.slug)"
-              @score="setScore(item.slug, $event)"
+              :note="activeRound?.notes[item.slug]"
               @note="setItemNote(item.slug, $event)"
+              @score="setScore(item.slug, $event)"
             />
           </div>
         </section>

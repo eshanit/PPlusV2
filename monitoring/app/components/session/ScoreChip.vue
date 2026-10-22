@@ -50,8 +50,8 @@ const style = computed(() => isNotScored.value
   >
     <span class="font-bold" :class="size === 'sm' ? 'text-base' : 'text-lg'">{{ score }}</span>
     <span class="flex min-w-0 flex-col leading-snug">
-      <span><span class="font-bold">Mentee:</span> {{ label }}</span>
-      <span><span class="font-bold">Mentor:</span> {{ mentorLabel }}</span>
+      <span><span class="font-bold">Mentee</span><UIcon name="i-heroicons-arrow-right" class="mx-1 inline-block size-4 shrink-0 align-[-0.125em]" aria-hidden="true" />{{ label }}</span>
+      <span><span class="font-bold">Mentor</span><UIcon name="i-heroicons-arrow-right" class="mx-1 inline-block size-4 shrink-0 align-[-0.125em]" aria-hidden="true" />{{ mentorLabel }}</span>
     </span>
   </span>
 
