@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { useSessionStore } from '~/stores/sessionStore'
+import { useGapStore } from '~/stores/gapStore'
+import GapCard from '~/components/gap/GapCard.vue'
 import { counsellingTool, getToolBySlug } from '~/data/evaluationItemData'
 import { calculateScoreCounts, calculateAverage, formatDate } from '~/composables/useSessionCalculations'
 import type { IRound } from '~/interfaces/ISession'
@@ -10,6 +12,29 @@ import ItemScoresList from '~/components/session/ItemScoresList.vue'
 const route = useRoute()
 const router = useRouter()
 const sessionStore = useSessionStore()
+const gapStore = useGapStore()
+
+// Gaps logged from the session form while recording this session. They are
+// followed up and resolved on the journey page.
+const sessionGaps = computed(() =>
+  gapStore.gaps.filter(gap => gap.sessionId === sessionId.value))
+
+// Grouped under the round they were found in. Gaps without a round (logged
+// before rounds were recorded on gaps) go under the first round.
+const sessionGapsByRound = computed(() => {
+  const rounds = session.value?.rounds?.length
+    ? session.value.rounds
+    : [{ roundId: '', label: 'Round 1' }]
+  return rounds
+    .map((round, index) => ({
+      key: round.roundId || `round-${index}`,
+      label: round.label || `Round ${index + 1}`,
+      gaps: sessionGaps.value.filter(gap => gap.roundId
+        ? gap.roundId === round.roundId
+        : index === 0),
+    }))
+    .filter(group => group.gaps.length > 0)
+})
 
 const sessionId = computed(() => route.query.sessionId as string)
 const menteeId = computed(() => route.query.menteeId as string)
@@ -18,7 +43,7 @@ const toolSlug = computed(() => route.query.toolSlug as string)
 const tool = computed(() => getToolBySlug(toolSlug.value ?? ''))
 const toolItems = computed(() => tool.value?.items ?? [])
 
-await sessionStore.loadAll()
+await Promise.all([sessionStore.loadAll(), gapStore.loadAll()])
 
 const session = computed(() => {
   return sessionStore.sessions.find(s => s._id === sessionId.value)
@@ -217,7 +242,34 @@ function phaseLabel(phase: string | null | undefined): string {
         </div>
       </div>
 
-      <!-- Session Notes -->
+      <!-- Gaps identified in this session -->
+      <section class="space-y-2 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h2 class="text-base font-semibold text-gray-900 dark:text-white">
+            Gaps identified in this session ({{ sessionGaps.length }})
+          </h2>
+          <UButton
+            variant="link"
+            color="neutral"
+            trailing-icon="i-heroicons-arrow-right"
+            class="px-0"
+            :to="{ path: '/sessions/journey', query: { menteeId, toolSlug } }"
+          >
+            Follow up in the journey
+          </UButton>
+        </div>
+        <template v-if="sessionGaps.length">
+          <div v-for="group in sessionGapsByRound" :key="group.key" class="space-y-2">
+            <h3 v-if="(session?.rounds?.length ?? 1) > 1" class="text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">
+              {{ group.label }}
+            </h3>
+            <GapCard v-for="gap in group.gaps" :key="gap._id" :gap="gap" readonly />
+          </div>
+        </template>
+        <p v-else class="text-sm text-gray-500 dark:text-gray-400">No gaps were logged with this session.</p>
+      </section>
+
+      <!-- Session Notes (older sessions only) -->
       <div v-if="session.notes" class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-4">
         <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
           Session Notes

@@ -2,11 +2,15 @@
 import { format } from 'date-fns'
 import { useUserStore } from '~/stores/userStore'
 import { useSessionStore } from '~/stores/sessionStore'
+import { useGapStore } from '~/stores/gapStore'
 import { counsellingTool, getToolBySlug } from '~/data/evaluationItemData'
 import { getCompetencyStatus, getLatestItemScores } from '~/composables/useCompetency'
 import type { IItemScore } from '~/interfaces/IItemScore'
 import type { IEvalItem } from '~/interfaces/IEvalItem'
 import type { IRound, ISession, MentorshipPhase } from '~/interfaces/ISession'
+import type { IGapEntry } from '~/interfaces/IGapEntry'
+import GapForm from '~/components/gap/GapForm.vue'
+import GapCard from '~/components/gap/GapCard.vue'
 import SessionScoreRow from '~/components/session/ScoreRow.vue'
 import ScoreLegend from '~/components/session/ScoreLegend.vue'
 import { echoAccuracy } from '~/composables/useSessionCalculations'
@@ -28,6 +32,8 @@ interface DraftRound {
   // Competencies chosen for this round. Each round can choose different items.
   itemSlugs: string[]
   counsellingSlugs: string[]
+  // Gaps found in this round. Drafts until the session is saved.
+  gaps: IGapEntry[]
   scores: Record<string, ScoreValue>
   notes: Record<string, string>
   notesText: string
@@ -56,9 +62,10 @@ const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 const sessionStore = useSessionStore()
+const gapStore = useGapStore()
 const toast = useToast()
 
-await Promise.all([userStore.loadUsers(), sessionStore.loadAll()])
+await Promise.all([userStore.loadUsers(), sessionStore.loadAll(), gapStore.loadAll()])
 
 const menteeId = computed(() => String(route.query.menteeId ?? ''))
 const toolSlug = computed(() => String(route.query.toolSlug ?? ''))
@@ -101,7 +108,23 @@ const latestJourneyDateStr = computed(() => {
 
 const phase = ref<MentorshipPhase | null>(null)
 const evalDateStr = ref(format(new Date(), 'yyyy-MM-dd'))
+// Session notes are no longer entered (client request): gaps take their place.
+// Notes on older sessions are kept and saved unchanged when they're edited.
 const sessionNotes = ref('')
+
+// Gaps are logged per round and held on the round as drafts until the session
+// is saved, so a discarded session (or deleted round) leaves no gaps behind.
+const showGapForm = ref(false)
+
+function addDraftGap(gap: IGapEntry) {
+  const round = rounds[activeRoundIndex.value]
+  if (round) round.gaps = [...round.gaps, gap]
+}
+
+function removeDraftGap(index: number) {
+  const round = rounds[activeRoundIndex.value]
+  if (round) round.gaps = round.gaps.filter((_, i) => i !== index)
+}
 const echocardiogramsPerformedInput = ref('')
 const echocardiogramsCorrectDiagnosisInput = ref('')
 const saving = ref(false)
@@ -165,6 +188,24 @@ const sessionsBeforeCurrent = computed(() => {
 })
 
 const currentSessionNumber = computed(() => sessionsBeforeCurrent.value.length + 1)
+
+// Gaps already saved against the active round of the session being edited.
+// Gaps saved before rounds were recorded on gaps show under the first round.
+const existingRoundGaps = computed(() => {
+  if (!editId.value) return []
+  const round = rounds[activeRoundIndex.value]
+  return gapStore.gaps.filter(gap => gap.sessionId === editId.value
+    && (gap.roundId ? gap.roundId === round?.roundId : activeRoundIndex.value === 0))
+})
+
+// Open gaps from earlier sessions in this journey, oldest first, so the mentor
+// has them in front of them when starting the next visit.
+const openEarlierGaps = computed(() =>
+  gapStore.gaps
+    .filter(gap => gap.evaluationGroupId === evaluationGroupId.value
+      && !gap.resolvedAt
+      && (!editId.value || gap.sessionId !== editId.value))
+    .sort((a, b) => a.identifiedAt - b.identifiedAt))
 
 // Items whose latest score in earlier sessions is already 4 or 5. Under the
 // competency rule they stay achieved, so mentors don't need to re-rate them.
@@ -291,7 +332,7 @@ const evaluationSlugs = computed(() => [
 const hasUnsavedChanges = computed(() => {
   if (editId.value) return true
   return phase.value !== null
-    || !!sessionNotes.value.trim()
+    || rounds.some(round => round.gaps.length > 0)
     || !!echocardiogramsPerformedInput.value
     || !!echocardiogramsCorrectDiagnosisInput.value
     || rounds.some(round => Object.keys(round.scores).length > 0
@@ -326,6 +367,7 @@ function createDraftRound(
     itemSlugs: [...(selection?.items ?? round?.selectedItemSlugs ?? [])],
     counsellingSlugs: [...(selection?.counselling ?? round?.selectedCounsellingSlugs
       ?? counsellingTool.items.map(item => item.slug))],
+    gaps: [],
     scores,
     notes,
     notesText: round?.notes ?? '',
@@ -486,6 +528,7 @@ function addRound() {
 function removeRound(index: number) {
   if (rounds.length <= 1 || !rounds[index]) return
   const hasData = Object.keys(rounds[index].scores).length > 0
+    || rounds[index].gaps.length > 0
     || !!rounds[index].notesText.trim()
     || Object.values(rounds[index].notes).some(note => note.trim())
   if (!hasData) {
@@ -609,6 +652,12 @@ function buildReviewPayload() {
     evalDate: evalDateStr.value,
     reopenReason: reopenReason.value,
     notes: sessionNotes.value,
+    // Each gap records the round it was found in.
+    gaps: rounds.flatMap((round, index) => round.gaps.map(gap => ({
+      ...gap,
+      roundId: round.roundId,
+      roundIndex: index + 1,
+    }))),
   }
 }
 
@@ -653,6 +702,7 @@ function hydrateDraft(draft: Record<string, unknown>): boolean {
       label: round.label || `Round ${index + 1}`,
       itemSlugs: Array.isArray(round.itemSlugs) ? round.itemSlugs : legacyItems,
       counsellingSlugs: Array.isArray(round.counsellingSlugs) ? round.counsellingSlugs : legacyCounselling,
+      gaps: Array.isArray(round.gaps) ? round.gaps : [],
       scores: round.scores ?? {},
       notes: round.notes ?? {},
       notesText: round.notesText ?? '',
@@ -805,6 +855,24 @@ function viewEvaluation() {
         <p class="mt-0.5 text-xs">Reason: {{ reopenReason }}</p>
       </div>
 
+      <details
+        v-if="openEarlierGaps.length"
+        class="group rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30"
+        :open="openEarlierGaps.length <= 3"
+      >
+        <summary class="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
+          <span class="flex items-center gap-2 font-semibold text-amber-900 dark:text-amber-100">
+            <UIcon name="i-heroicons-exclamation-triangle" class="size-5" />
+            Open gaps from earlier sessions ({{ openEarlierGaps.length }})
+          </span>
+          <UIcon name="i-heroicons-chevron-right" class="size-5 shrink-0 text-amber-700 transition-transform group-open:rotate-90" />
+        </summary>
+        <div class="space-y-2 border-t border-amber-200 p-3 dark:border-amber-900">
+          <GapCard v-for="gap in openEarlierGaps" :key="gap._id" :gap="gap" readonly />
+          <p class="text-sm text-amber-900 dark:text-amber-200">Resolve gaps from the journey page once they've been addressed.</p>
+        </div>
+      </details>
+
       <section class="grid gap-4 sm:grid-cols-2">
         <div id="session-date" class="scroll-mt-36">
           <label class="mb-2 block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
@@ -948,6 +1016,13 @@ function viewEvaluation() {
               @click="activeRoundIndex = index"
             >
               {{ round.label || `Round ${index + 1}` }}
+              <span
+                v-if="round.gaps.length"
+                class="rounded-full bg-amber-100 px-1.5 text-xs font-semibold text-amber-800 dark:bg-amber-900/50 dark:text-amber-200"
+                :aria-label="`${round.gaps.length} gaps`"
+              >
+                {{ round.gaps.length }} gap{{ round.gaps.length === 1 ? '' : 's' }}
+              </span>
             </button>
             <UButton size="md" variant="soft" color="primary" @click="addRound">
               <UIcon name="i-heroicons-plus" class="mr-1 h-4 w-4" />
@@ -1010,11 +1085,38 @@ function viewEvaluation() {
           :show-errors="showEchoErrors"
         />
 
-        <section class="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
-          <label class="mb-2 block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-            Session notes <span class="font-normal normal-case tracking-normal">(optional)</span>
-          </label>
-          <UTextarea v-model="sessionNotes" :rows="3" placeholder="Overall observations or follow-up actions…" class="w-full" />
+        <section id="session-gaps" class="space-y-3 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div class="min-w-0">
+              <h3 class="text-base font-semibold text-gray-900 dark:text-white">
+                Gaps identified in {{ activeRound?.label || `Round ${activeRoundIndex + 1}` }}
+              </h3>
+              <p class="mt-0.5 text-sm text-gray-600 dark:text-gray-300">
+                Record what the mentee needs to work on, from this round. Gaps are saved with the session and followed up in the journey.
+              </p>
+            </div>
+            <UButton color="warning" variant="soft" icon="i-heroicons-plus" @click="showGapForm = true">
+              Log a gap
+            </UButton>
+          </div>
+
+          <div v-if="existingRoundGaps.length || activeRound?.gaps.length" class="space-y-2">
+            <GapCard v-for="gap in existingRoundGaps" :key="gap._id" :gap="gap" readonly />
+            <div v-for="(gap, index) in activeRound?.gaps ?? []" :key="`draft-${index}`" class="space-y-1">
+              <GapCard :gap="gap" readonly />
+              <div class="flex justify-end">
+                <UButton variant="link" color="error" icon="i-heroicons-trash" class="px-0" @click="removeDraftGap(index)">
+                  Remove
+                </UButton>
+              </div>
+            </div>
+          </div>
+          <p v-else class="text-sm text-gray-500 dark:text-gray-400">No gaps logged for this round yet.</p>
+
+          <div v-if="sessionNotes.trim()" class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-800">
+            <p class="text-sm font-semibold text-gray-700 dark:text-gray-200">Notes recorded with this session</p>
+            <p class="mt-0.5 whitespace-pre-line text-sm text-gray-600 dark:text-gray-300">{{ sessionNotes }}</p>
+          </div>
         </section>
 
         <div class="sticky bottom-2 rounded-xl border border-gray-200 bg-white/95 p-3 shadow-lg backdrop-blur dark:border-gray-700 dark:bg-gray-900/95">
@@ -1043,6 +1145,16 @@ function viewEvaluation() {
         </div>
       </section>
     </main>
+
+    <GapForm
+      v-model:open="showGapForm"
+      draft
+      :evaluation-group-id="evaluationGroupId"
+      :mentee-id="menteeId"
+      :evaluator-id="userStore.currentUser?.id ?? ''"
+      :tool-slug="toolSlug"
+      @drafted="addDraftGap"
+    />
 
     <UModal v-model:open="showPlanConfirm" title="Remove recorded item scores?">
       <template #body>

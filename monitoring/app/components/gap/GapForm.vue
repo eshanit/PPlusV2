@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { GapDomain, SupervisionLevel } from '~/interfaces/IGapEntry'
+import type { GapDomain, IGapEntry, SupervisionLevel } from '~/interfaces/IGapEntry'
 
 const props = defineProps<{
   open: boolean
@@ -8,11 +8,15 @@ const props = defineProps<{
   evaluatorId: string
   toolSlug: string
   sessionRound?: number
+  // Draft mode: hand the gap back with `drafted` instead of saving it. Used by
+  // the session form, which saves gaps together with the session.
+  draft?: boolean
 }>()
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
   saved: []
+  drafted: [gap: IGapEntry]
 }>()
 
 import { useGapStore } from '~/stores/gapStore'
@@ -72,7 +76,7 @@ async function save() {
   saving.value = true
   try {
     const now = Date.now()
-    await gapStore.save({
+    const gap: IGapEntry = {
       _id: '',
       type: 'gap',
       evaluationGroupId: props.evaluationGroupId,
@@ -90,7 +94,14 @@ async function save() {
       syncStatus: 'pending',
       createdAt: now,
       updatedAt: now,
-    })
+    }
+    if (props.draft) {
+      emit('drafted', gap)
+      reset()
+      emit('update:open', false)
+      return
+    }
+    await gapStore.save(gap)
     toast.add({ title: 'Gap logged', color: 'success', icon: 'i-heroicons-check-circle' })
     reset()
     emit('update:open', false)

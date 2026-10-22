@@ -30,6 +30,17 @@ export interface IGapEntry {
   // this field existed or for journeys with no sessions yet.
   sessionRound?: number
 
+  // The session in which the gap was identified, when it was logged from the
+  // session form. The gap still belongs to the journey (evaluationGroupId) and
+  // is followed up there; this link lets the session and its review show the
+  // gaps found that day. Absent for gaps logged from the journey page.
+  sessionId?: string
+
+  // The round of that session in which the gap was found: its roundId, and its
+  // 1-based position among the session's rounds (synced as round_index).
+  roundId?: string
+  roundIndex?: number
+
   description: string     // Free-text description of the specific gap
 
   // Multiple domains can apply to a single gap

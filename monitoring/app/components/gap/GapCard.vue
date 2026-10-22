@@ -3,6 +3,8 @@ import type { IGapEntry, GapDomain } from '~/interfaces/IGapEntry'
 
 const props = defineProps<{
   gap: IGapEntry
+  /** Hide the Resolve action, e.g. on session pages; gaps are resolved from the journey. */
+  readonly?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -66,10 +68,10 @@ function formatDate(ts: number | undefined): string {
     <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
       <span>
         Identified {{ formatDate(gap.identifiedAt) }}
-        <template v-if="gap.sessionRound != null">· Round {{ gap.sessionRound }}</template>
+        <template v-if="(gap.roundIndex ?? gap.sessionRound) != null">· Round {{ gap.roundIndex ?? gap.sessionRound }}</template>
       </span>
       <UButton
-        v-if="!gap.resolvedAt"
+        v-if="!gap.resolvedAt && !readonly"
         size="md"
         variant="soft"
         color="success"

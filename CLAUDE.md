@@ -610,6 +610,15 @@ Exposed state: `cleanupRunning`, `lastCleanupAt`, `lastCleanupPurged`. Triggered
   generated from it for `ToolsAndItemsSeeder`; regenerate it whenever item data
   changes, then re-run the seeder, or the dashboard will judge competency on
   different advanced items than the app.
-- **Gaps are journey-scoped, not session-scoped**: `IGapEntry` links to
-  `evaluationGroupId`, not to a session `_id`. Gap management belongs on
-  `sessions/journey.vue`. Do not add gap sections to `sessions/session.vue`.
+- **Gaps replace session notes** (client request, 2026-10-22) and are logged
+  **per round**: the session form ends with "Gaps identified in <round>" for the
+  active round. Drafts live on each `DraftRound.gaps` and are saved by
+  `preview.vue` after the session, each with `sessionId`, `roundId` and 1-based
+  `roundIndex` (synced to `gap_entries.session_id` / `round_index`). Deleting a
+  round deletes its draft gaps. The session form also lists open gaps from earlier
+  sessions. Session notes are no longer entered; notes on older sessions are
+  shown read-only and preserved on edit.
+- **Gaps still belong to the journey**: `evaluationGroupId` is the owner and gaps
+  are resolved on `sessions/journey.vue`. `sessionId` only records where a gap
+  was found, so `session.vue`, the review page and the form show it read-only
+  (`GapCard readonly`). Gaps logged from the journey page have no `sessionId`.

@@ -293,6 +293,8 @@ class SyncCouchDb extends Command
         DB::table('gap_entries')->upsert([
             'id' => $doc['_id'],
             'evaluation_group_id' => $doc['evaluationGroupId'],
+            'session_id' => $doc['sessionId'] ?? null,
+            'round_index' => $doc['roundIndex'] ?? null,
             'mentee_id' => $doc['menteeId'],
             'evaluator_id' => $doc['evaluatorId'],
             'tool_id' => $toolId,
@@ -313,6 +315,8 @@ class SyncCouchDb extends Command
             'updated_at' => $this->msToDatetime($doc['updatedAt'] ?? null),
             'synced_at' => now(),
         ], uniqueBy: ['id'], update: [
+            'session_id',
+            'round_index',
             'session_round',
             'description',
             'domains',

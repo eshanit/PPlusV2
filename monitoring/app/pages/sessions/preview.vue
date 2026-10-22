@@ -2,6 +2,9 @@
 import { format } from 'date-fns'
 import { useSessionStore } from '~/stores/sessionStore'
 import { useUserStore } from '~/stores/userStore'
+import { useGapStore } from '~/stores/gapStore'
+import type { IGapEntry } from '~/interfaces/IGapEntry'
+import GapCard from '~/components/gap/GapCard.vue'
 import {
   getToolBySlug,
   counsellingTool,
@@ -21,6 +24,7 @@ const router = useRouter()
 const toast = useToast()
 const sessionStore = useSessionStore()
 const userStore = useUserStore()
+const gapStore = useGapStore()
 
 const saving = ref(false)
 const evalDateStr = ref(new Date().toISOString().split('T')[0])
@@ -55,6 +59,8 @@ interface PreviewData {
   evalDate: string
   reopenReason?: string
   notes: string
+  // Gaps logged in the session form, saved together with the session.
+  gaps?: IGapEntry[]
 }
 
 const previewData = ref<PreviewData | null>(null)
@@ -170,7 +176,7 @@ async function saveSession() {
       ? sessionStore.sessions.find(session => session._id === pData.sessionId)
       : undefined
 
-    await sessionStore.save({
+    const savedSession = await sessionStore.save({
       _id: pData.sessionId ?? '',
       _rev: pData.sessionRev ?? existingSession?._rev,
       type: 'session',
@@ -215,8 +221,30 @@ async function saveSession() {
       updatedAt: now,
     })
 
+    // Save the session's gaps, linked to it. Each gets its own random ID, as
+    // several are saved within the same millisecond.
+    for (const gap of pData.gaps ?? []) {
+      const gapNow = Date.now()
+      await gapStore.save({
+        ...gap,
+        _id: `gap::${evaluationGroupId}::${crypto.randomUUID()}`,
+        evaluationGroupId,
+        sessionId: savedSession._id,
+        identifiedAt: evalDate,
+        syncStatus: 'pending',
+        createdAt: gapNow,
+        updatedAt: gapNow,
+      })
+    }
+
     sessionStorage.removeItem('penplus_session_draft')
-    toast.add({ title: 'Session saved', color: 'success', icon: 'i-heroicons-check-circle' })
+    const gapCount = pData.gaps?.length ?? 0
+    toast.add({
+      title: 'Session saved',
+      description: gapCount ? `${gapCount} gap${gapCount === 1 ? '' : 's'} logged` : undefined,
+      color: 'success',
+      icon: 'i-heroicons-check-circle',
+    })
     router.push(`/mentees/${pData.menteeId}`)
   } catch (err) {
     toast.add({ title: 'Save failed', description: String(err), color: 'error', icon: 'i-heroicons-x-circle' })
@@ -462,6 +490,19 @@ const saveBlockedReason = computed(() => {
 })
 
 const roundCount = computed(() => previewData.value?.rounds?.length ?? 1)
+
+// The session's gaps, grouped under the round they were found in.
+const gapsByRound = computed(() => {
+  const rounds = previewData.value?.rounds ?? []
+  const gaps = previewData.value?.gaps ?? []
+  return rounds
+    .map((round, index) => ({
+      key: round.roundId,
+      label: round.label || `Round ${index + 1}`,
+      gaps: gaps.filter(gap => gap.roundId === round.roundId),
+    }))
+    .filter(group => group.gaps.length > 0)
+})
 </script>
 
 <template>
@@ -689,18 +730,27 @@ const roundCount = computed(() => previewData.value?.rounds?.length ?? 1)
         </div>
       </details>
 
-      <!-- Session Notes -->
-      <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-4">
-        <label class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-2">
-          Session Notes <span class="text-gray-400 font-normal normal-case tracking-normal">(optional)</span>
-        </label>
-        <UTextarea
-          v-model="notes"
-          placeholder="Any observations or comments about this session…"
-          :rows="3"
-          class="w-full"
-        />
-      </div>
+      <!-- Gaps identified in this session (replaces session notes) -->
+      <section class="space-y-2 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
+        <h2 class="text-base font-semibold text-gray-900 dark:text-white">
+          Gaps identified in this session ({{ previewData.gaps?.length ?? 0 }})
+        </h2>
+        <template v-if="previewData.gaps?.length">
+          <div v-for="group in gapsByRound" :key="group.key" class="space-y-2">
+            <h3 v-if="roundCount > 1" class="text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">
+              {{ group.label }}
+            </h3>
+            <GapCard v-for="(gap, index) in group.gaps" :key="index" :gap="gap" readonly />
+          </div>
+        </template>
+        <p v-else class="text-sm text-gray-500 dark:text-gray-400">
+          No gaps logged. Use Back to edit to add one.
+        </p>
+        <div v-if="notes.trim()" class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-800">
+          <p class="text-sm font-semibold text-gray-700 dark:text-gray-200">Notes recorded with this session</p>
+          <p class="mt-0.5 whitespace-pre-line text-sm text-gray-600 dark:text-gray-300">{{ notes }}</p>
+        </div>
+      </section>
 
       <!-- Actions -->
       <div class="sticky bottom-2 z-20 rounded-xl border border-gray-200 bg-white/95 p-3 shadow-lg backdrop-blur dark:border-gray-700 dark:bg-gray-900/95">
