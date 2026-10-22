@@ -172,7 +172,10 @@ tool context.
 ### Counselling items
 
 DC1-DC9 counselling competencies are evaluated in every session regardless of
-selected disease tool.
+selected disease tool, **except Echocardiogram** (client request, 2026-10-22).
+`ITool.includesCounselling: false` on the echo tool turns them off; use
+`toolIncludesCounselling(tool)` rather than assuming every tool has them. Older
+Echocardiogram sessions keep any counselling scores they already have.
 
 - Monitoring stores them in `ISession.counsellingScores`.
 - MySQL stores them as normal `evaluation_items` rows under the `counselling`
@@ -566,7 +569,7 @@ Exposed state: `cleanupRunning`, `lastCleanupAt`, `lastCleanupPurged`. Triggered
 - Do not cap journeys at 5 sessions.
 - Do not create one CouchDB document with nested session arrays.
 - Use tool-namespaced item slugs.
-- Keep counselling as cross-cutting DC1-DC9.
+- Keep counselling as cross-cutting DC1-DC9 (every tool except Echocardiogram).
 - Use `evaluationGroupId` exactly as `${mentee.id}::${toolSlug}`.
 - `sync_checkpoints.last_seq` must remain a string/VARCHAR because CouchDB
   sequences can be strings.

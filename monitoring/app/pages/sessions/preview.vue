@@ -10,6 +10,7 @@ import {
   counsellingTool,
   scoreBand,
   scoreBackground,
+  toolIncludesCounselling,
   scoreTextColor,
   SCORE_SHORT_LABELS,
 } from '~/data/evaluationItemData'
@@ -119,7 +120,10 @@ function averageFor(type: PreviewItem['type']): number | null {
 const averageTiles = computed(() => [
   { key: 'tool', label: `${previewData.value?.toolLabel ?? 'Tool'} average`, value: averageFor('tool') },
   { key: 'counselling', label: 'Counselling average', value: averageFor('counselling') },
-].map(tile => {
+]
+  // Tools without counselling (Echocardiogram) don't get an empty counselling tile.
+  .filter(tile => tile.key !== 'counselling' || toolIncludesCounselling(tool.value) || tile.value !== null)
+  .map(tile => {
   const band = scoreBand(tile.value)
   return {
     ...tile,

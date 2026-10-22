@@ -10,6 +10,11 @@ export const SCORE_LABELS: Record<1 | 2 | 3 | 4 | 5, string> = {
 
 export const NA_LABEL = 'The competency cannot be evaluated'
 
+/** Whether sessions with this tool include the general counselling competencies. */
+export function toolIncludesCounselling(tool: { includesCounselling?: boolean } | null | undefined): boolean {
+  return tool?.includesCounselling !== false
+}
+
 /**
  * The mentor's level of involvement for each score, from the paper tool's
  * "Mentor" legend row. It describes what the score means; it is not a second
@@ -416,6 +421,7 @@ export const evaluationTools: ITool[] = [
   {
     slug: 'echo',
     label: 'Echocardiogram',
+    includesCounselling: false,
     items: [
       { slug: 'echo-E1', number: 'E1', isAdvanced: false,
         category: 'ECHOCARDIOGRAM COMPETENCIES',

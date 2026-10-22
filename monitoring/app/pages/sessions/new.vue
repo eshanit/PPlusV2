@@ -3,7 +3,7 @@ import { format } from 'date-fns'
 import { useUserStore } from '~/stores/userStore'
 import { useSessionStore } from '~/stores/sessionStore'
 import { useGapStore } from '~/stores/gapStore'
-import { counsellingTool, getToolBySlug } from '~/data/evaluationItemData'
+import { counsellingTool, getToolBySlug, toolIncludesCounselling } from '~/data/evaluationItemData'
 import { getCompetencyStatus, getLatestItemScores } from '~/composables/useCompetency'
 import type { IItemScore } from '~/interfaces/IItemScore'
 import type { IEvalItem } from '~/interfaces/IEvalItem'
@@ -130,6 +130,12 @@ const echocardiogramsCorrectDiagnosisInput = ref('')
 const saving = ref(false)
 const activeStep = ref<'plan' | 'observe'>('plan')
 const activeRoundIndex = ref(0)
+// Counselling items chosen by default in a new round: all of them, unless the
+// tool leaves counselling out (Echocardiogram).
+function defaultCounsellingSlugs(): string[] {
+  return toolIncludesCounselling(tool.value) ? counsellingTool.items.map(item => item.slug) : []
+}
+
 const rounds = reactive<DraftRound[]>([createDraftRound(1)])
 
 // The competency screen edits the active round's selection.
@@ -233,6 +239,8 @@ const allGroups = computed<ItemGroup[]>(() => {
       .filter((item): item is IEvalItem => item !== undefined)
       .map(item => ({ ...item, kind: 'tool' })),
   }))
+
+  if (!toolIncludesCounselling(tool.value)) return toolGroups
 
   toolGroups.push({
     slug: 'general-counselling',
@@ -339,7 +347,7 @@ const hasUnsavedChanges = computed(() => {
       || Object.values(round.notes).some(note => note.trim())
       || !!round.notesText.trim())
     || rounds.some(round => round.itemSlugs.length > 0
-      || round.counsellingSlugs.length !== counsellingTool.items.length)
+      || round.counsellingSlugs.length !== defaultCounsellingSlugs().length)
 })
 
 const allowNavigation = ref(false)
@@ -366,7 +374,7 @@ function createDraftRound(
     label: round?.label ?? `Round ${index}`,
     itemSlugs: [...(selection?.items ?? round?.selectedItemSlugs ?? [])],
     counsellingSlugs: [...(selection?.counselling ?? round?.selectedCounsellingSlugs
-      ?? counsellingTool.items.map(item => item.slug))],
+      ?? defaultCounsellingSlugs())],
     gaps: [],
     scores,
     notes,
@@ -518,7 +526,7 @@ function addRound() {
   const previous = rounds[activeRoundIndex.value]
   rounds.push(createDraftRound(highestRoundNumber + 1, undefined, {
     items: previous?.itemSlugs ?? [],
-    counselling: previous?.counsellingSlugs ?? counsellingTool.items.map(item => item.slug),
+    counselling: previous?.counsellingSlugs ?? defaultCounsellingSlugs(),
   }))
   activeRoundIndex.value = rounds.length - 1
   // Let the mentor confirm or change which competencies this round covers.
@@ -575,7 +583,7 @@ function roundScores(round: DraftRound, kind: ItemKind): IItemScore[] {
   const selectedSlugs = kind === 'tool' ? round.itemSlugs : round.counsellingSlugs
   const itemOrder = kind === 'tool'
     ? (tool.value?.items.map(item => item.slug) ?? [])
-    : counsellingTool.items.map(item => item.slug)
+    : defaultCounsellingSlugs()
   const allowedSlugs = new Set(selectedSlugs)
 
   return itemOrder
@@ -693,7 +701,7 @@ function hydrateDraft(draft: Record<string, unknown>): boolean {
     : []
   const legacyCounselling = Array.isArray(draft.selectedCounsellingSlugs)
     ? draft.selectedCounsellingSlugs.filter((slug): slug is string => typeof slug === 'string')
-    : counsellingTool.items.map(item => item.slug)
+    : defaultCounsellingSlugs()
 
   const storedRounds = Array.isArray(draft.rounds) ? draft.rounds as DraftRound[] : []
   if (storedRounds.length) {
@@ -918,7 +926,7 @@ function viewEvaluation() {
             </p>
           </div>
           <p class="text-xs font-medium text-gray-600 dark:text-gray-300">
-            {{ selectedToolItems }} tool items · {{ selectedCounsellingCount }}/{{ counsellingTool.items.length }} counselling
+            {{ selectedToolItems }} tool items<template v-if="toolIncludesCounselling(tool)"> · {{ selectedCounsellingCount }}/{{ counsellingTool.items.length }} counselling</template>
           </p>
         </div>
 
