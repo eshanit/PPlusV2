@@ -53,6 +53,14 @@ menteeScore: 1 | 2 | 3 | 4 | 5 | null
 `null` means N/A or not evaluated. Do not add `mentorScore`, `mentor_score`, or
 autonomy score columns unless the client reverses this decision.
 
+The paper legend's **Mentor row** ("I had to do" … "I did not need to be there")
+is shown as part of each score's meaning, not as a second score. The client
+asked for it on 2026-10-22. `MENTOR_LABELS` in `evaluationItemData.ts` holds the
+wording; `ScoreLegend` shows Score / Mentee / Mentor as a table, and `ScoreRow`
+shows both meanings, labelled, once a score is tapped, as does its previous-score
+line. `ScoreChip` shows both wherever a full score meaning appears (review,
+session details, round lists); its `short` form stays one word. Nothing extra is stored.
+
 ### Unlimited sessions
 
 The old app treated a complete evaluation as exactly 5 sessions. That cap is

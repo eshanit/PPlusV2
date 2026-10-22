@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { NA_LABEL, SCORE_LABELS, SCORE_SHORT_LABELS, scoreBackground, scoreTextColor } from '~/data/evaluationItemData'
+import { MENTOR_LABELS, NA_LABEL, SCORE_LABELS, SCORE_SHORT_LABELS, scoreBackground, scoreTextColor } from '~/data/evaluationItemData'
 
 /**
- * A score with its meaning, e.g. "4 · Demonstrates advanced competency".
+ * A score with its meaning. The full form shows both sides of the paper
+ * tool's legend, labelled Mentee and Mentor; the short form shows one word.
  * Uses the legend colour as the background so the chip always matches the
  * score buttons and legend, with text colours chosen for contrast.
  */
@@ -28,13 +29,35 @@ const label = computed(() => {
   return props.short ? SCORE_SHORT_LABELS[score] : SCORE_LABELS[score]
 })
 
+// Full form for a 1-5 score: show the mentee and mentor meanings together.
+const showBoth = computed(() => !props.short && !isNotScored.value && props.score !== null)
+const mentorLabel = computed(() => showBoth.value
+  ? MENTOR_LABELS[props.score as 1 | 2 | 3 | 4 | 5]
+  : undefined)
+
 const style = computed(() => isNotScored.value
   ? undefined
   : { backgroundColor: scoreBackground(props.score), color: scoreTextColor(props.score) })
 </script>
 
 <template>
+  <!-- Full form: score plus labelled Mentee and Mentor meanings -->
   <span
+    v-if="showBoth"
+    class="inline-flex max-w-full items-start gap-2.5 rounded-md text-left"
+    :class="size === 'sm' ? 'px-2 py-1 text-sm' : 'px-2.5 py-1.5 text-base'"
+    :style="style"
+  >
+    <span class="font-bold" :class="size === 'sm' ? 'text-base' : 'text-lg'">{{ score }}</span>
+    <span class="flex min-w-0 flex-col leading-snug">
+      <span><span class="font-bold">Mentee:</span> {{ label }}</span>
+      <span><span class="font-bold">Mentor:</span> {{ mentorLabel }}</span>
+    </span>
+  </span>
+
+  <!-- Short form, N/A and Not scored -->
+  <span
+    v-else
     class="inline-flex max-w-full items-center gap-2 rounded-md font-bold"
     :class="[
       size === 'sm' ? 'px-2 py-0.5 text-sm' : 'px-2.5 py-1 text-base',

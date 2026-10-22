@@ -10,6 +10,19 @@ export const SCORE_LABELS: Record<1 | 2 | 3 | 4 | 5, string> = {
 
 export const NA_LABEL = 'The competency cannot be evaluated'
 
+/**
+ * The mentor's level of involvement for each score, from the paper tool's
+ * "Mentor" legend row. It describes what the score means; it is not a second
+ * score. Only the mentee score is recorded.
+ */
+export const MENTOR_LABELS: Record<1 | 2 | 3 | 4 | 5, string> = {
+  1: 'I had to do',
+  2: 'I needed to talk them through',
+  3: 'I needed to prompt',
+  4: 'I needed to be there just in case',
+  5: 'I did not need to be there',
+}
+
 /** One-word names for each score, for tight spaces such as averages. */
 export const SCORE_SHORT_LABELS: Record<1 | 2 | 3 | 4 | 5, string> = {
   1: 'Not demonstrated',

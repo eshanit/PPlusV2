@@ -1,34 +1,51 @@
 <script setup lang="ts">
-import { NA_LABEL, SCORE_COLORS, SCORE_LABELS } from '~/data/evaluationItemData'
+import {
+  MENTOR_LABELS,
+  NA_LABEL,
+  SCORE_LABELS,
+  scoreBackground,
+  scoreTextColor,
+} from '~/data/evaluationItemData'
 
-interface LegendItem {
-  score: number | null
-  label: string
-  color: string
-}
-
-const legendItems: LegendItem[] = [
-  { score: 1, label: SCORE_LABELS[1], color: SCORE_COLORS[1] },
-  { score: 2, label: SCORE_LABELS[2], color: SCORE_COLORS[2] },
-  { score: 3, label: SCORE_LABELS[3], color: SCORE_COLORS[3] },
-  { score: 4, label: SCORE_LABELS[4], color: SCORE_COLORS[4] },
-  { score: 5, label: SCORE_LABELS[5], color: SCORE_COLORS[5] },
-  { score: null, label: NA_LABEL, color: SCORE_COLORS[0] },
+// Mirrors the paper tool's legend: each score is defined from the mentee's
+// side and from the mentor's level of involvement.
+const rows: { score: 1 | 2 | 3 | 4 | 5 | null; mentee: string; mentor: string }[] = [
+  ...([1, 2, 3, 4, 5] as const).map(score => ({
+    score,
+    mentee: SCORE_LABELS[score],
+    mentor: MENTOR_LABELS[score],
+  })),
+  { score: null, mentee: NA_LABEL, mentor: '—' },
 ]
 </script>
 
 <template>
-  <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-    <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
-      Score Legend
+  <section class="overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+    <h3 class="border-b border-gray-200 px-4 py-2.5 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:border-gray-700 dark:text-gray-300">
+      Score legend
     </h3>
-    <div class="space-y-2">
-      <div v-for="item in legendItems" :key="item.score ?? 'na'" class="flex items-center gap-2">
-        <div class="w-3 h-3 rounded-full" :style="{ backgroundColor: item.color }" />
-        <span class="text-xs text-gray-600 dark:text-gray-300">
-          {{ item.score ?? 'N/A' }} - {{ item.label }}
-        </span>
-      </div>
-    </div>
-  </div>
+    <table class="w-full text-left text-sm">
+      <thead class="bg-gray-50 text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+        <tr>
+          <th scope="col" class="w-16 px-3 py-2 font-semibold">Score</th>
+          <th scope="col" class="px-3 py-2 font-semibold">Mentee</th>
+          <th scope="col" class="px-3 py-2 font-semibold">Mentor</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        <tr v-for="row in rows" :key="row.score ?? 'na'">
+          <td class="px-3 py-2">
+            <span
+              class="inline-flex min-w-10 items-center justify-center rounded-md px-2 py-1 text-sm font-bold"
+              :style="{ backgroundColor: scoreBackground(row.score), color: scoreTextColor(row.score) }"
+            >
+              {{ row.score ?? 'N/A' }}
+            </span>
+          </td>
+          <td class="px-3 py-2 text-gray-900 dark:text-gray-100">{{ row.mentee }}</td>
+          <td class="px-3 py-2 text-gray-700 dark:text-gray-300">{{ row.mentor }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
 </template>

@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { format } from 'date-fns'
 import type { IEvalItem } from '~/interfaces/IEvalItem'
-import { NA_LABEL, SCORE_LABELS, scoreBackground, scoreTextColor } from '~/data/evaluationItemData'
+import { MENTOR_LABELS, NA_LABEL, SCORE_LABELS, scoreBackground, scoreTextColor } from '~/data/evaluationItemData'
 import { getScoreChangeDisplay } from '~/composables/useSessionCalculations'
-import ScoreChip from './ScoreChip.vue'
 
 type ScoreValue = 1 | 2 | 3 | 4 | 5 | null
 
@@ -51,6 +50,13 @@ function selectedStyle(value: ScoreValue) {
 const selectedScoreLabel = computed(() => {
   if (!props.isScored) return undefined
   return props.score === null ? NA_LABEL : SCORE_LABELS[props.score]
+})
+
+// The paper tool defines each score for both the mentee and the mentor.
+// This is the meaning of the one recorded score, not a second score.
+const selectedMentorLabel = computed(() => {
+  if (!props.isScored || props.score === null) return undefined
+  return MENTOR_LABELS[props.score]
 })
 
 const scoreChangeDisplay = computed(() => props.isScored
@@ -125,8 +131,28 @@ const scoreChangeDisplay = computed(() => props.isScored
       </div>
     </div>
 
-    <div v-if="selectedScoreLabel" class="mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-      <ScoreChip :score="score" />
+    <div v-if="selectedScoreLabel" class="mt-3 flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+      <div
+        class="min-w-[16rem] flex-1 overflow-hidden rounded-lg border-2"
+        :style="{ borderColor: scoreBackground(score) }"
+        role="status"
+        :aria-label="`Score ${score ?? 'N/A'}`"
+      >
+        <p
+          class="px-3 py-1.5 text-base font-bold"
+          :style="{ backgroundColor: scoreBackground(score), color: scoreTextColor(score) }"
+        >
+          {{ score === null ? 'N/A' : `Score ${score}` }}
+        </p>
+        <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 bg-white px-3 py-2 text-base dark:bg-gray-900">
+          <dt class="font-semibold text-gray-600 dark:text-gray-300">Mentee</dt>
+          <dd class="text-gray-900 dark:text-gray-100">{{ selectedScoreLabel }}</dd>
+          <template v-if="selectedMentorLabel">
+            <dt class="font-semibold text-gray-600 dark:text-gray-300">Mentor</dt>
+            <dd class="text-gray-900 dark:text-gray-100">{{ selectedMentorLabel }}</dd>
+          </template>
+        </dl>
+      </div>
       <span
         v-if="scoreChangeDisplay"
         class="inline-flex items-center gap-1 text-sm font-semibold"
@@ -144,7 +170,11 @@ const scoreChangeDisplay = computed(() => props.isScored
       class="mt-2 rounded-md bg-gray-50 px-2.5 py-2 text-sm text-gray-600 dark:bg-gray-900/70 dark:text-gray-300"
     >
       <span class="font-semibold">Previous score:</span>
-      {{ previousAssessment.score === null ? 'N/A' : `${previousAssessment.score} — ${SCORE_LABELS[previousAssessment.score]}` }}
+      {{ previousAssessment.score === null ? 'N/A' : previousAssessment.score }}
+      <template v-if="previousAssessment.score !== null">
+        <span class="mt-0.5 block"><span class="font-semibold">Mentee:</span> {{ SCORE_LABELS[previousAssessment.score] }}</span>
+        <span class="block"><span class="font-semibold">Mentor:</span> {{ MENTOR_LABELS[previousAssessment.score] }}</span>
+      </template>
       <span class="mt-0.5 block text-gray-500 dark:text-gray-400">
         {{ format(new Date(previousAssessment.evalDate), 'd MMM yyyy') }}
         · Session {{ previousAssessment.sessionNumber }}
