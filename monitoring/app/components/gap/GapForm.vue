@@ -40,7 +40,7 @@ const supervisionOptions: { label: string; value: SupervisionLevel }[] = [
 ]
 
 const coveredOptions = [
-  { label: 'Yes — addressed in this session', value: 'yes' },
+  { label: "Yes — addressed in this session's round", value: 'yes' },
   { label: 'No — will cover later', value: 'no' },
   { label: 'Not yet decided', value: 'undecided' },
 ]
@@ -160,7 +160,7 @@ function close() {
         <!-- Covered in mentorship -->
         <div>
           <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
-            Addressed in this session?
+            Addressed in this session's round?
           </label>
           <div class="flex flex-col gap-1.5">
             <label
