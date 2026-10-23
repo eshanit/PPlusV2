@@ -61,8 +61,9 @@ const isCompetencySession = (sessionNumber) =>
             :points="[
                 'Session numbers are assigned from evaluation date and creation time; they are derived for reporting and are not stored in the source session.',
                 'Round labels distinguish multiple visits on the same date. Review those visits in round order when interpreting same-day score changes.',
-                'Each session is a snapshot; compare item scores and notes across visits to see what changed and what still needs attention.',
-                'Competency closure is journey-level: basic competence requires all non-advanced items to score 4 or 5.',
+                'Mentors evaluate only the competencies they observed, so each session covers different items. Its average is shown with its item count; do not compare it across sessions.',
+                'Required achieved and current average use each item’s latest score so far, so they show progress from one session to the next.',
+                'Competency closure is journey-level: basic competence requires every non-advanced item’s latest score to be 4 or 5.',
             ]"
         />
 
@@ -136,22 +137,24 @@ const isCompetencySession = (sessionNumber) =>
                             <th class="px-4 py-3 font-medium">#</th>
                             <th class="px-4 py-3 font-medium">Date</th>
                             <th class="px-4 py-3 font-medium">Phase</th>
-                            <th class="px-4 py-3 font-medium text-right">Avg Score</th>
+                            <th class="px-4 py-3 font-medium text-right">Session avg</th>
                             <th class="px-4 py-3 font-medium text-right">Scored</th>
                             <th class="px-4 py-3 font-medium text-right">N/A</th>
+                            <th class="px-4 py-3 font-medium text-right">Required achieved</th>
+                            <th class="px-4 py-3 font-medium text-right">Current avg</th>
                             <th class="px-4 py-3 font-medium text-right"></th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-if="sessions.length === 0">
-                            <td colspan="7" class="px-4 py-10 text-center text-muted-foreground">
+                            <td colspan="9" class="px-4 py-10 text-center text-muted-foreground">
                                 No sessions found for this journey.
                             </td>
                         </tr>
                         <template v-for="s in sessions" :key="s.sessionId">
                             <!-- Day-to-day delta separator, shown above the first round of a day (once there's a previous day to compare) -->
                             <tr v-if="s.dayRoundNumber === 1 && dayOverDayByDate.get(s.date)?.dayOverDayDelta != null" class="border-t bg-muted/20">
-                                <td colspan="7" class="px-4 py-1.5 text-xs text-muted-foreground">
+                                <td colspan="9" class="px-4 py-1.5 text-xs text-muted-foreground">
                                     <span class="inline-flex items-center gap-1.5">
                                         <component
                                             :is="dayOverDayByDate.get(s.date).dayOverDayDelta >= 0 ? TrendingUp : TrendingDown"
@@ -161,7 +164,8 @@ const isCompetencySession = (sessionNumber) =>
                                         <span :class="dayOverDayByDate.get(s.date).dayOverDayDelta >= 0 ? 'text-emerald-600' : 'text-red-600'" class="font-medium">
                                             {{ dayOverDayByDate.get(s.date).dayOverDayDelta >= 0 ? '+' : '' }}{{ dayOverDayByDate.get(s.date).dayOverDayDelta }} avg
                                         </span>
-                                        vs last round on {{ dayOverDayByDate.get(s.date).prevDate }}
+                                        vs last round on {{ dayOverDayByDate.get(s.date).prevDate }},
+                                        on {{ dayOverDayByDate.get(s.date).dayOverDayItems }} item{{ dayOverDayByDate.get(s.date).dayOverDayItems === 1 ? '' : 's' }} scored in both
                                     </span>
                                 </td>
                             </tr>
@@ -198,6 +202,16 @@ const isCompetencySession = (sessionNumber) =>
                                 </td>
                                 <td class="px-4 py-3 text-right tabular-nums text-muted-foreground">
                                     {{ s.naItems ?? '—' }}
+                                </td>
+                                <td class="px-4 py-3 text-right tabular-nums">
+                                    <span :class="s.requiredItems > 0 && s.requiredAchieved === s.requiredItems ? 'font-semibold text-emerald-600' : ''">
+                                        {{ s.requiredAchieved }} of {{ s.requiredItems }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 text-right tabular-nums">
+                                    <span :class="scoreColor(s.currentAvgScore)">
+                                        {{ s.currentAvgScore != null ? s.currentAvgScore.toFixed(2) : '—' }}
+                                    </span>
                                 </td>
                                 <td class="px-4 py-3 text-right">
                                     <TableLink

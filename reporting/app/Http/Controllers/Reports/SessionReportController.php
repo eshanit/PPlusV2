@@ -109,18 +109,23 @@ class SessionReportController extends Controller
             'dayRoundNumber' => (int) $prevSession->day_round_number,
         ] : null;
 
-        $prevToolScores = $prevSessionId
-            ? DB::table('v_session_item_scores')->where('session_id', $prevSessionId)->pluck('mentee_score', 'item_id')->all()
-            : [];
-
-        $prevCounsellingScores = $prevSessionId
-            ? DB::table('v_session_item_scores as sis')
-                ->join('evaluation_items as ei', 'ei.id', '=', 'sis.item_id')
-                ->where('sis.session_id', $prevSessionId)
-                ->where('ei.tool_id', $counsellingToolId)
-                ->pluck('sis.mentee_score', 'sis.item_id')
-                ->all()
-            : [];
+        // Each item's most recent earlier score, from any earlier session in the
+        // journey. Mentors evaluate only what they observed, so the previous
+        // session often didn't score an item; comparing with its last earlier
+        // score matches the field app's "Previous score".
+        $earlierScores = [];
+        DB::table('v_session_item_scores as sis')
+            ->join('v_sessions_numbered as psn', 'psn.id', '=', 'sis.session_id')
+            ->where('psn.evaluation_group_id', $sessionRow->evaluation_group_id)
+            ->where('psn.session_number', '<', $sessionRow->session_number)
+            ->whereNotNull('sis.mentee_score')
+            ->orderByDesc('psn.session_number')
+            ->get(['sis.item_id', 'sis.mentee_score'])
+            ->each(function (object $r) use (&$earlierScores): void {
+                $earlierScores[$r->item_id] ??= (int) $r->mentee_score;
+            });
+        $prevToolScores = $earlierScores;
+        $prevCounsellingScores = $earlierScores;
 
         $items = $toolScores->map(fn (object $r): array => [
             'itemId' => $r->item_id,
@@ -172,19 +177,23 @@ class SessionReportController extends Controller
             ->sortByDesc('identifiedAt')
             ->first()['supervisionLevel'] ?? null;
 
-        if ($prevSessionId) {
-            $prevMean = DB::table('v_session_averages')->where('session_id', $prevSessionId)->value('avg_mentee_score');
-            $stats['vsPrevSession'] = ($prevMean !== null && $stats['mean'] !== null)
-                ? round((float) $stats['mean'] - (float) $prevMean, 2)
-                : null;
-        }
+        // Average change on the tool items scored now and before, rather than the
+        // difference between two session averages over different items.
+        $toolDeltas = collect($items)->pluck('delta')->filter(fn ($d) => $d !== null);
+        $stats['vsPrevSession'] = $toolDeltas->isNotEmpty() ? round((float) $toolDeltas->avg(), 2) : null;
+        $stats['vsPrevItems'] = $toolDeltas->count();
 
         $trajectory = DB::table('v_sessions_numbered as sn')
             ->leftJoin('v_session_averages as sa', 'sa.session_id', '=', 'sn.id')
+            ->leftJoin('v_journey_progress as jp', 'jp.session_id', '=', 'sn.id')
             ->where('sn.evaluation_group_id', $sessionRow->evaluation_group_id)
             ->orderBy('sn.session_number')
-            ->get(['sn.id as session_id', 'sn.session_number', 'sn.eval_date', 'sn.day_round_number', 'sn.day_round_count', 'sa.avg_mentee_score'])
+            ->get([
+                'sn.id as session_id', 'sn.session_number', 'sn.eval_date', 'sn.day_round_number', 'sn.day_round_count', 'sa.avg_mentee_score',
+                'jp.required_items', 'jp.required_achieved', 'jp.total_items', 'jp.total_achieved', 'jp.items_evaluated', 'jp.current_avg_score',
+            ])
             ->map(fn (object $s): array => [
+                ...ReportQueryService::standing($s),
                 'sessionId' => $s->session_id,
                 'session' => (int) $s->session_number,
                 'date' => $s->eval_date,

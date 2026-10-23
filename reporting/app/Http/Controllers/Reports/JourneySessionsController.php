@@ -53,6 +53,7 @@ class JourneySessionsController extends Controller
 
         $sessions = DB::table('v_sessions_numbered as sn')
             ->leftJoin('v_session_averages as sa', 'sa.session_id', '=', 'sn.id')
+            ->leftJoin('v_journey_progress as jp', 'jp.session_id', '=', 'sn.id')
             ->where('sn.evaluation_group_id', $groupId)
             ->orderBy('sn.session_number')
             ->get([
@@ -65,6 +66,12 @@ class JourneySessionsController extends Controller
                 'sa.avg_mentee_score',
                 'sa.scored_items',
                 'sa.na_items',
+                'jp.required_items',
+                'jp.required_achieved',
+                'jp.total_items',
+                'jp.total_achieved',
+                'jp.items_evaluated',
+                'jp.current_avg_score',
             ])
             ->map(fn (object $s): array => [
                 'sessionId' => $s->session_id,
@@ -76,6 +83,7 @@ class JourneySessionsController extends Controller
                 'avgScore' => $s->avg_mentee_score !== null ? round((float) $s->avg_mentee_score, 2) : null,
                 'scoredItems' => $s->scored_items !== null ? (int) $s->scored_items : null,
                 'naItems' => $s->na_items !== null ? (int) $s->na_items : null,
+                ...ReportQueryService::standing($s),
             ])
             ->all();
 

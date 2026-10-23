@@ -42,7 +42,10 @@ class EvaluatorActivityController extends Controller
             ->selectRaw('COUNT(DISTINCT es.id) as session_count')
             ->selectRaw('COUNT(DISTINCT es.evaluation_group_id) as mentee_count')
             ->selectRaw('COUNT(DISTINCT es.tool_id) as tool_count')
-            ->selectRaw('ROUND(AVG(sa.avg_mentee_score), 2) as avg_score')
+            // Weighted by items scored: the average of every item score given, so a
+            // one-item session doesn't count as much as a 30-item one.
+            ->selectRaw('ROUND(SUM(sa.avg_mentee_score * (sa.scored_items - sa.na_items)) / NULLIF(SUM(sa.scored_items - sa.na_items), 0), 2) as avg_score')
+            ->selectRaw('COALESCE(SUM(sa.scored_items - sa.na_items), 0) as items_scored')
             ->groupBy('es.evaluator_id', 'evaluators.firstname', 'evaluators.lastname')
             ->orderByDesc('session_count')
             ->get()
@@ -53,6 +56,7 @@ class EvaluatorActivityController extends Controller
                 'mentees' => (int) $r->mentee_count,
                 'tools' => (int) $r->tool_count,
                 'avgScore' => $r->avg_score !== null ? round((float) $r->avg_score, 2) : null,
+                'itemsScored' => (int) $r->items_scored,
             ])
             ->all();
 

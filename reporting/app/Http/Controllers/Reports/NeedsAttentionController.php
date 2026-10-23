@@ -42,7 +42,7 @@ class NeedsAttentionController extends Controller
             ->selectRaw('
                 evaluation_group_id, mentee_firstname, mentee_lastname,
                 tool_label, district_name, facility_name,
-                total_sessions, latest_avg_score, open_gaps,
+                total_sessions, current_avg_score, required_achieved, required_items, open_gaps,
                 DATEDIFF(CURDATE(), latest_session_date) as days_stale
             ')
             ->orderByRaw('days_stale DESC');
@@ -54,7 +54,9 @@ class NeedsAttentionController extends Controller
             'district' => $j->district_name,
             'facility' => $j->facility_name,
             'totalSessions' => (int) $j->total_sessions,
-            'latestAvgScore' => $j->latest_avg_score !== null ? round((float) $j->latest_avg_score, 1) : null,
+            'currentAvgScore' => $j->current_avg_score !== null ? round((float) $j->current_avg_score, 1) : null,
+            'requiredAchieved' => (int) $j->required_achieved,
+            'requiredItems' => (int) $j->required_items,
             'openGaps' => (int) $j->open_gaps,
             'daysStale' => (int) $j->days_stale,
         ];

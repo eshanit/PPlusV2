@@ -40,10 +40,19 @@ watch(groupId, (newVal) => {
     );
 });
 
+// Progress, not session averages: mentors evaluate only what they observed, so
+// each session's average covers different items. Standing uses each item's
+// latest score so far, so it is comparable from session to session.
 const chartSeries = computed(() => [
     {
-        name: 'Avg Score',
-        data: props.trajectory.map((s) => s.avgScore ?? null),
+        name: 'Required items achieved (%)',
+        type: 'column',
+        data: props.trajectory.map((s) => s.achievedPct ?? null),
+    },
+    {
+        name: 'Current average (latest score per item)',
+        type: 'line',
+        data: props.trajectory.map((s) => s.currentAvgScore ?? null),
     },
 ]);
 
@@ -52,14 +61,25 @@ const chartOptions = computed(() => ({
         categories: props.trajectory.map((s) => `Session ${s.session}`),
         title: { text: 'Session' },
     },
-    yaxis: {
-        min: 1,
-        max: 5,
-        title: { text: 'Average Score' },
-        tickAmount: 4,
-    },
-    markers: { size: 5 },
-    stroke: { curve: 'smooth', width: 2 },
+    yaxis: [
+        {
+            min: 0,
+            max: 100,
+            tickAmount: 5,
+            title: { text: 'Required items achieved (%)' },
+            labels: { formatter: (val) => `${Math.round(val)}%` },
+        },
+        {
+            opposite: true,
+            min: 1,
+            max: 5,
+            tickAmount: 4,
+            title: { text: 'Current average' },
+        },
+    ],
+    colors: ['#16a34a', '#2563eb'],
+    markers: { size: [0, 5] },
+    stroke: { curve: 'smooth', width: [0, 3] },
     annotations: props.selectedJourney?.sessionsToBasic
         ? {
               xaxis: [
@@ -76,7 +96,16 @@ const chartOptions = computed(() => ({
         : {},
     dataLabels: { enabled: false },
     tooltip: {
-        y: { formatter: (val) => (val != null ? val.toFixed(2) : '—') },
+        shared: true,
+        y: [
+            {
+                formatter: (val, { dataPointIndex }) => {
+                    const s = props.trajectory[dataPointIndex];
+                    return s ? `${s.requiredAchieved} of ${s.requiredItems} (${val ?? 0}%)` : '—';
+                },
+            },
+            { formatter: (val) => (val != null ? val.toFixed(2) : '—') },
+        ],
     },
 }));
 
@@ -106,17 +135,17 @@ const scoreColor = (score) => {
 
     <main class="mx-auto max-w-7xl space-y-5 px-4 py-6 sm:px-6 lg:px-8">
         <InsightsPanel
-            summary="Tracks average scores across numbered sessions to show how recorded competency changes over time."
+            summary="Tracks a mentee's progress towards competency, session by session."
             :points="[
-                'Session numbers are derived within each mentee-tool journey and ordered by evaluation date, then creation time.',
-                'Rising averages suggest improvement in recorded scores; item mix, N/A responses, and the number of journeys can affect each point.',
-                'Use the item-level or journey views to locate persistent gaps hidden by an overall average.',
-                'The score-4 threshold is an item competency target; a mean above 4 does not mean every item or mentee is competent.',
+                'Mentors evaluate only the competencies they observed, so each session covers a different set of items. Its own average is shown with its item count and should not be compared across sessions.',
+                'Progress uses each item’s latest score so far: an item is achieved once its latest score is 4 or 5. The bars show the share of required items achieved after each session.',
+                'The current average is the mean of every item’s latest score so far, so it is comparable from session to session.',
+                'Basic Competent is reached when every required item is achieved. Advanced items are not required.',
             ]"
         />
         <div class="flex flex-col gap-1">
             <h1 class="text-2xl font-semibold tracking-normal">Score Trajectory</h1>
-            <p class="text-sm text-muted-foreground">Session-by-session average score for a single mentee journey.</p>
+            <p class="text-sm text-muted-foreground">Session-by-session progress towards competency for a single mentee journey.</p>
         </div>
 
         <div class="flex flex-wrap items-end gap-3">
@@ -184,8 +213,10 @@ const scoreColor = (score) => {
                                 <th class="px-4 py-3 font-medium">#</th>
                                 <th class="px-4 py-3 font-medium">Date</th>
                                 <th class="px-4 py-3 font-medium">Phase</th>
-                                <th class="px-4 py-3 font-medium text-right">Avg Score</th>
-                                <th class="px-4 py-3 font-medium text-right">Items Scored</th>
+                                <th class="px-4 py-3 font-medium text-right">Evaluated this session</th>
+                                <th class="px-4 py-3 font-medium text-right">Session avg</th>
+                                <th class="px-4 py-3 font-medium text-right">Required achieved</th>
+                                <th class="px-4 py-3 font-medium text-right">Current avg</th>
                                 <th class="px-4 py-3 font-medium text-right"></th>
                             </tr>
                         </thead>
@@ -199,10 +230,20 @@ const scoreColor = (score) => {
                                 <td class="px-4 py-3 font-mono text-xs text-muted-foreground">{{ s.session }}</td>
                                 <td class="px-4 py-3">{{ s.date }}</td>
                                 <td class="px-4 py-3 text-muted-foreground">{{ phaseLabel(s.phase) }}</td>
+                                <td class="px-4 py-3 text-right tabular-nums text-muted-foreground">
+                                    {{ s.scoredItems }} item{{ s.scoredItems === 1 ? '' : 's' }}<template v-if="s.naItems"> ({{ s.naItems }} N/A)</template>
+                                </td>
                                 <td class="px-4 py-3 text-right tabular-nums">
                                     <span :class="scoreColor(s.avgScore)">{{ s.avgScore != null ? s.avgScore.toFixed(2) : '—' }}</span>
                                 </td>
-                                <td class="px-4 py-3 text-right tabular-nums text-muted-foreground">{{ s.scoredItems }}</td>
+                                <td class="px-4 py-3 text-right tabular-nums">
+                                    <span :class="s.requiredAchieved === s.requiredItems && s.requiredItems > 0 ? 'font-semibold text-emerald-600' : ''">
+                                        {{ s.requiredAchieved }} of {{ s.requiredItems }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 text-right tabular-nums">
+                                    <span :class="scoreColor(s.currentAvgScore)">{{ s.currentAvgScore != null ? s.currentAvgScore.toFixed(2) : '—' }}</span>
+                                </td>
                                 <td class="px-4 py-3 text-right">
                                     <TableLink
                                         :href="`/sessions/${s.sessionId}`"

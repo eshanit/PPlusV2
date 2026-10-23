@@ -111,6 +111,7 @@ const scoreBg = (score) => {
                 'The distribution shows how often each score was recorded; the trend averages sessions only when enough journeys contribute.',
                 'The journey breakdown carries forward the latest non-null score for this item, so its date may be older than a journey’s latest session.',
                 'N/A means not assessed or not applicable and is excluded from score averages.',
+                'Coverage shows how often mentors reach this competency. They evaluate only what they observed, so a rarely covered item may need deliberate attention during visits.',
                 'Use this page to decide whether the item needs broad teaching, repeated follow-up, or closer review of particular journeys.',
             ]"
         />
@@ -194,6 +195,38 @@ const scoreBg = (score) => {
                 <p class="text-xs text-muted-foreground">Journeys</p>
                 <p class="mt-1 text-2xl font-bold tabular-nums">{{ stats.journeyCount }}</p>
                 <p class="mt-1 text-xs text-muted-foreground">mentee journeys scored this item</p>
+            </Card>
+        </section>
+
+        <!-- Coverage -->
+        <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <Card class="p-4">
+                <p class="text-xs text-muted-foreground">Journey coverage</p>
+                <p class="mt-1 text-2xl font-bold tabular-nums">
+                    {{ stats.journeyCoveragePct != null ? `${stats.journeyCoveragePct}%` : '—' }}
+                </p>
+                <p class="mt-1 text-xs text-muted-foreground">
+                    {{ stats.journeysEvaluated }} of {{ stats.toolJourneys }} {{ item.tool.label }} journeys have evaluated it
+                </p>
+            </Card>
+            <Card class="p-4">
+                <p class="text-xs text-muted-foreground">Never evaluated</p>
+                <p class="mt-1 text-2xl font-bold tabular-nums" :class="stats.journeysNeverEvaluated > 0 ? 'text-amber-600' : ''">
+                    {{ stats.journeysNeverEvaluated }}
+                </p>
+                <p class="mt-1 text-xs text-muted-foreground">journeys that can't reach competency until it is</p>
+            </Card>
+            <Card class="p-4">
+                <p class="text-xs text-muted-foreground">Achieved</p>
+                <p class="mt-1 text-2xl font-bold tabular-nums text-emerald-600">{{ stats.journeysAchieved }}</p>
+                <p class="mt-1 text-xs text-muted-foreground">journeys whose latest score is 4 or 5</p>
+            </Card>
+            <Card class="p-4">
+                <p class="text-xs text-muted-foreground">Session coverage</p>
+                <p class="mt-1 text-2xl font-bold tabular-nums">
+                    {{ stats.sessionCoveragePct != null ? `${stats.sessionCoveragePct}%` : '—' }}
+                </p>
+                <p class="mt-1 text-xs text-muted-foreground">of {{ item.tool.label }} sessions included it</p>
             </Card>
         </section>
 

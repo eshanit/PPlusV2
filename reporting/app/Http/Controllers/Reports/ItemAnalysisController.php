@@ -33,7 +33,42 @@ class ItemAnalysisController extends Controller
 
         $timesScored = (int) ($statsRow->times_scored ?? 0);
 
+        // Coverage. Mentors evaluate only what they observed, so some items come
+        // up far less often than others; these show how often this one is reached.
+        $toolCoverage = DB::table('evaluation_sessions as es')
+            ->where('es.tool_id', $item->tool_id)
+            ->whereRaw(...$this->scope->scope('es'))
+            ->when($menteeId, fn ($q) => $q->where('es.mentee_id', $menteeId))
+            ->selectRaw('COUNT(DISTINCT es.evaluation_group_id) as tool_journeys')
+            ->selectRaw('COUNT(DISTINCT es.id) as tool_sessions')
+            ->first();
+        $itemCoverage = DB::table('v_session_item_scores as sis')
+            ->join('evaluation_sessions as es', 'es.id', '=', 'sis.session_id')
+            ->where('sis.item_id', $id)
+            ->whereNotNull('sis.mentee_score')
+            ->whereRaw(...$this->scope->scope('es'))
+            ->when($menteeId, fn ($q) => $q->where('es.mentee_id', $menteeId))
+            ->selectRaw('COUNT(DISTINCT es.evaluation_group_id) as journeys_evaluated')
+            ->selectRaw('COUNT(DISTINCT es.id) as sessions_evaluated')
+            ->first();
+        $toolJourneys = (int) ($toolCoverage->tool_journeys ?? 0);
+        $toolSessions = (int) ($toolCoverage->tool_sessions ?? 0);
+        $journeysEvaluated = (int) ($itemCoverage->journeys_evaluated ?? 0);
+        $sessionsEvaluated = (int) ($itemCoverage->sessions_evaluated ?? 0);
+        $journeysAchieved = DB::table('v_latest_item_scores as vlis')
+            ->where('vlis.item_id', $id)
+            ->where('vlis.mentee_score', '>=', 4)
+            ->whereRaw(...$this->scope->scope('vlis'))
+            ->when($menteeId, fn ($q) => $q->where('vlis.mentee_id', $menteeId))
+            ->count();
+
         $stats = [
+            'toolJourneys' => $toolJourneys,
+            'journeysEvaluated' => $journeysEvaluated,
+            'journeysNeverEvaluated' => max(0, $toolJourneys - $journeysEvaluated),
+            'journeysAchieved' => $journeysAchieved,
+            'journeyCoveragePct' => $toolJourneys > 0 ? (int) round($journeysEvaluated / $toolJourneys * 100) : null,
+            'sessionCoveragePct' => $toolSessions > 0 ? (int) round($sessionsEvaluated / $toolSessions * 100) : null,
             'avgScore' => $statsRow->avg_score !== null ? (float) $statsRow->avg_score : null,
             'pctCompetent' => $timesScored > 0
                 ? round(((int) $statsRow->count_competent / $timesScored) * 100, 1)

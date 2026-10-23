@@ -143,14 +143,15 @@ const chartOptions = computed(() => ({
                             <th class="px-4 py-3 font-medium">Facility / District</th>
                             <th class="px-4 py-3 font-medium text-right">Days Stale</th>
                             <th class="px-4 py-3 font-medium text-right">Sessions</th>
-                            <th class="px-4 py-3 font-medium text-right">Avg Score</th>
+                            <th class="px-4 py-3 font-medium text-right">Required Achieved</th>
+                            <th class="px-4 py-3 font-medium text-right">Current Avg</th>
                             <th class="px-4 py-3 font-medium text-right">Open Gaps</th>
                             <th class="px-4 py-3 font-medium text-right print:hidden"></th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-if="items.length === 0">
-                            <td colspan="8" class="px-4 py-10 text-center text-muted-foreground">
+                            <td colspan="9" class="px-4 py-10 text-center text-muted-foreground">
                                 No overdue journeys. All in-progress journeys have recent activity.
                             </td>
                         </tr>
@@ -170,8 +171,11 @@ const chartOptions = computed(() => ({
                             </td>
                             <td class="px-4 py-3 text-right tabular-nums text-muted-foreground">{{ item.totalSessions }}</td>
                             <td class="px-4 py-3 text-right tabular-nums">
-                                <span :class="scoreColor(item.latestAvgScore)">
-                                    {{ item.latestAvgScore != null ? item.latestAvgScore.toFixed(1) : '—' }}
+                                {{ item.requiredAchieved }} of {{ item.requiredItems }}
+                            </td>
+                            <td class="px-4 py-3 text-right tabular-nums">
+                                <span :class="scoreColor(item.currentAvgScore)">
+                                    {{ item.currentAvgScore != null ? item.currentAvgScore.toFixed(1) : '—' }}
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-right">

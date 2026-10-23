@@ -110,7 +110,7 @@ const scoreColor = (score) => {
                             <th class="px-4 py-3 font-medium">Tool</th>
                             <th class="hidden px-4 py-3 font-medium sm:table-cell">Facility</th>
                             <th class="px-4 py-3 font-medium text-right">Sessions</th>
-                            <th class="px-4 py-3 font-medium text-right">Score</th>
+                            <th class="px-4 py-3 font-medium text-right" title="Required items whose latest score is 4 or 5, and the average of every item’s latest score">Progress</th>
                             <th class="px-4 py-3 font-medium">Status</th>
                             <th class="hidden px-4 py-3 font-medium text-right xl:table-cell">Sessions→Competent</th>
                             <th class="hidden px-4 py-3 font-medium text-right xl:table-cell">Days→Competent</th>
@@ -148,8 +148,9 @@ const scoreColor = (score) => {
                                 </TableLink>
                             </td>
                             <td class="px-4 py-3 text-right tabular-nums">
-                                <span :class="scoreColor(j.latestAvgScore)" class="font-medium">
-                                    {{ j.latestAvgScore != null ? j.latestAvgScore.toFixed(1) : '—' }}
+                                <span class="block tabular-nums">{{ j.requiredAchieved ?? 0 }} of {{ j.requiredItems ?? 0 }}</span>
+                                <span :class="scoreColor(j.currentAvgScore)" class="text-xs font-medium">
+                                    avg {{ j.currentAvgScore != null ? Number(j.currentAvgScore).toFixed(1) : '—' }}
                                 </span>
                             </td>
                             <td class="px-4 py-3">

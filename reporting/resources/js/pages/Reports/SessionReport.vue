@@ -116,11 +116,12 @@ const deltaColor = (delta) => {
 // same-day rounds too — so "prev" can mean an earlier pass in this same
 // visit, not a separate day's visit. Those read very differently for an M&E
 // officer, so label which one it actually is rather than just saying "prev".
+// Changes compare each item with its most recent earlier score, from whichever
+// session last rated it, so the label names the items rather than one visit.
 const prevComparisonLabel = computed(() => {
-    if (!props.prevSession) return null;
-    return props.prevSession.sameDay
-        ? `vs Round ${props.prevSession.dayRoundNumber} (earlier today)`
-        : `vs visit on ${props.prevSession.date}`;
+    const n = props.stats.vsPrevItems ?? 0;
+    if (!props.prevSession || n === 0) return null;
+    return `vs previous scores, on ${n} item${n === 1 ? '' : 's'} scored before`;
 });
 
 const prevComparisonShort = computed(() => {
@@ -184,7 +185,7 @@ const sessionVerdict = computed(() => {
             : { text: 'Weak session', color: 'text-red-600' };
 
     const target = props.stats.target ?? 4;
-    const detail = `${pct}% of basic items scoring ${target}+`;
+    const detail = `${pct}% of the basic items evaluated this session scoring ${target}+`;
 
     const trendDelta = props.stats.vsPrevSession;
     let trend = null;
@@ -199,16 +200,9 @@ const sessionVerdict = computed(() => {
 
 // Where this visit sits among every scored session in the journey — flags an
 // unusually good or bad visit that the raw number alone might not stand out.
-const sessionRank = computed(() => {
-    const scored = props.trajectory.filter((s) => s.avgScore != null);
-    const current = scored.find((s) => s.isCurrent);
-    if (!current || scored.length < 2) return null;
-
-    const sorted = [...scored].sort((a, b) => b.avgScore - a.avgScore);
-    const rank = sorted.findIndex((s) => s.sessionId === current.sessionId) + 1;
-
-    return { rank, total: scored.length, isBest: rank === 1, isWorst: rank === scored.length };
-});
+// Ranking sessions by their averages is no longer meaningful: each session
+// covers a different set of items. Kept as null so the template hides it.
+const sessionRank = computed(() => null);
 
 const ordinal = (n) => {
     const s = ['th', 'st', 'nd', 'rd'];
@@ -247,10 +241,18 @@ const itemsByBucket = computed(() => {
 });
 
 // ── trajectory chart ──────────────────────────────────────────────────────────
+// Progress, not session averages: required items achieved after each session
+// (latest score per item so far), with the current average alongside.
 const trajectorySeries = computed(() => [
     {
-        name: 'Avg Score',
-        data: props.trajectory.map((s) => s.avgScore ?? null),
+        name: 'Required items achieved (%)',
+        type: 'column',
+        data: props.trajectory.map((s) => s.achievedPct ?? null),
+    },
+    {
+        name: 'Current average (latest score per item)',
+        type: 'line',
+        data: props.trajectory.map((s) => s.currentAvgScore ?? null),
     },
 ]);
 
@@ -300,17 +302,29 @@ const trajectoryOptions = computed(() => ({
         categories: props.trajectory.map(categoryLabel),
         title: { text: 'Session' },
     },
-    yaxis: { min: 1, max: 5, tickAmount: 4, title: { text: 'Avg Score' } },
-    markers: {
-        size: props.trajectory.map((s) => (s.isCurrent ? 8 : 5)),
-        fillOpacity: props.trajectory.map((s) => (s.isCurrent ? 1 : 0.7)),
-    },
-    stroke: { curve: 'smooth', width: 2 },
+    yaxis: [
+        { min: 0, max: 100, tickAmount: 5, title: { text: 'Required achieved (%)' }, labels: { formatter: (val) => `${Math.round(val)}%` } },
+        { opposite: true, min: 1, max: 5, tickAmount: 4, title: { text: 'Current average' } },
+    ],
+    colors: ['#16a34a', '#2563eb'],
+    markers: { size: [0, 5] },
+    stroke: { curve: 'smooth', width: [0, 3] },
     annotations: props.journeyStatus?.sessionsToBasic
         ? basicCompetencyAnnotation.value
         : currentSessionAnnotation.value,
     dataLabels: { enabled: false },
-    tooltip: { y: { formatter: (val) => (val != null ? val.toFixed(2) : '—') } },
+    tooltip: {
+        shared: true,
+        y: [
+            {
+                formatter: (val, { dataPointIndex }) => {
+                    const s = props.trajectory[dataPointIndex];
+                    return s ? `${s.requiredAchieved} of ${s.requiredItems} (${val ?? 0}%)` : '—';
+                },
+            },
+            { formatter: (val) => (val != null ? val.toFixed(2) : '—') },
+        ],
+    },
 }));
 </script>
 
@@ -539,7 +553,7 @@ const trajectoryOptions = computed(() => ({
                 <div class="grid grid-cols-2 gap-3">
 
                     <div class="rounded-lg bg-muted/50 p-3">
-                        <p class="text-xs text-muted-foreground">Mean Score</p>
+                        <p class="text-xs text-muted-foreground">Mean of items evaluated</p>
                         <p :class="['text-2xl font-bold tabular-nums', scoreColor(stats.mean)]">
                             {{ stats.mean != null ? stats.mean.toFixed(2) : '—' }}
                         </p>
@@ -817,8 +831,8 @@ const trajectoryOptions = computed(() => ({
 
         <!-- Journey trajectory -->
         <Card v-if="trajectory.length > 1" class="p-4 print-hide-chart">
-            <h2 class="mb-1 text-base font-semibold">Journey Trajectory</h2>
-            <p class="mb-3 text-xs text-muted-foreground">Average score across all sessions in this journey. Current session highlighted.</p>
+            <h2 class="mb-1 text-base font-semibold">Journey Progress</h2>
+            <p class="mb-3 text-xs text-muted-foreground">Progress after each session: the share of required items whose latest score is 4 or 5, and the average of every item’s latest score. Current session highlighted.</p>
             <ApexChart type="line" :series="trajectorySeries" :options="trajectoryOptions" :height="220" />
         </Card>
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Reports;
 
 use App\Http\Controllers\Controller;
 use App\Models\GapEntry;
+use App\Services\ReportQueryService;
 use App\Services\ReportScopeService;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -57,6 +58,7 @@ class GapReportController extends Controller
 
         $trajectory = DB::table('v_sessions_numbered as sn')
             ->leftJoin('v_session_averages as sa', 'sa.session_id', '=', 'sn.id')
+            ->leftJoin('v_journey_progress as jp', 'jp.session_id', '=', 'sn.id')
             ->where('sn.evaluation_group_id', $gap->evaluation_group_id)
             ->orderBy('sn.session_number')
             ->get([
@@ -64,8 +66,10 @@ class GapReportController extends Controller
                 'sn.session_number',
                 'sn.eval_date',
                 'sa.avg_mentee_score',
+                'jp.required_items', 'jp.required_achieved', 'jp.total_items', 'jp.total_achieved', 'jp.items_evaluated', 'jp.current_avg_score',
             ])
             ->map(fn (object $s): array => [
+                ...ReportQueryService::standing($s),
                 'sessionId' => $s->session_id,
                 'sessionNumber' => (int) $s->session_number,
                 'date' => $s->eval_date,
@@ -79,17 +83,13 @@ class GapReportController extends Controller
             ->where('eval_date', '<=', $gap->identified_at->toDateString())
             ->count();
 
-        $avgBefore = DB::table('v_sessions_numbered as sn')
-            ->join('v_session_averages as sa', 'sa.session_id', '=', 'sn.id')
-            ->where('sn.evaluation_group_id', $gap->evaluation_group_id)
-            ->where('sn.eval_date', '<=', $gap->identified_at->toDateString())
-            ->avg('sa.avg_mentee_score');
-
-        $avgAfter = DB::table('v_sessions_numbered as sn')
-            ->join('v_session_averages as sa', 'sa.session_id', '=', 'sn.id')
-            ->where('sn.evaluation_group_id', $gap->evaluation_group_id)
-            ->where('sn.eval_date', '>', $gap->identified_at->toDateString())
-            ->avg('sa.avg_mentee_score');
+        // Standing (latest score per item) when the gap was identified, and now.
+        // Averages of session averages would compare different sets of items.
+        $trajectoryRows = collect($trajectory);
+        $standingBefore = $trajectoryRows->filter(fn (array $s): bool => ! $s['afterGap'])->last();
+        $standingNow = $trajectoryRows->filter(fn (array $s): bool => $s['afterGap'])->last();
+        $avgBefore = $standingBefore['currentAvgScore'] ?? null;
+        $avgAfter = $standingNow['currentAvgScore'] ?? null;
 
         $daysOpen = $gap->resolved_at
             ? $gap->identified_at->diffInDays($gap->resolved_at)
@@ -129,6 +129,8 @@ class GapReportController extends Controller
                 'sessionsAfter' => max(0, (int) $journey->total_sessions - $sessionsAtIdentification),
                 'avgScoreBefore' => $avgBefore !== null ? round((float) $avgBefore, 2) : null,
                 'avgScoreAfter' => $avgAfter !== null ? round((float) $avgAfter, 2) : null,
+                'achievedBefore' => $standingBefore ? "{$standingBefore['requiredAchieved']} of {$standingBefore['requiredItems']}" : null,
+                'achievedNow' => $standingNow ? "{$standingNow['requiredAchieved']} of {$standingNow['requiredItems']}" : null,
             ],
             'trajectory' => $trajectory,
             'domainLabels' => self::DOMAINS,

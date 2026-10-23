@@ -166,9 +166,9 @@ const scoreBg = (score) => {
                     helper="With at least one scored journey"
                 />
                 <MetricCard
-                    label="Overall avg score"
+                    label="Overall current avg"
                     :value="summary.avgScore != null ? summary.avgScore.toFixed(2) : '—'"
-                    helper="Across all mentees' latest scores"
+                    helper="Average of each item’s latest score, across mentees"
                 />
                 <MetricCard
                     label="Mentees below 3.0"
@@ -178,7 +178,7 @@ const scoreBg = (score) => {
                 <MetricCard
                     label="Below competency (< 4.0)"
                     :value="String(summary.below4)"
-                    helper="Not yet at competency threshold, overall"
+                    helper="Current average below 4.0, across their journeys"
                 />
             </section>
 
@@ -213,9 +213,9 @@ const scoreBg = (score) => {
                             <tr>
                                 <th class="px-4 py-3 font-medium">Mentee</th>
                                 <th class="px-4 py-3 font-medium">District / Facility</th>
-                                <th class="px-4 py-3 font-medium text-right">Avg Score</th>
+                                <th class="px-4 py-3 font-medium text-right">Current Avg</th>
                                 <th class="px-4 py-3 font-medium text-right">Journeys</th>
-                                <th class="px-4 py-3 font-medium text-right">Below Competency</th>
+                                <th class="px-4 py-3 font-medium text-right">Not Yet Competent</th>
                                 <th class="px-4 py-3 font-medium text-right">Open Gaps</th>
                                 <th class="px-4 py-3 font-medium">Weakest Tool</th>
                                 <th class="px-4 py-3 font-medium text-right"></th>

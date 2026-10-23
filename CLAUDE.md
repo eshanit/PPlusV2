@@ -370,6 +370,25 @@ Implemented views:
 
 - `v_sessions_numbered`
 - `v_session_averages`
+- `v_evaluation_group_status` (competency rule; see Competency closure rule)
+- `v_journey_progress`: one row per session with the journey's **standing** at
+  that point, from each tool item's latest score so far: `required_achieved` /
+  `required_items`, `total_achieved` / `total_items`, `items_evaluated`,
+  `current_avg_score`
+- `v_journey_summary`: adds the latest session's standing columns;
+  `latest_avg_score` is the last session's average over tool items only
+- `v_day_progress`: round-to-round and day-to-day deltas compare only items
+  scored in both (`intra_day_items`, `day_over_day_items`)
+
+**Partial evaluation (2026-10-22):** mentors score only the competencies they
+observed, so a session's average covers a different item set each time. Never
+compare or average session averages across sessions or mentees. Use standing
+(`v_journey_progress` / `ReportQueryService::standing()`), item-weighted
+averages, or item-by-item deltas. Score trajectory, Cohort progress, Session
+report, Gap report, Journey sessions, Struggling mentees, Needs attention,
+Journey status and Evaluator activity follow this. Item analysis reports
+coverage: journeys and sessions that evaluated the item, and journeys that never
+have.
 
 Useful future reporting view:
 

@@ -37,7 +37,7 @@ class StrugglingMenteesController extends Controller
             ->when($districtId, fn ($q) => $q->where('v_journey_summary.district_id', $districtId))
             ->when($facilityId, fn ($q) => $q->where('v_journey_summary.facility_id', $facilityId))
             ->when($menteeId, fn ($q) => $q->where('v_journey_summary.mentee_id', $menteeId))
-            ->whereNotNull('v_journey_summary.latest_avg_score')
+            ->whereNotNull('v_journey_summary.current_avg_score')
             ->get();
 
         $mentees = $this->rollUpByMentee($journeys);
@@ -90,19 +90,23 @@ class StrugglingMenteesController extends Controller
             ->groupBy('mentee_id')
             ->map(function (Collection $group): array {
                 $first = $group->first();
-                $weakest = $group->sortBy('latest_avg_score')->first();
+                // Current standing (latest score per item), not the last session's
+                // average, which covers only the items evaluated that day.
+                $weakest = $group->sortBy('current_avg_score')->first();
+                $required = (int) $group->sum('required_items');
 
                 return [
                     'menteeId' => $first->mentee_id,
                     'mentee' => trim("{$first->mentee_firstname} {$first->mentee_lastname}"),
                     'district' => $first->district_name,
                     'facility' => $first->facility_name,
-                    'avgScore' => round($group->avg('latest_avg_score'), 2),
+                    'avgScore' => round($group->avg('current_avg_score'), 2),
+                    'achievedPct' => $required > 0 ? (int) round($group->sum('required_achieved') / $required * 100) : null,
                     'totalJourneys' => $group->count(),
-                    'journeysBelowCompetency' => $group->filter(fn (JourneySummary $j): bool => $j->latest_avg_score < 4)->count(),
+                    'journeysBelowCompetency' => $group->filter(fn (JourneySummary $j): bool => $j->competency_status === 'in_progress')->count(),
                     'openGaps' => (int) $group->sum('open_gaps'),
                     'weakestTool' => $weakest->tool_label,
-                    'weakestToolScore' => (float) $weakest->latest_avg_score,
+                    'weakestToolScore' => (float) $weakest->current_avg_score,
                     'weakestGroupId' => $weakest->evaluation_group_id,
                 ];
             })

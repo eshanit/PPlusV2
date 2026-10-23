@@ -16,9 +16,17 @@ const props = defineProps({
     filters: { type: Object, default: () => ({}) },
 });
 
+// Standing after the Nth session of each journey (latest score per item), not
+// session averages, which cover a different set of items every session.
 const chartSeries = computed(() => [
     {
-        name: 'Avg Score',
+        name: 'Required items achieved (%)',
+        type: 'column',
+        data: props.rows.map((r) => r.achievedPct ?? 0),
+    },
+    {
+        name: 'Current average',
+        type: 'line',
         data: props.rows.map((r) => r.avgScore),
     },
 ]);
@@ -28,33 +36,21 @@ const chartOptions = computed(() => ({
         categories: props.rows.map((r) => `Session ${r.session}`),
         title: { text: 'Session Number' },
     },
-    yaxis: {
-        min: 1,
-        max: 5,
-        tickAmount: 4,
-        title: { text: 'Average Score (all mentees)' },
-    },
-    markers: { size: 5 },
-    stroke: { curve: 'smooth', width: 2 },
+    yaxis: [
+        { min: 0, max: 100, tickAmount: 5, title: { text: 'Required items achieved (%)' }, labels: { formatter: (val) => `${Math.round(val)}%` } },
+        { opposite: true, min: 1, max: 5, tickAmount: 4, title: { text: 'Current average (all mentees)' } },
+    ],
+    colors: ['#16a34a', '#2563eb'],
+    markers: { size: [0, 5] },
+    stroke: { curve: 'smooth', width: [0, 3] },
     dataLabels: { enabled: false },
-    annotations: {
-        yaxis: [
-            {
-                y: 4,
-                borderColor: '#22c55e',
-                label: {
-                    text: 'Competency Threshold (4.0)',
-                    style: { color: '#fff', background: '#22c55e' },
-                },
-            },
-        ],
-    },
     tooltip: {
         custom: ({ series, seriesIndex, dataPointIndex }) => {
             const row = props.rows[dataPointIndex];
             return `<div class="px-3 py-2 text-sm">
                 <strong>Session ${row.session}</strong><br/>
-                Avg score: ${row.avgScore.toFixed(2)}<br/>
+                Required items achieved: ${row.achievedPct ?? 0}%<br/>
+                Current average: ${row.avgScore.toFixed(2)}<br/>
                 Journeys: ${row.journeyCount}
             </div>`;
         },
@@ -75,7 +71,7 @@ const scoreColor = (score) => {
         <div class="flex flex-col gap-1">
             <h1 class="text-2xl font-semibold tracking-normal">Cohort Progress</h1>
             <p class="text-sm text-muted-foreground">
-                Average score across all mentees by session number — shows cohort-wide learning trajectory.
+                Where journeys stand after each session number: the average share of required items achieved, and the average of every item’s latest score. Comparable across sessions even though each session evaluates different items.
             </p>
         </div>
         <InsightsPanel
@@ -125,9 +121,9 @@ const scoreColor = (score) => {
                     <thead class="bg-muted/60 text-xs uppercase text-muted-foreground">
                         <tr>
                             <th class="px-4 py-3 font-medium">Session #</th>
-                            <th class="px-4 py-3 font-medium text-right">Avg Score</th>
+                            <th class="px-4 py-3 font-medium text-right">Current avg</th>
                             <th class="px-4 py-3 font-medium text-right">Journeys</th>
-                            <th class="px-4 py-3 font-medium">Progress</th>
+                            <th class="px-4 py-3 font-medium">Required achieved</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -150,11 +146,11 @@ const scoreColor = (score) => {
                                 <div class="flex items-center gap-2">
                                     <div class="h-1.5 w-32 rounded-full bg-muted">
                                         <div
-                                            class="h-1.5 rounded-full bg-primary transition-all"
-                                            :style="{ width: `${((row.avgScore - 1) / 4) * 100}%` }"
+                                            class="h-1.5 rounded-full bg-emerald-600 transition-all"
+                                            :style="{ width: `${row.achievedPct ?? 0}%` }"
                                         />
                                     </div>
-                                    <span class="text-xs text-muted-foreground">/ 5</span>
+                                    <span class="text-xs tabular-nums text-muted-foreground">{{ row.achievedPct ?? 0 }}%</span>
                                 </div>
                             </td>
                         </tr>

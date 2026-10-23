@@ -32,10 +32,10 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => Color::Amber,
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
+            // App\Filament\Pages\Dashboard (discovered here) replaces Filament's
+            // default dashboard. Registering both gave two routes the same name,
+            // which breaks `php artisan route:cache` and `optimize`.
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
-            ->pages([
-                Pages\Dashboard::class,
-            ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->navigationItems([
                 NavigationItem::make('Back to Reporting')

@@ -39,10 +39,12 @@ const scoreDelta = computed(() => {
 });
 
 // Trajectory chart
+// Standing after each session (average of every item’s latest score so far),
+// which stays comparable when sessions evaluate different items.
 const chartSeries = computed(() => [
     {
-        name: 'Avg Score',
-        data: props.trajectory.map((s) => s.avgScore ?? null),
+        name: 'Current average (latest score per item)',
+        data: props.trajectory.map((s) => s.currentAvgScore ?? null),
     },
 ]);
 
@@ -237,21 +239,21 @@ const chartOptions = computed(() => {
         <!-- Score comparison -->
         <div v-if="stats.avgScoreBefore != null || stats.avgScoreAfter != null" class="grid grid-cols-2 gap-3">
             <Card class="p-4 text-center">
-                <p class="text-xs font-medium uppercase text-muted-foreground">Avg Score Before Gap</p>
+                <p class="text-xs font-medium uppercase text-muted-foreground">Standing when gap identified</p>
                 <p class="mt-1 text-3xl font-bold tabular-nums" :class="scoreColor(stats.avgScoreBefore)">
                     {{ stats.avgScoreBefore != null ? stats.avgScoreBefore.toFixed(2) : '—' }}
                 </p>
                 <p class="mt-0.5 text-xs text-muted-foreground">
-                    across {{ stats.sessionsAtIdentification }} session{{ stats.sessionsAtIdentification !== 1 ? 's' : '' }}
+                    after {{ stats.sessionsAtIdentification }} session{{ stats.sessionsAtIdentification !== 1 ? 's' : '' }}<template v-if="stats.achievedBefore"> · {{ stats.achievedBefore }} required achieved</template>
                 </p>
             </Card>
             <Card class="p-4 text-center">
-                <p class="text-xs font-medium uppercase text-muted-foreground">Avg Score After Gap</p>
+                <p class="text-xs font-medium uppercase text-muted-foreground">Standing now</p>
                 <p class="mt-1 text-3xl font-bold tabular-nums" :class="scoreColor(stats.avgScoreAfter)">
                     {{ stats.avgScoreAfter != null ? stats.avgScoreAfter.toFixed(2) : '—' }}
                 </p>
                 <p class="mt-0.5 text-xs text-muted-foreground">
-                    across {{ stats.sessionsAfter }} session{{ stats.sessionsAfter !== 1 ? 's' : '' }}
+                    {{ stats.sessionsAfter }} more session{{ stats.sessionsAfter !== 1 ? 's' : '' }}<template v-if="stats.achievedNow"> · {{ stats.achievedNow }} required achieved</template>
                 </p>
             </Card>
         </div>

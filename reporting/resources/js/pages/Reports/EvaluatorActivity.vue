@@ -106,7 +106,7 @@ const monthOptions = computed(() =>
                             <th class="px-4 py-3 font-medium text-right">Sessions</th>
                             <th class="px-4 py-3 font-medium text-right">Mentees</th>
                             <th class="px-4 py-3 font-medium text-right">Tools</th>
-                            <th class="px-4 py-3 font-medium text-right">Avg Score</th>
+                            <th class="px-4 py-3 font-medium text-right" title="Average of every item score this evaluator gave">Avg Score Given</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -128,6 +128,9 @@ const monthOptions = computed(() =>
                             <td class="px-4 py-3 text-right tabular-nums">
                                 <span :class="scoreColor(row.avgScore)">
                                     {{ row.avgScore != null ? row.avgScore.toFixed(2) : '—' }}
+                                </span>
+                                <span class="block text-xs text-muted-foreground tabular-nums">
+                                    {{ row.itemsScored }} item scores
                                 </span>
                             </td>
                         </tr>
