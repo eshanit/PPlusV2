@@ -5,6 +5,7 @@ import { useGapStore } from '~/stores/gapStore'
 import { useSyncStore } from '~/stores/syncStore'
 import { getToolBySlug } from '~/data/evaluationItemData'
 import { getCompetencyStatus } from '~/composables/useCompetency'
+import { getJourneyCoverage } from '~/composables/useCoverage'
 import type { ISession, MentorshipPhase } from '~/interfaces/ISession'
 
 const userStore = useUserStore()
@@ -15,6 +16,7 @@ const syncStore = useSyncStore()
 const CONTINUE_LIMIT = 5
 const RECENT_LIMIT = 8
 const GAPS_LIMIT = 5
+const COVERAGE_LIMIT = 5
 
 const greeting = computed(() => {
   const h = new Date().getHours()
@@ -106,6 +108,41 @@ const continueJourneys = computed(() => {
     .filter(journey => journey !== null)
     .sort((a, b) => b.lastDate - a.lastDate)
     .slice(0, CONTINUE_LIMIT)
+})
+
+// ── Journeys with required items never evaluated ─────────────────────────────
+// "Mine" is journeys this mentor has visited. "All evaluators" lets them pick
+// up a mentee a colleague started, since staff move between facilities often.
+const coverageScope = ref<'mine' | 'all'>('mine')
+
+const uncoveredJourneys = computed(() => {
+  const groups = coverageScope.value === 'mine'
+    ? new Set(mySessions.value.map(s => s.evaluationGroupId))
+    : new Set(sessionStore.sessions.map(s => s.evaluationGroupId))
+  return [...groups]
+    .map((groupId) => {
+      const sessions = sessionStore.sessionsForGroup(groupId)
+      const latest = [...sessions].sort((a, b) => b.evalDate - a.evalDate || b.createdAt - a.createdAt)[0]
+      if (!latest) return null
+      const tool = getToolBySlug(latest.toolSlug)
+      if (getCompetencyStatus(sessions, tool) !== 'in_progress') return null
+      const notYetEvaluated = getJourneyCoverage(sessions, tool).neverRequired.length
+      if (!notYetEvaluated) return null
+      return {
+        groupId,
+        menteeId: latest.mentee.id,
+        menteeName: menteeName(latest),
+        toolSlug: latest.toolSlug,
+        toolLabel: toolLabel(latest.toolSlug),
+        notYetEvaluated,
+        lastDate: latest.evalDate,
+        lastEvaluator: latest.evaluator.id === myId.value
+          ? 'you'
+          : `${latest.evaluator.firstname} ${latest.evaluator.lastname}`.trim(),
+      }
+    })
+    .filter(journey => journey !== null)
+    .sort((a, b) => b.notYetEvaluated - a.notYetEvaluated || b.lastDate - a.lastDate)
 })
 
 // ── Open gaps this mentor logged ─────────────────────────────────────────────
@@ -224,6 +261,61 @@ const syncLine = computed(() => {
           </UButton>
         </li>
       </ul>
+    </section>
+
+    <!-- Required competencies never evaluated -->
+    <section v-if="uncoveredJourneys.length || coverageScope === 'all'">
+      <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">
+          Competencies not yet evaluated
+          <span class="ml-1 rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-800 dark:bg-red-900/40 dark:text-red-200">
+            {{ uncoveredJourneys.length }}
+          </span>
+        </h2>
+        <div class="flex rounded-lg border border-gray-200 p-0.5 dark:border-gray-700">
+          <UButton
+            size="sm"
+            :color="coverageScope === 'mine' ? 'primary' : 'neutral'"
+            :variant="coverageScope === 'mine' ? 'solid' : 'ghost'"
+            @click="coverageScope = 'mine'"
+          >
+            Mine
+          </UButton>
+          <UButton
+            size="sm"
+            :color="coverageScope === 'all' ? 'primary' : 'neutral'"
+            :variant="coverageScope === 'all' ? 'solid' : 'ghost'"
+            @click="coverageScope = 'all'"
+          >
+            All evaluators
+          </UButton>
+        </div>
+      </div>
+      <p v-if="uncoveredJourneys.length === 0" class="text-sm text-gray-500 dark:text-gray-400">
+        Every journey in progress has had each required competency evaluated at least once.
+      </p>
+      <ul v-else class="space-y-2">
+        <li v-for="journey in uncoveredJourneys.slice(0, COVERAGE_LIMIT)" :key="journey.groupId">
+          <NuxtLink
+            :to="journeyLink(journey.menteeId, journey.toolSlug)"
+            class="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900"
+          >
+            <span class="min-w-10 shrink-0 rounded-lg bg-red-50 px-2 py-1 text-center text-base font-bold text-red-700 dark:bg-red-950/40 dark:text-red-300">
+              {{ journey.notYetEvaluated }}
+            </span>
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-base font-semibold text-gray-900 dark:text-white">{{ journey.menteeName }}</p>
+              <p class="truncate text-sm text-gray-600 dark:text-gray-300">
+                {{ journey.toolLabel }} · last {{ formatDate(journey.lastDate) }} by {{ journey.lastEvaluator }}
+              </p>
+            </div>
+            <UIcon name="i-heroicons-chevron-right" class="size-5 shrink-0 text-gray-400" />
+          </NuxtLink>
+        </li>
+      </ul>
+      <p v-if="uncoveredJourneys.length > COVERAGE_LIMIT" class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+        Showing the {{ COVERAGE_LIMIT }} with the most items left. The number is how many required items have no score yet.
+      </p>
     </section>
 
     <!-- Open gaps to follow up -->

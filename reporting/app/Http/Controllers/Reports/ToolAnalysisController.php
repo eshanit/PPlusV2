@@ -136,7 +136,7 @@ class ToolAnalysisController extends Controller
         $dq = District::orderBy('name');
         $fq = Facility::orderBy('name');
 
-        if ($user && ! $user->isAdmin() && $user->district_id) {
+        if ($user && ! $user->isAdmin() && ! $user->isEvaluator() && $user->district_id) {
             $dq->where('id', $user->district_id);
             $fq->where('district_id', $user->district_id);
         }

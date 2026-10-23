@@ -12,6 +12,7 @@ import {
     Flame,
     Gauge,
     LayoutDashboard,
+    ListChecks,
     LogOut,
     PieChart,
     Settings,
@@ -42,6 +43,7 @@ const sections = computed(() => {
             label: 'Journey Reports',
             items: [
                 { href: '/journey-status', label: 'Journey Status', icon: Target },
+                { href: '/competency-coverage', label: 'Competency Coverage', icon: ListChecks },
                 { href: '/tool-analysis', label: 'Tool Analysis', icon: BarChart2 },
                 { href: '/tool-score-distribution', label: 'Score Distribution', icon: PieChart },
                 { href: '/hot-spots', label: 'Hot Spots', icon: Flame, pro: true },

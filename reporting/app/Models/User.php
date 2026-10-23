@@ -116,4 +116,9 @@ class User extends Authenticatable implements FilamentUser, HasName
     {
         return $this->role?->name === 'district_admin';
     }
+
+    public function isEvaluator(): bool
+    {
+        return $this->role?->name === 'evaluator';
+    }
 }

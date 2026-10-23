@@ -5,7 +5,7 @@ import { COMPETENT_SCORE } from '~/data/evaluationItemData'
 
 export type CompetencyStatus = 'fully_competent' | 'basic_competent' | 'in_progress'
 
-function getSessionRounds(session: ISession) {
+export function getSessionRounds(session: ISession) {
   const rounds = Array.isArray(session.rounds) && session.rounds.length > 0
     ? session.rounds
     : [{
@@ -18,7 +18,7 @@ function getSessionRounds(session: ISession) {
   return rounds
 }
 
-function sortSessions(sessions: ISession[]): ISession[] {
+export function sortSessions(sessions: ISession[]): ISession[] {
   return [...sessions].sort((a, b) =>
     a.evalDate - b.evalDate
     || (a.roundOfDay ?? Number.POSITIVE_INFINITY) - (b.roundOfDay ?? Number.POSITIVE_INFINITY)

@@ -640,6 +640,28 @@ Exposed state: `cleanupRunning`, `lastCleanupAt`, `lastCleanupPurged`. Triggered
   round deletes its draft gaps. The session form also lists open gaps from earlier
   sessions. Session notes are no longer entered; notes on older sessions are
   shown read-only and preserved on edit.
+- **Competency coverage** tracks what a journey has not covered, whoever the
+  evaluator was, so a mentor can pick up a mentee from a colleague. Each tool
+  item is `achieved` (latest ≥4), `pending` (latest <4), `never` or `only_na`.
+  A pending item is *stale* once it has gone `STALE_AFTER_SESSIONS` (2) sessions
+  without a score; achieved items are never flagged. Monitoring:
+  `getJourneyCoverage()` in `composables/useCoverage.ts`, shown by
+  `journey/CoverageCard.vue` on the journey page, by chips on the plan screen in
+  `sessions/new.vue`, by a count on `mentees/[id].vue`, and by the home card
+  "Competencies not yet evaluated" (Mine / All evaluators). Reporting: the
+  `v_item_coverage` view (one row per journey × item) and
+  `CompetencyCoverageController` (`/competency-coverage`, CSV export). Keep the
+  two in step.
+- **Demo data is the showcase set** (2026-10-23): `monitoring/scripts/seed-showcase-couchdb.ts`
+  seeds 10 mentees and 15 journeys, each showing one feature (near-competent,
+  Basic vs Fully Competent, irregular rounds, handed-over journey, coverage
+  gaps, echo counts, struggling mentee, per-round gaps, just started). The
+  presenter is `evaluator@penplus.local`; three colleague evaluators are demo
+  users. Run `php artisan couchdb:push-users` before seeding. The old 100-mentee
+  `seed-demo-couchdb.ts` is kept but no longer used.
+- **Evaluators see every district in reporting** (they move between
+  facilities). `ReportScopeService` and `canFilterDistrict()` exempt
+  `isEvaluator()`; only district admins stay district-scoped.
 - **Gaps still belong to the journey**: `evaluationGroupId` is the owner and gaps
   are resolved on `sessions/journey.vue`. `sessionId` only records where a gap
   was found, so `session.vue`, the review page and the form show it read-only

@@ -21,7 +21,7 @@ class ToolService
     {
         $user = Auth::user();
 
-        if ($user && ! $user->isAdmin() && $user->district_id) {
+        if ($user && ! $user->isAdmin() && ! $user->isEvaluator() && $user->district_id) {
             return DB::table('districts')
                 ->where('id', $user->district_id)
                 ->whereNull('deleted_at')

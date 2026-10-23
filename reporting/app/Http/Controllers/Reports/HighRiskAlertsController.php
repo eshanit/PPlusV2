@@ -135,7 +135,7 @@ class HighRiskAlertsController extends Controller
     {
         $user = auth()->user();
 
-        if ($user && ! $user->isAdmin() && $user->district_id) {
+        if ($user && ! $user->isAdmin() && ! $user->isEvaluator() && $user->district_id) {
             $districts = District::where('id', $user->district_id)->get(['id', 'name']);
             $facilities = Facility::where('district_id', $user->district_id)->orderBy('name')->get(['id', 'name']);
         } else {

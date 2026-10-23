@@ -219,88 +219,101 @@ function observedScores(row) {
         .filter((e) => enabledSessionIds.value.has(e.id) && e.score !== null);
 }
 
+// Insights compare each item's latest score with the score before it, never
+// averages: mentors score only what they observed, and an item stands where
+// its latest score puts it (the competency rule). The red cell rings in the
+// table still mark every historical drop.
+const COMPETENT_SCORE = 4;
+const INSIGHT_LIMIT = 6;
+
 const itemInsights = computed(() =>
     props.rows.map((row) => {
         const obs = observedScores(row);
-        const first = obs.length > 0 ? obs[0].score : null;
         const last = obs.length > 0 ? obs[obs.length - 1].score : null;
+        const previous = obs.length > 1 ? obs[obs.length - 2].score : null;
         return {
             row,
             obs,
-            avg: rowAvg(row),
-            first,
             last,
-            delta: obs.length > 1 ? round2(last - first) : null,
+            previous,
+            change: previous !== null ? last - previous : null,
             regressions: regressedCells(row),
         };
     }),
 );
 
-// Mean of each row's average within a category — a quick strengths/weaknesses
-// read at the competency-area level, above the noise of individual items.
+// Share of each area's evaluated items whose latest score is 4 or 5.
 const categoryStats = computed(() => {
     const map = new Map();
-    for (const { row, avg } of itemInsights.value) {
-        if (avg === null) continue;
-        if (!map.has(row.category)) map.set(row.category, []);
-        map.get(row.category).push(avg);
+    for (const { row, last } of itemInsights.value) {
+        if (last === null) continue;
+        if (!map.has(row.category)) map.set(row.category, { achieved: 0, evaluated: 0 });
+        const stat = map.get(row.category);
+        stat.evaluated++;
+        if (last >= COMPETENT_SCORE) stat.achieved++;
     }
     return [...map.entries()]
-        .map(([category, avgs]) => ({ category, avg: round2(avgs.reduce((a, b) => a + b, 0) / avgs.length) }))
-        .sort((a, b) => b.avg - a.avg);
+        .map(([category, s]) => ({ category, ...s, pct: Math.round((s.achieved / s.evaluated) * 100) }))
+        .sort((a, b) => b.pct - a.pct || b.evaluated - a.evaluated);
 });
 
-const strongCategories = computed(() => categoryStats.value.filter((c) => c.avg >= 4).slice(0, 3));
+const strongCategories = computed(() => categoryStats.value.filter((c) => c.achieved === c.evaluated).slice(0, 3));
+
+const achievedItems = computed(() => itemInsights.value.filter((i) => i.last !== null && i.last >= COMPETENT_SCORE));
 
 const strongItems = computed(() =>
-    itemInsights.value
-        .filter((i) => i.avg !== null && i.avg >= 4 && i.regressions.size === 0)
-        .sort((a, b) => b.avg - a.avg)
-        .slice(0, 5),
+    [...achievedItems.value].sort((a, b) => b.last - a.last || (b.change ?? 0) - (a.change ?? 0)).slice(0, 5),
 );
 
-// Currently scoring low on the latest enabled round — critical items first.
-const needsAttention = computed(() =>
+// Every evaluated item not yet achieved, lowest latest score first, critical first within a score.
+const notAchieved = computed(() =>
     itemInsights.value
-        .filter((i) => i.last !== null && i.last <= 2)
-        .sort((a, b) => Number(b.row.isCritical) - Number(a.row.isCritical) || a.last - b.last)
-        .slice(0, 6),
+        .filter((i) => i.last !== null && i.last < COMPETENT_SCORE)
+        .sort((a, b) => a.last - b.last || Number(b.row.isCritical) - Number(a.row.isCritical)),
 );
+const needsAttention = computed(() => notAchieved.value.slice(0, INSIGHT_LIMIT));
 
 const mostImproved = computed(() =>
     itemInsights.value
-        .filter((i) => i.delta !== null && i.delta >= 1)
-        .sort((a, b) => b.delta - a.delta)
+        .filter((i) => i.change !== null && i.change >= 1)
+        .sort((a, b) => b.change - a.change)
         .slice(0, 5),
 );
 
-// Flagged via the same regression logic as the table cells above.
+// Latest score below the one before it.
 const regressedItems = computed(() =>
     itemInsights.value
-        .filter((i) => i.regressions.size > 0)
-        .sort((a, b) => b.regressions.size - a.regressions.size || (a.delta ?? 0) - (b.delta ?? 0))
-        .slice(0, 5),
+        .filter((i) => i.change !== null && i.change < 0)
+        .sort((a, b) => a.change - b.change || a.last - b.last),
 );
 
-// Scored on more than one included round and never once rose above a "gap"
-// score — distinct from a one-off regression, this is a stuck item.
-const persistentGaps = computed(() =>
+// Not achieved, and the latest score is the same as the one before it.
+const stuckItems = computed(() =>
     itemInsights.value
-        .filter((i) => i.obs.length > 1 && i.obs.every((o) => o.score <= 2))
-        .sort((a, b) => Number(b.row.isCritical) - Number(a.row.isCritical) || (a.avg ?? 0) - (b.avg ?? 0))
-        .slice(0, 5),
+        .filter((i) => i.change === 0 && i.last < COMPETENT_SCORE)
+        .sort((a, b) => a.last - b.last || Number(b.row.isCritical) - Number(a.row.isCritical)),
 );
 
+// Required items achieved (latest score 4 or 5) after the first included
+// session versus after the latest one. Session averages aren't compared
+// because each session covers a different set of items.
 const overallTrend = computed(() => {
-    const first = enabledSessionsOrdered.value[0];
-    const last = enabledSessionsOrdered.value[enabledSessionsOrdered.value.length - 1];
-    if (!first || !last) return { firstAvg: null, lastAvg: null, delta: null };
+    const sessions = enabledSessionsOrdered.value;
+    const required = props.rows.filter((row) => !row.isAdvanced);
+    const achievedAfter = (count) => {
+        const ids = new Set(sessions.slice(0, count).map((s) => s.id));
+        return required.filter((row) => {
+            const scored = props.sessions
+                .map((s, idx) => (ids.has(s.id) && row.cells[idx]?.present ? row.cells[idx].score : null))
+                .filter((score) => score !== null);
+            return scored.length > 0 && scored[scored.length - 1] >= COMPETENT_SCORE;
+        }).length;
+    };
+    if (sessions.length === 0) return { from: null, to: null, total: required.length, delta: null };
 
-    const firstAvg = sessionAvg(first.id);
-    const lastAvg = first.id === last.id ? firstAvg : sessionAvg(last.id);
-    const delta = first.id !== last.id && firstAvg !== null && lastAvg !== null ? round2(lastAvg - firstAvg) : null;
-
-    return { firstAvg, lastAvg, delta };
+    const from = achievedAfter(1);
+    const to = achievedAfter(sessions.length);
+    return { from, to, total: required.length, delta: sessions.length > 1 ? to - from : null };
 });
 
 // ---- Phase advancement, supervision & gap domains --------------------
@@ -568,7 +581,9 @@ function avgScoreClass(score) {
                             {{ overallTrend.delta >= 0 ? '+' : '' }}{{ overallTrend.delta }}
                         </div>
                         <p v-else class="mt-1 text-lg font-bold text-muted-foreground">—</p>
-                        <p class="text-[10px] text-muted-foreground">{{ overallTrend.firstAvg ?? '—' }} → {{ overallTrend.lastAvg ?? '—' }}</p>
+                        <p class="text-[10px] text-muted-foreground">
+                            required achieved {{ overallTrend.from ?? '—' }} → {{ overallTrend.to ?? '—' }} of {{ overallTrend.total }}
+                        </p>
                     </div>
                     <div class="rounded-md border p-3">
                         <p class="text-[10px] uppercase tracking-wide text-muted-foreground">Open gaps</p>
@@ -578,18 +593,18 @@ function avgScoreClass(score) {
                         <p class="text-[10px] text-muted-foreground">{{ journey.resolvedGaps ?? 0 }} resolved</p>
                     </div>
                     <div class="rounded-md border p-3">
-                        <p class="text-[10px] uppercase tracking-wide text-muted-foreground">Regressions flagged</p>
+                        <p class="text-[10px] uppercase tracking-wide text-muted-foreground">Regressed</p>
                         <p class="mt-1 text-lg font-bold" :class="regressedItems.length > 0 ? 'text-red-600' : 'text-emerald-600'">
                             {{ regressedItems.length }}
                         </p>
-                        <p class="text-[10px] text-muted-foreground">items dropped vs. prior round</p>
+                        <p class="text-[10px] text-muted-foreground">latest score below the previous one</p>
                     </div>
                     <div class="rounded-md border p-3">
-                        <p class="text-[10px] uppercase tracking-wide text-muted-foreground">Persistent gaps</p>
-                        <p class="mt-1 text-lg font-bold" :class="persistentGaps.length > 0 ? 'text-red-600' : 'text-emerald-600'">
-                            {{ persistentGaps.length }}
+                        <p class="text-[10px] uppercase tracking-wide text-muted-foreground">Not yet achieved</p>
+                        <p class="mt-1 text-lg font-bold" :class="notAchieved.length > 0 ? 'text-amber-600' : 'text-emerald-600'">
+                            {{ notAchieved.length }}
                         </p>
-                        <p class="text-[10px] text-muted-foreground">never scored above 2</p>
+                        <p class="text-[10px] text-muted-foreground">evaluated, latest score below 4 · {{ stuckItems.length }} unchanged</p>
                     </div>
                     <div class="rounded-md border p-3" :title="phaseAdvancementTooltip">
                         <p class="flex items-center gap-1 text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -638,7 +653,7 @@ function avgScoreClass(score) {
                         </div>
                         <div v-if="strongCategories.length" class="mb-2 flex flex-wrap gap-1">
                             <Badge v-for="c in strongCategories" :key="c.category" variant="success" class="text-[10px]">
-                                {{ c.category }} ({{ c.avg.toFixed(1) }})
+                                {{ c.category }} ({{ c.achieved }}/{{ c.evaluated }})
                             </Badge>
                         </div>
                         <ul v-if="strongItems.length" class="space-y-1 text-xs">
@@ -647,10 +662,10 @@ function avgScoreClass(score) {
                                     <span class="font-mono text-[10px] text-muted-foreground">{{ i.row.number }}</span>
                                     {{ i.row.title }}
                                 </span>
-                                <span class="shrink-0 font-semibold text-emerald-600">{{ i.avg.toFixed(1) }}</span>
+                                <span class="shrink-0 font-semibold text-emerald-600">{{ i.last }}</span>
                             </li>
                         </ul>
-                        <p v-else class="text-xs text-muted-foreground">Not enough consistently strong items yet.</p>
+                        <p v-else class="text-xs text-muted-foreground">No item has a latest score of 4 or 5 yet.</p>
                     </div>
 
                     <!-- Needs attention -->
@@ -669,7 +684,10 @@ function avgScoreClass(score) {
                                 <span class="shrink-0 font-semibold text-red-600">{{ i.last }}</span>
                             </li>
                         </ul>
-                        <p v-else class="text-xs text-muted-foreground">Nothing currently scoring low — nice work.</p>
+                        <p v-if="notAchieved.length > needsAttention.length" class="mt-1.5 text-[11px] text-muted-foreground">
+                            and {{ notAchieved.length - needsAttention.length }} more below 4
+                        </p>
+                        <p v-else-if="!needsAttention.length" class="text-xs text-muted-foreground">Every evaluated item has a latest score of 4 or 5.</p>
                     </div>
 
                     <!-- Most improved -->
@@ -684,10 +702,10 @@ function avgScoreClass(score) {
                                     <span class="font-mono text-[10px] text-muted-foreground">{{ i.row.number }}</span>
                                     {{ i.row.title }}
                                 </span>
-                                <span class="shrink-0 font-semibold text-emerald-600">{{ i.first }} → {{ i.last }}</span>
+                                <span class="shrink-0 font-semibold text-emerald-600">{{ i.previous }} → {{ i.last }}</span>
                             </li>
                         </ul>
-                        <p v-else class="text-xs text-muted-foreground">No items improved by 1+ points yet across included rounds.</p>
+                        <p v-else class="text-xs text-muted-foreground">No item's latest score is higher than the one before it.</p>
                     </div>
 
                     <!-- Regressed or stuck -->
@@ -696,32 +714,33 @@ function avgScoreClass(score) {
                             <TrendingDown class="size-3.5" />
                             Regressed or stuck
                         </div>
-                        <ul v-if="regressedItems.length || persistentGaps.length" class="space-y-1 text-xs">
+                        <ul v-if="regressedItems.length || stuckItems.length" class="space-y-1 text-xs">
                             <li
-                                v-for="i in regressedItems"
+                                v-for="i in regressedItems.slice(0, INSIGHT_LIMIT)"
                                 :key="'r-' + i.row.id"
                                 class="flex items-center justify-between gap-2"
-                                :title="[...i.regressions.values()][0]"
+                                :title="`Latest score ${i.last}, down from ${i.previous}`"
                             >
                                 <span class="truncate">
                                     <span class="font-mono text-[10px] text-muted-foreground">{{ i.row.number }}</span>
                                     {{ i.row.title }}
                                 </span>
-                                <span class="shrink-0 font-semibold text-red-600">{{ i.first }} → {{ i.last }}</span>
+                                <span class="shrink-0 font-semibold text-red-600">{{ i.previous }} → {{ i.last }}</span>
                             </li>
                             <li
-                                v-for="i in persistentGaps.filter((p) => !regressedItems.some((r) => r.row.id === p.row.id))"
+                                v-for="i in stuckItems.slice(0, Math.max(0, INSIGHT_LIMIT - regressedItems.length))"
                                 :key="'g-' + i.row.id"
                                 class="flex items-center justify-between gap-2"
+                                :title="`Scored ${i.last} the last two times it was evaluated`"
                             >
                                 <span class="truncate">
                                     <span class="font-mono text-[10px] text-muted-foreground">{{ i.row.number }}</span>
                                     {{ i.row.title }}
                                 </span>
-                                <Badge variant="outline" class="shrink-0 text-[9px]">stuck at {{ i.avg?.toFixed(1) }}</Badge>
+                                <Badge variant="outline" class="shrink-0 text-[9px]">stuck at {{ i.last }}</Badge>
                             </li>
                         </ul>
-                        <p v-else class="text-xs text-muted-foreground">No regressions or persistent gaps detected.</p>
+                        <p v-else class="text-xs text-muted-foreground">No item's latest score is lower than, or stuck at, the one before it.</p>
                     </div>
                 </div>
             </Card>

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\ReportingDashboardController;
 use App\Http\Controllers\Reports\CohortProgressController;
+use App\Http\Controllers\Reports\CompetencyCoverageController;
 use App\Http\Controllers\Reports\EvaluatorActivityController;
 use App\Http\Controllers\Reports\ExportsController;
 use App\Http\Controllers\Reports\GapController;
@@ -32,6 +33,7 @@ Route::middleware('reporting.auth')->group(function () {
     Route::get('/dashboard', ReportingDashboardController::class)->name('dashboard.index');
 
     Route::get('/journey-status', JourneyStatusController::class)->name('reports.journey-status');
+    Route::get('/competency-coverage', CompetencyCoverageController::class)->name('reports.competency-coverage');
     Route::get('/journey-sessions', JourneySessionsController::class)->name('reports.journey-sessions');
     Route::get('/journey-gaps', JourneyGapsController::class)->name('reports.journey-gaps');
     Route::get('/gap-report/{id}', GapReportController::class)->name('reports.gap-report');

@@ -11,7 +11,10 @@ class ReportScopeService
 {
     /**
      * Returns a [sql, bindings] pair for use with whereRaw() that scopes a query to
-     * the current user's district. Admins and users without a district_id see all rows.
+     * the current user's district. Admins, evaluators and users without a district_id
+     * see all rows. Evaluators see every district because health workers move between
+     * facilities and districts, and a new evaluator must be able to pick up where the
+     * previous one left off.
      *
      * Usage: ->whereRaw(...$this->scope->scope('v_journey_summary'))
      *
@@ -26,7 +29,7 @@ class ReportScopeService
     {
         $user = Auth::user();
 
-        if (! $user || $user->isAdmin() || ! $user->district_id) {
+        if (! $user || $user->isAdmin() || $user->isEvaluator() || ! $user->district_id) {
             return ['1=1', []];
         }
 
@@ -45,7 +48,7 @@ class ReportScopeService
     {
         $user = Auth::user();
 
-        if (! $user || $user->isAdmin() || ! $user->district_id) {
+        if (! $user || $user->isAdmin() || $user->isEvaluator() || ! $user->district_id) {
             return ['1=1', []];
         }
 
@@ -90,7 +93,7 @@ class ReportScopeService
     {
         $user = $user ?? Auth::user();
 
-        if (! $user || $user->isAdmin()) {
+        if (! $user || $user->isAdmin() || $user->isEvaluator()) {
             return $query;
         }
 

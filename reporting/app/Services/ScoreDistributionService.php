@@ -38,7 +38,7 @@ class ScoreDistributionService
 
         // Apply district scope for non-admin users
         $user = Auth::user();
-        if ($user && ! $user->isAdmin() && $user->district_id) {
+        if ($user && ! $user->isAdmin() && ! $user->isEvaluator() && $user->district_id) {
             $query->where('es.district_id', $user->district_id);
         }
 
@@ -79,7 +79,7 @@ class ScoreDistributionService
 
         // Get metadata
         $sessions = EvaluationSession::whereNotNull('synced_at');
-        if ($user && ! $user->isAdmin() && $user->district_id) {
+        if ($user && ! $user->isAdmin() && ! $user->isEvaluator() && $user->district_id) {
             $sessions->where('district_id', $user->district_id);
         }
         if ($districtIds && count($districtIds) > 0) {
@@ -144,7 +144,7 @@ class ScoreDistributionService
 
         // Apply district scope for non-admin users
         $user = Auth::user();
-        if ($user && ! $user->isAdmin() && $user->district_id) {
+        if ($user && ! $user->isAdmin() && ! $user->isEvaluator() && $user->district_id) {
             $query->where('es.district_id', $user->district_id);
         }
 

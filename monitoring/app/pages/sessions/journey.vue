@@ -10,6 +10,7 @@ import type { ISession } from '~/interfaces/ISession'
 import JourneySummaryCard from '~/components/journey/SummaryCard.vue'
 import JourneySessionCard from '~/components/journey/SessionCard.vue'
 import JourneyCompetencyGrid from '~/components/journey/CompetencyGrid.vue'
+import JourneyCoverageCard from '~/components/journey/CoverageCard.vue'
 import GapCard from '~/components/gap/GapCard.vue'
 import GapForm from '~/components/gap/GapForm.vue'
 
@@ -268,6 +269,8 @@ async function confirmResolve() {
           </p>
         </div>
       </div>
+
+      <JourneyCoverageCard v-if="sessions.length > 0 && !isBasicCompetent" :sessions="sessions" :tool="tool" />
 
       <JourneyEchoActivityCard v-if="toolSlug === 'echo' && sessions.length > 0" :sessions="sessions" />
 

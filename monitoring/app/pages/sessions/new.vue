@@ -5,6 +5,7 @@ import { useSessionStore } from '~/stores/sessionStore'
 import { useGapStore } from '~/stores/gapStore'
 import { counsellingTool, getToolBySlug, toolIncludesCounselling } from '~/data/evaluationItemData'
 import { getCompetencyStatus, getLatestItemScores } from '~/composables/useCompetency'
+import { getJourneyCoverage } from '~/composables/useCoverage'
 import type { IItemScore } from '~/interfaces/IItemScore'
 import type { IEvalItem } from '~/interfaces/IEvalItem'
 import type { IRound, ISession, MentorshipPhase } from '~/interfaces/ISession'
@@ -222,6 +223,23 @@ const achievedItems = computed(() => {
   }
   return achieved
 })
+
+// Coverage so far, regardless of evaluator: items never evaluated and items
+// below 4 not rated recently, so they can be included in this visit. Not shown
+// on a journey's first session, when nothing has been evaluated yet.
+const priorCoverage = computed(() => {
+  if (sessionsBeforeCurrent.value.length === 0) return new Map()
+  return new Map(getJourneyCoverage(sessionsBeforeCurrent.value, tool.value).items.map(c => [c.item.slug, c]))
+})
+
+function coverageLabel(slug: string): string | undefined {
+  const c = priorCoverage.value.get(slug)
+  if (!c) return undefined
+  if (c.status === 'never') return 'Not yet evaluated'
+  if (c.status === 'only_na') return 'Only N/A so far'
+  if (c.stale) return `Not rated for ${c.sessionsSince} sessions`
+  return undefined
+}
 
 function achievedLabel(slug: string): string | undefined {
   const entry = achievedItems.value.get(slug)
@@ -980,6 +998,13 @@ function viewEvaluation() {
                 >
                   <UIcon name="i-heroicons-check-circle" class="size-4" />
                   {{ achievedLabel(item.slug) }}
+                </span>
+                <span
+                  v-else-if="item.kind === 'tool' && coverageLabel(item.slug)"
+                  class="mt-1 flex w-fit items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900 dark:bg-amber-900/40 dark:text-amber-100"
+                >
+                  <UIcon name="i-heroicons-exclamation-circle" class="size-4" />
+                  {{ coverageLabel(item.slug) }}
                 </span>
               </span>
               <span v-if="item.isAdvanced" class="shrink-0 rounded-full bg-gray-700 px-2 py-0.5 text-xs font-semibold uppercase text-white dark:bg-gray-600">

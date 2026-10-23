@@ -220,6 +220,6 @@ class ReportQueryService
     {
         $user = auth()->user();
 
-        return $user && $user->isAdmin();
+        return $user && ($user->isAdmin() || $user->isEvaluator());
     }
 }

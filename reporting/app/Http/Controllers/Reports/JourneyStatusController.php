@@ -58,7 +58,7 @@ class JourneyStatusController extends Controller
         $districtsQuery = District::orderBy('name');
         $facilitiesQuery = Facility::orderBy('name');
         $user = auth()->user();
-        if ($user && ! $user->isAdmin() && $user->district_id) {
+        if ($user && ! $user->isAdmin() && ! $user->isEvaluator() && $user->district_id) {
             $districtsQuery->where('id', $user->district_id);
             $facilitiesQuery->where('district_id', $user->district_id);
         }

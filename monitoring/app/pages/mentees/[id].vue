@@ -43,6 +43,12 @@
                   {{ journey.sessionCount }} session{{ journey.sessionCount !== 1 ? 's' : '' }}
                   · Last: {{ formatDate(journey.lastSessionDate) }} (Round {{ journey.lastSessionRound }})
                 </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                  by {{ journey.lastEvaluatorIsMe ? 'you' : journey.lastEvaluator }}
+                </p>
+                <p v-if="journey.notYetEvaluated > 0" class="mt-0.5 text-xs font-semibold text-red-700 dark:text-red-300">
+                  {{ journey.notYetEvaluated }} required item{{ journey.notYetEvaluated === 1 ? '' : 's' }} not yet evaluated
+                </p>
               </div>
               <div class="flex flex-col items-end gap-1.5 shrink-0">
                 <UBadge
@@ -186,6 +192,7 @@ import { useGapStore } from '~/stores/gapStore'
 import { evaluationTools } from '~/data/evaluationItemData'
 import type { MentorshipPhase } from '~/interfaces/ISession'
 import { getCompetencyStatus, type CompetencyStatus } from '~/composables/useCompetency'
+import { getJourneyCoverage } from '~/composables/useCoverage'
 
 const route = useRoute()
 const router = useRouter()
@@ -225,6 +232,9 @@ interface Journey {
   openGaps: number
   competencyStatus: CompetencyStatus
   isClosed: boolean
+  lastEvaluator: string
+  lastEvaluatorIsMe: boolean
+  notYetEvaluated: number
 }
 
 const journeys = computed((): Journey[] => {
@@ -253,6 +263,8 @@ const journeys = computed((): Journey[] => {
     ).length
     const competencyStatus = getCompetencyStatus(sessions, tool)
     const isClosed = competencyStatus === 'basic_competent' || competencyStatus === 'fully_competent'
+    const lastEvaluator = sorted[0]!.evaluator
+    const coverage = isClosed ? null : getJourneyCoverage(sessions, tool)
 
     return {
       groupId,
@@ -265,6 +277,9 @@ const journeys = computed((): Journey[] => {
       openGaps,
       competencyStatus,
       isClosed,
+      lastEvaluator: `${lastEvaluator.firstname} ${lastEvaluator.lastname}`.trim(),
+      lastEvaluatorIsMe: lastEvaluator.id === userStore.currentUser?.id,
+      notYetEvaluated: coverage?.neverRequired.length ?? 0,
     }
   }).sort((a, b) => b.lastSessionDate - a.lastSessionDate)
 })

@@ -16,7 +16,7 @@ class EvaluatorActivityController extends Controller
     private function scopedDistricts(): array
     {
         $user = auth()->user();
-        if ($user && ! $user->isAdmin() && $user->district_id) {
+        if ($user && ! $user->isAdmin() && ! $user->isEvaluator() && $user->district_id) {
             return [];
         }
 
