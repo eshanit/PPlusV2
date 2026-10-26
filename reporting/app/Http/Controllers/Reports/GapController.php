@@ -160,6 +160,12 @@ class GapController extends Controller
         $gap->supervision_level = $validated['supervision_level'] ?? null;
         $gap->resolution_note = $validated['resolution_note'] ?? null;
         $gap->resolved_at = $validated['resolved_at'] ? Carbon::parse($validated['resolved_at']) : null;
+        // Keep the status in step with the resolved date.
+        if ($gap->resolved_at) {
+            $gap->status = 'resolved';
+        } elseif ($gap->status === 'resolved') {
+            $gap->status = 'open';
+        }
         $gap->save();
 
         return redirect()->route('reports.gap-overview')->with('success', 'Gap updated successfully.');

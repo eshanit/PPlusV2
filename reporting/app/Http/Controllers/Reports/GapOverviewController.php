@@ -36,6 +36,8 @@ class GapOverviewController extends Controller
                 COUNT(*) as total,
                 SUM(CASE WHEN resolved_at IS NULL THEN 1 ELSE 0 END) as open_count,
                 SUM(CASE WHEN resolved_at IS NOT NULL THEN 1 ELSE 0 END) as resolved_count,
+                SUM(CASE WHEN resolved_at IS NULL AND status = "in_progress" THEN 1 ELSE 0 END) as in_progress_count,
+                SUM(CASE WHEN resolved_at IS NULL AND target_date < CURDATE() THEN 1 ELSE 0 END) as overdue_count,
                 ROUND(AVG(CASE WHEN resolved_at IS NOT NULL THEN DATEDIFF(resolved_at, identified_at) END), 1) as avg_days_to_resolve
             ')
             ->first();
@@ -129,6 +131,8 @@ class GapOverviewController extends Controller
                 'total' => (int) ($summary->total ?? 0),
                 'open' => (int) ($summary->open_count ?? 0),
                 'resolved' => (int) ($summary->resolved_count ?? 0),
+                'inProgress' => (int) ($summary->in_progress_count ?? 0),
+                'overdue' => (int) ($summary->overdue_count ?? 0),
                 'avgDaysToResolve' => $summary->avg_days_to_resolve !== null ? (float) $summary->avg_days_to_resolve : null,
             ],
             'byTool' => $byTool,

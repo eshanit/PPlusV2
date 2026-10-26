@@ -31,6 +31,9 @@ class GapEntry extends Model
         'supervision_level',
         'resolution_note',
         'resolved_at',
+        'status',
+        'target_date',
+        'status_history',
         'couchdb_rev',
         'synced_at',
         'created_at',
@@ -42,6 +45,8 @@ class GapEntry extends Model
         return [
             'identified_at' => 'date',
             'resolved_at' => 'date',
+            'target_date' => 'date',
+            'status_history' => 'array',
             'domains' => 'array',
             'covered_in_mentorship' => 'boolean',
             'covering_later' => 'boolean',

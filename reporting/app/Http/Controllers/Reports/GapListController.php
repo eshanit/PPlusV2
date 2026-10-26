@@ -31,6 +31,8 @@ class GapListController extends Controller
             ->when($toolId, fn ($q) => $q->where('tool_id', $toolId))
             ->when($request->mentee_id, fn ($q) => $q->where('mentee_id', $request->mentee_id))
             ->when($request->status === 'open', fn ($q) => $q->whereNull('resolved_at'))
+            ->when($request->status === 'in_progress', fn ($q) => $q->whereNull('resolved_at')->where('status', 'in_progress'))
+            ->when($request->status === 'overdue', fn ($q) => $q->whereNull('resolved_at')->whereNotNull('target_date')->whereDate('target_date', '<', now()->toDateString()))
             ->when($request->status === 'resolved', fn ($q) => $q->whereNotNull('resolved_at'))
             ->orderByDesc('identified_at')
             ->paginate(25)
@@ -48,6 +50,9 @@ class GapListController extends Controller
             'supervisionLabel' => self::SUPERVISION_LABELS[$gap->supervision_level] ?? null,
             'resolvedAt' => $gap->resolved_at?->toDateString(),
             'isResolved' => $gap->resolved_at !== null,
+            'status' => $gap->resolved_at !== null ? 'resolved' : ($gap->status === 'in_progress' ? 'in_progress' : 'open'),
+            'targetDate' => $gap->target_date?->toDateString(),
+            'isOverdue' => $gap->resolved_at === null && $gap->target_date !== null && $gap->target_date->lt(now()->startOfDay()),
         ]);
 
         return Inertia::render('Reports/GapList', [

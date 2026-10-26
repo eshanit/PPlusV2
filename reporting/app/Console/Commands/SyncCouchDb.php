@@ -290,6 +290,11 @@ class SyncCouchDb extends Command
             throw new RuntimeException("Unknown toolSlug: {$doc['toolSlug']}");
         }
 
+        // Same rule as gapStatus() in the monitoring app: a resolved date wins.
+        $status = isset($doc['resolvedAt'])
+            ? 'resolved'
+            : (($doc['status'] ?? null) === 'in_progress' ? 'in_progress' : 'open');
+
         DB::table('gap_entries')->upsert([
             'id' => $doc['_id'],
             'evaluation_group_id' => $doc['evaluationGroupId'],
@@ -306,6 +311,13 @@ class SyncCouchDb extends Command
             'covering_later' => $doc['coveringLater'] ?? false,
             'timeline' => $doc['timeline'] ?? null,
             'supervision_level' => $doc['supervisionLevel'] ?? null,
+            'status' => $status,
+            'target_date' => isset($doc['targetDate'])
+                ? date('Y-m-d', intdiv((int) $doc['targetDate'], 1000))
+                : null,
+            'status_history' => is_array($doc['statusHistory'] ?? null)
+                ? json_encode($doc['statusHistory'], JSON_THROW_ON_ERROR)
+                : null,
             'resolution_note' => $doc['resolutionNote'] ?? null,
             'resolved_at' => isset($doc['resolvedAt'])
                 ? date('Y-m-d', intdiv((int) $doc['resolvedAt'], 1000))
@@ -324,6 +336,9 @@ class SyncCouchDb extends Command
             'covering_later',
             'timeline',
             'supervision_level',
+            'status',
+            'target_date',
+            'status_history',
             'resolution_note',
             'resolved_at',
             'couchdb_rev',

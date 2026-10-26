@@ -672,6 +672,18 @@ Exposed state: `cleanupRunning`, `lastCleanupAt`, `lastCleanupPurged`. Triggered
 - **Evaluators see every district in reporting** (they move between
   facilities). `ReportScopeService` and `canFilterDistrict()` exempt
   `isEvaluator()`; only district admins stay district-scoped.
+- **Gap statuses and the Gaps page** (client request, 2026-10-26): a gap is
+  `open` → `in_progress` ("Being addressed", with an optional `targetDate`;
+  overdue once that date has passed) → `resolved`, and a resolved gap can be
+  reopened. `resolvedAt` is the day it was resolved, which the mentor can set to
+  an earlier day. Every change is kept in `statusHistory`. Gaps saved before
+  statuses existed have no `status`, so use `gapStatus()` from
+  `composables/useGapStatus.ts` (resolved when `resolvedAt` is set). Changes go
+  through `GapStatusModal`. `pages/gaps/index.vue` (home button "Gaps", badge
+  shows open gaps, red when any are overdue) groups gaps by journey with
+  Mine / All evaluators, and logs gaps without a session. `GapForm` outside a
+  session asks for the "Identified on" date. Reporting syncs `gap_entries.status`,
+  `target_date` and `status_history` (migration `2026_10_26_000002`).
 - **Gaps still belong to the journey**: `evaluationGroupId` is the owner and gaps
   are resolved on `sessions/journey.vue`. `sessionId` only records where a gap
   was found, so `session.vue`, the review page and the form show it read-only

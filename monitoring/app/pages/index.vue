@@ -6,6 +6,7 @@ import { useSyncStore } from '~/stores/syncStore'
 import { getToolBySlug } from '~/data/evaluationItemData'
 import { getCompetencyStatus } from '~/composables/useCompetency'
 import { getJourneyCoverage } from '~/composables/useCoverage'
+import { gapStatus, isGapOverdue } from '~/composables/useGapStatus'
 import type { ISession, MentorshipPhase } from '~/interfaces/ISession'
 
 const userStore = useUserStore()
@@ -15,7 +16,6 @@ const syncStore = useSyncStore()
 
 const CONTINUE_LIMIT = 5
 const RECENT_LIMIT = 8
-const GAPS_LIMIT = 5
 const COVERAGE_LIMIT = 5
 
 const greeting = computed(() => {
@@ -145,24 +145,12 @@ const uncoveredJourneys = computed(() => {
     .sort((a, b) => b.notYetEvaluated - a.notYetEvaluated || b.lastDate - a.lastDate)
 })
 
-// ── Open gaps this mentor logged ─────────────────────────────────────────────
+// ── Gaps badge: gaps still to follow up in my journeys, or that I logged ────
+const myJourneyIds = computed(() => new Set(mySessions.value.map(s => s.evaluationGroupId)))
 const myOpenGaps = computed(() =>
-  gapStore.gaps
-    .filter(g => !g.resolvedAt && g.evaluatorId === myId.value)
-    .sort((a, b) => a.identifiedAt - b.identifiedAt))
-
-const gapRows = computed(() => myOpenGaps.value.slice(0, GAPS_LIMIT).map((gap) => {
-  const mentee = userStore.allUsers.find(u => u.id === gap.menteeId)
-  return {
-    id: gap._id,
-    description: gap.description,
-    menteeId: gap.menteeId,
-    menteeName: mentee ? `${mentee.firstname} ${mentee.lastname}` : 'Unknown mentee',
-    toolSlug: gap.toolSlug,
-    toolLabel: toolLabel(gap.toolSlug),
-    identifiedAt: gap.identifiedAt,
-  }
-}))
+  gapStore.gaps.filter(g => gapStatus(g) !== 'resolved'
+    && (g.evaluatorId === myId.value || myJourneyIds.value.has(g.evaluationGroupId))))
+const myOverdueGaps = computed(() => myOpenGaps.value.filter(g => isGapOverdue(g)).length)
 
 // ── Sync status: say what the mentor needs to know, not just "online" ───────
 const pendingCount = computed(() =>
@@ -203,8 +191,8 @@ const syncLine = computed(() => {
       </h1>
     </div>
 
-    <!-- Quick actions: New Session is a guided start, My Mentees is browsing -->
-    <div class="grid grid-cols-2 gap-3">
+    <!-- Quick actions: New Session is a guided start, My Mentees is browsing, Gaps is follow-up -->
+    <div class="grid grid-cols-3 gap-3">
       <UButton
         :to="{ path: '/mentees', query: { intent: 'new-session' } }"
         color="primary"
@@ -225,7 +213,27 @@ const syncLine = computed(() => {
         icon="i-heroicons-users"
       >
         <span class="mt-1 text-base font-semibold">My Mentees</span>
-        <span class="text-sm font-normal text-gray-500 dark:text-gray-400">Profiles, journeys and gaps</span>
+        <span class="text-sm font-normal text-gray-500 dark:text-gray-400">Profiles and journeys</span>
+      </UButton>
+
+      <UButton
+        to="/gaps"
+        color="neutral"
+        variant="solid"
+        size="xl"
+        class="relative h-28 flex-col justify-center rounded-2xl bg-orange-600 text-white hover:bg-orange-700 active:bg-orange-800 dark:bg-orange-600 dark:text-white dark:hover:bg-orange-700"
+        icon="i-heroicons-exclamation-triangle"
+      >
+        <span class="mt-1 text-base font-semibold">Gaps</span>
+        <span class="text-sm font-normal opacity-90">Follow up and resolve</span>
+        <span
+          v-if="myOpenGaps.length"
+          class="absolute right-2 top-2 min-w-7 rounded-full px-2 py-0.5 text-sm font-bold"
+          :class="myOverdueGaps ? 'bg-red-600 text-white ring-2 ring-white' : 'bg-white text-orange-700'"
+          :aria-label="`${myOpenGaps.length} gaps to follow up${myOverdueGaps ? `, ${myOverdueGaps} overdue` : ''}`"
+        >
+          {{ myOpenGaps.length }}
+        </span>
       </UButton>
     </div>
 
@@ -315,36 +323,6 @@ const syncLine = computed(() => {
       </ul>
       <p v-if="uncoveredJourneys.length > COVERAGE_LIMIT" class="mt-2 text-sm text-gray-500 dark:text-gray-400">
         Showing the {{ COVERAGE_LIMIT }} with the most items left. The number is how many required items have no score yet.
-      </p>
-    </section>
-
-    <!-- Open gaps to follow up -->
-    <section v-if="myOpenGaps.length">
-      <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">
-        Open gaps to follow up
-        <span class="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
-          {{ myOpenGaps.length }}
-        </span>
-      </h2>
-      <ul class="space-y-2">
-        <li v-for="gap in gapRows" :key="gap.id">
-          <NuxtLink
-            :to="journeyLink(gap.menteeId, gap.toolSlug)"
-            class="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900 dark:bg-amber-950/30"
-          >
-            <UIcon name="i-heroicons-exclamation-triangle" class="size-5 shrink-0 text-amber-600 dark:text-amber-400" />
-            <div class="min-w-0 flex-1">
-              <p class="line-clamp-2 text-base text-gray-900 dark:text-white">{{ gap.description }}</p>
-              <p class="truncate text-sm text-gray-600 dark:text-gray-300">
-                {{ gap.menteeName }} · {{ gap.toolLabel }} · since {{ formatDate(gap.identifiedAt) }}
-              </p>
-            </div>
-            <UIcon name="i-heroicons-chevron-right" class="size-5 shrink-0 text-gray-400" />
-          </NuxtLink>
-        </li>
-      </ul>
-      <p v-if="myOpenGaps.length > GAPS_LIMIT" class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-        Showing the {{ GAPS_LIMIT }} oldest. Open a mentee's journey to see the rest.
       </p>
     </section>
 

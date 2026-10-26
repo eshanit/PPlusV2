@@ -83,7 +83,11 @@ const metric = (n, suffix = '') => (n == null ? '—' : `${Number(n).toFixed(1)}
             <MetricCard label="Total gaps" :value="whole(summary.total)">
                 <template #icon><Flag class="size-5" /></template>
             </MetricCard>
-            <MetricCard label="Open gaps" :value="whole(summary.open)">
+            <MetricCard
+                label="Open gaps"
+                :value="whole(summary.open)"
+                :helper="`${whole(summary.inProgress ?? 0)} being addressed${summary.overdue ? ` · ${whole(summary.overdue)} overdue` : ''}`"
+            >
                 <template #icon><Activity class="size-5" /></template>
             </MetricCard>
             <MetricCard label="Resolved" :value="whole(summary.resolved)">

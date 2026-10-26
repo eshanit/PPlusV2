@@ -10,6 +10,21 @@ export type GapDomain =
 // Overall supervision level the evaluator recommends for this mentee+tool combination
 export type SupervisionLevel = 'intensive_mentorship' | 'ongoing_mentorship' | 'independent_practice'
 
+// open → in_progress ("being addressed") → resolved; a resolved gap can be reopened.
+export type GapStatus = 'open' | 'in_progress' | 'resolved'
+
+export interface IGapStatusChange {
+  status: GapStatus
+  // The day the change applies from: the resolved date for 'resolved'.
+  date: number
+  // When the change was recorded.
+  changedAt: number
+  by: string
+  byName?: string
+  note?: string
+  targetDate?: number
+}
+
 export interface IGapEntry {
   _id: string
   _rev?: string
@@ -60,7 +75,16 @@ export interface IGapEntry {
 
   // Closure fields — filled in once the gap is considered resolved
   resolutionNote?: string
+  // The day the gap was resolved, which the mentor can set to an earlier day.
   resolvedAt?: number
+
+  // Where the gap stands. Absent on gaps saved before statuses existed: those
+  // are resolved when resolvedAt is set, otherwise open. Use gapStatus().
+  status?: GapStatus
+  // "Address by" date, set when the gap is being addressed. Overdue after it.
+  targetDate?: number
+  // Every status change, oldest first.
+  statusHistory?: IGapStatusChange[]
 
   syncStatus: SyncStatus
   syncedAt?: number

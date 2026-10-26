@@ -21,7 +21,9 @@ const props = defineProps({
 });
 
 const statusOptions = [
-    { value: 'open', label: 'Open only' },
+    { value: 'open', label: 'Not resolved' },
+    { value: 'in_progress', label: 'Being addressed' },
+    { value: 'overdue', label: 'Overdue' },
     { value: 'resolved', label: 'Resolved only' },
 ];
 
@@ -145,8 +147,9 @@ const domainConfig = {
                                 {{ gap.supervisionLabel ?? '—' }}
                             </td>
                             <td class="px-4 py-3">
-                                <Badge :variant="gap.isResolved ? 'success' : 'warning'">
-                                    {{ gap.isResolved ? 'Resolved' : 'Open' }}
+                                <span v-if="gap.isOverdue" class="mr-1 inline-flex items-center rounded-md border border-red-200 bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">Overdue</span>
+                                <Badge :variant="gap.isResolved ? 'success' : gap.status === 'in_progress' ? 'secondary' : 'warning'">
+                                    {{ gap.isResolved ? 'Resolved' : gap.status === 'in_progress' ? 'Being addressed' : 'Open' }}
                                 </Badge>
                             </td>
                             <td class="px-4 py-3 text-right">

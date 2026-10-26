@@ -13,6 +13,7 @@ import JourneyCompetencyGrid from '~/components/journey/CompetencyGrid.vue'
 import JourneyCoverageCard from '~/components/journey/CoverageCard.vue'
 import JourneyNotAssessableCard from '~/components/journey/NotAssessableCard.vue'
 import GapCard from '~/components/gap/GapCard.vue'
+import GapStatusModal from '~/components/gap/GapStatusModal.vue'
 import GapForm from '~/components/gap/GapForm.vue'
 
 const route = useRoute()
@@ -186,35 +187,13 @@ const resolvedGaps = computed(() => gaps.value.filter(g => g.resolvedAt))
 
 const showGapForm = ref(false)
 
-const resolvingGap = ref<IGapEntry | null>(null)
-const resolveNote = ref('')
-const resolving = ref(false)
-const showResolveModal = ref(false)
+// Moving a gap between open, being addressed and resolved.
+const statusGap = ref<IGapEntry | null>(null)
+const showStatusModal = ref(false)
 
-function openResolve(gap: IGapEntry) {
-  resolvingGap.value = gap
-  resolveNote.value = ''
-  showResolveModal.value = true
-}
-
-async function confirmResolve() {
-  if (!resolvingGap.value) return
-  resolving.value = true
-  try {
-    const now = Date.now()
-    await gapStore.save({
-      ...resolvingGap.value,
-      resolvedAt: now,
-      resolutionNote: resolveNote.value.trim() || undefined,
-      updatedAt: now,
-    })
-    toast.add({ title: 'Gap resolved', color: 'success', icon: 'i-heroicons-check-circle' })
-    showResolveModal.value = false
-  } catch (err) {
-    toast.add({ title: 'Save failed', description: String(err), color: 'error', icon: 'i-heroicons-x-circle' })
-  } finally {
-    resolving.value = false
-  }
+function openStatus(gap: IGapEntry) {
+  statusGap.value = gap
+  showStatusModal.value = true
 }
 </script>
 
@@ -395,7 +374,7 @@ async function confirmResolve() {
             v-for="gap in gaps"
             :key="gap._id"
             :gap="gap"
-            @resolve="openResolve"
+            @status="openStatus"
           />
         </div>
         <div v-else class="text-center py-6 text-gray-400 text-sm">
@@ -417,30 +396,6 @@ async function confirmResolve() {
       :session-round="sessions.length > 0 ? sessionStore.roundNumber(sessions[0]!) : undefined"
     />
 
-    <!-- Resolve modal -->
-    <UModal v-model:open="showResolveModal" title="Resolve Gap">
-      <template #body>
-        <div class="space-y-4">
-          <p class="text-sm text-gray-700 dark:text-gray-300">{{ resolvingGap?.description }}</p>
-          <div>
-            <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-              Resolution Note <span class="text-gray-400 font-normal normal-case tracking-normal">(optional)</span>
-            </label>
-            <UTextarea
-              v-model="resolveNote"
-              placeholder="How was this gap addressed?"
-              :rows="2"
-              class="w-full"
-            />
-          </div>
-        </div>
-      </template>
-      <template #footer>
-        <div class="flex gap-2 justify-end">
-          <UButton variant="ghost" color="neutral" @click="showResolveModal = false">Cancel</UButton>
-          <UButton color="success" :loading="resolving" @click="confirmResolve">Mark Resolved</UButton>
-        </div>
-      </template>
-    </UModal>
+    <GapStatusModal v-model:open="showStatusModal" :gap="statusGap" />
   </div>
 </template>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { format } from 'date-fns'
 import type { GapDomain, IGapEntry, SupervisionLevel } from '~/interfaces/IGapEntry'
 
 const props = defineProps<{
@@ -39,11 +40,18 @@ const supervisionOptions: { label: string; value: SupervisionLevel }[] = [
   { label: 'Independent Practice', value: 'independent_practice' },
 ]
 
-const coveredOptions = [
-  { label: "Yes — addressed in this session's round", value: 'yes' },
+// In a session the question is about the round; logged afterwards (journey or
+// Gaps page) it is about the mentorship visit the gap came from.
+const coveredQuestion = computed(() => props.draft ? "Addressed in this session's round?" : 'Addressed during the mentorship visit?')
+const coveredOptions = computed(() => [
+  { label: props.draft ? "Yes — addressed in this session's round" : 'Yes — addressed during the visit', value: 'yes' },
   { label: 'No — will cover later', value: 'no' },
   { label: 'Not yet decided', value: 'undecided' },
-]
+])
+
+// Gaps logged after the visit can be dated to the day they were found.
+const todayStr = () => format(new Date(), 'yyyy-MM-dd')
+const identifiedStr = ref(todayStr())
 
 const description = ref('')
 const selectedDomains = ref<GapDomain[]>([])
@@ -52,7 +60,8 @@ const timeline = ref('')
 const supervisionLevel = ref<SupervisionLevel | undefined>(undefined)
 
 const showTimeline = computed(() => coveredChoice.value === 'no')
-const isValid = computed(() => description.value.trim().length > 0 && selectedDomains.value.length > 0)
+const isValid = computed(() => description.value.trim().length > 0 && selectedDomains.value.length > 0
+  && (props.draft || (!!identifiedStr.value && identifiedStr.value <= todayStr())))
 
 function toggleDomain(d: GapDomain) {
   const idx = selectedDomains.value.indexOf(d)
@@ -69,6 +78,7 @@ function reset() {
   coveredChoice.value = 'undecided'
   timeline.value = ''
   supervisionLevel.value = undefined
+  identifiedStr.value = todayStr()
 }
 
 async function save() {
@@ -83,7 +93,9 @@ async function save() {
       menteeId: props.menteeId,
       evaluatorId: props.evaluatorId,
       toolSlug: props.toolSlug,
-      identifiedAt: now,
+      identifiedAt: props.draft || identifiedStr.value === todayStr()
+        ? now
+        : new Date(`${identifiedStr.value}T12:00:00`).getTime(),
       sessionRound: props.sessionRound,
       description: description.value.trim(),
       domains: [...selectedDomains.value],
@@ -157,10 +169,19 @@ function close() {
           </div>
         </div>
 
+        <!-- Identified on, when logged after the visit -->
+        <div v-if="!draft">
+          <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+            Identified on
+          </label>
+          <UInput v-model="identifiedStr" type="date" :max="todayStr()" class="w-full" />
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Set the day of the visit if you are logging it afterwards.</p>
+        </div>
+
         <!-- Covered in mentorship -->
         <div>
           <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
-            Addressed in this session's round?
+            {{ coveredQuestion }}
           </label>
           <div class="flex flex-col gap-1.5">
             <label
