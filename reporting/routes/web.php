@@ -20,6 +20,7 @@ use App\Http\Controllers\Reports\JourneySessionsController;
 use App\Http\Controllers\Reports\JourneyStatusController;
 use App\Http\Controllers\Reports\LowScoreWatchlistController;
 use App\Http\Controllers\Reports\NeedsAttentionController;
+use App\Http\Controllers\Reports\NotAssessableController;
 use App\Http\Controllers\Reports\ScoreTrajectoryController;
 use App\Http\Controllers\Reports\SessionReportController;
 use App\Http\Controllers\Reports\StrugglingMenteesController;
@@ -34,6 +35,7 @@ Route::middleware('reporting.auth')->group(function () {
 
     Route::get('/journey-status', JourneyStatusController::class)->name('reports.journey-status');
     Route::get('/competency-coverage', CompetencyCoverageController::class)->name('reports.competency-coverage');
+    Route::get('/not-assessable', NotAssessableController::class)->name('reports.not-assessable');
     Route::get('/journey-sessions', JourneySessionsController::class)->name('reports.journey-sessions');
     Route::get('/journey-gaps', JourneyGapsController::class)->name('reports.journey-gaps');
     Route::get('/gap-report/{id}', GapReportController::class)->name('reports.gap-report');

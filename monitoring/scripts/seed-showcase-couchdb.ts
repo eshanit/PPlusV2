@@ -9,9 +9,12 @@
 // Run from monitoring/:
 //   COUCHDB_URL=... COUCHDB_USER=... COUCHDB_PASSWORD=... pnpm dlx tsx scripts/seed-showcase-couchdb.ts
 // Remote CouchDB targets require ALLOW_REMOTE_DEMO_SEED=1.
+// SHOWCASE_ONLY=rudo:ckd,nyasha:sickle_cell rewrites just those journeys'
+// sessions and gaps, leaving everything else as it is.
 import { createHash } from 'node:crypto'
 import { counsellingTool, getToolBySlug } from '../app/data/evaluationItemData'
 import type { ITool } from '../app/interfaces/ITool'
+import type { INotAssessable } from '../app/interfaces/IItemScore'
 
 const COUCHDB_URL = process.env.COUCHDB_URL ?? 'http://localhost:5984'
 const COUCHDB_USER = process.env.COUCHDB_USER ?? ''
@@ -91,6 +94,8 @@ interface SessionSpec {
   /** Fixed scores for particular items, rated even if outside `cover`. */
   set?: Record<string, Score>
   notes?: Record<string, string>
+  /** Items marked not assessable this visit (see NOT_ASSESSABLE.md). */
+  notAssessable?: Record<string, INotAssessable>
   echo?: [performed: number, correct: number]
   gaps?: GapSpec[]
 }
@@ -127,7 +132,8 @@ const SCENARIOS: JourneySpec[] = [
       gaps: [{ description: 'Does not stage CKD from eGFR and urine protein', domains: ['knowledge'], covered: true, supervisionLevel: 'intensive_mentorship', resolved: { on: '2026-08-13', note: 'Staged three patients correctly during the clinic round' } }] },
     { date: '2026-07-16', by: 'grace', phase: 'initial_intensive', level: [2, 4] },
     { date: '2026-08-13', by: 'grace', phase: 'ongoing', level: [3, 5] },
-    { date: '2026-09-17', by: 'grace', phase: 'supervision', level: [4, 5], competent: true, set: { H15: 2 } },
+    { date: '2026-09-17', by: 'grace', phase: 'supervision', level: [4, 5], competent: true,
+      notAssessable: { H15: { reason: 'referral_unavailable', note: 'No palliative care service or dialysis referral pathway in the district' } } },
   ] },
   { mentee: 'rudo', tool: 'hypertension', sessions: [
     { date: '2026-07-16', by: 'grace', phase: 'initial_intensive', level: [2, 3] },
@@ -162,7 +168,12 @@ const SCENARIOS: JourneySpec[] = [
     { date: '2026-06-18', by: 'blessing', phase: 'initial_intensive', cover: range(1, 30, 'S'), level: [1, 3], set: { S5: 2 } },
     { date: '2026-07-23', by: 'blessing', phase: 'initial_intensive', cover: c => range(1, 30, 'S')(c) && c !== 'S5', level: [2, 4],
       gaps: [{ description: 'Hydroxyurea dosing and blood count monitoring not yet understood', domains: ['knowledge'], covered: false, timeline: 'Next visit', supervisionLevel: 'intensive_mentorship' }] },
-    { date: '2026-08-20', by: 'blessing', phase: 'ongoing', cover: c => range(1, 30, 'S')(c) && c !== 'S5', level: [3, 5] },
+    { date: '2026-08-20', by: 'blessing', phase: 'ongoing', cover: c => range(1, 30, 'S')(c) && c !== 'S5', level: [3, 5],
+      notAssessable: {
+        S27: { reason: 'medicine_unavailable', note: 'No oral morphine stocked at Musisinyane' },
+        S28: { reason: 'medicine_unavailable', note: 'No oral morphine stocked at Musisinyane' },
+        S2: { reason: 'lab_test_unavailable', note: 'Hb electrophoresis only at the provincial hospital' },
+      } },
   ] },
 
   // 6. Tatenda: respiratory, required items never evaluated and items not rated recently.
@@ -310,6 +321,7 @@ function buildJourney(spec: JourneySpec, mentee: CouchDoc, evaluators: Record<Ev
 
     // Items rated this visit: those in scope that aren't achieved yet, plus fixed ones.
     const due = tool.items.filter((item) => {
+      if (s.notAssessable && item.number in s.notAssessable) return true
       if (s.set && item.number in s.set) return true
       if (s.cover && !s.cover(item.number)) return false
       if ((latest.get(item.slug) ?? 0) >= 4) return false
@@ -329,13 +341,15 @@ function buildJourney(spec: JourneySpec, mentee: CouchDoc, evaluators: Record<Ev
     const rounds = labels.map((label, roundIndex) => {
       const items = due.slice(roundIndex * perRound, (roundIndex + 1) * perRound)
       const itemScores = items.map((item) => {
+        const mark = s.notAssessable?.[item.number]
+        if (mark) return { itemSlug: item.slug, menteeScore: null, notAssessable: mark }
         const menteeScore = scoreFor(item)
         const note = s.notes?.[item.number]
         return { itemSlug: item.slug, menteeScore, ...(note && menteeScore !== null ? { notes: note } : {}) }
       })
       // In a two-round visit, the second round re-rates the first item seen
       // that morning, one point higher: a same-day improvement.
-      if (roundIndex === 1 && labels.length > 1 && due[0]) {
+      if (roundIndex === 1 && labels.length > 1 && due[0] && !s.notAssessable?.[due[0].number]) {
         const first = scoreFor(due[0])
         if (first !== null && first < 5) itemScores.unshift({ itemSlug: due[0].slug, menteeScore: (first + 1) as Score })
       }
@@ -483,16 +497,19 @@ async function main(): Promise<void> {
     demoDataset: DEMO_DATASET,
   }])) as unknown as Record<MenteeKey, CouchDoc>
 
+  const only = (process.env.SHOWCASE_ONLY ?? '').split(',').map(v => v.trim()).filter(Boolean)
   const sessions: CouchDoc[] = []
   const gaps: CouchDoc[] = []
-  for (const spec of SCENARIOS) {
+  for (const spec of SCENARIOS.filter(spec => !only.length || only.includes(`${spec.mentee}:${spec.tool}`))) {
     const journey = buildJourney(spec, mentees[spec.mentee], evaluators)
     sessions.push(...journey.sessions)
     gaps.push(...journey.gaps)
   }
 
-  await upsert(DB_DISTRICTS, DISTRICTS, { allowNonDemo: true })
-  await upsert(DB_USERS, [...colleagueDocs, ...Object.values(mentees)])
+  if (!only.length) {
+    await upsert(DB_DISTRICTS, DISTRICTS, { allowNonDemo: true })
+    await upsert(DB_USERS, [...colleagueDocs, ...Object.values(mentees)])
+  }
   await upsert(DB_SESSIONS, sessions)
   await upsert(DB_GAPS, gaps)
 

@@ -176,7 +176,8 @@ class CompetencyCoverageController extends Controller
         return $groups
             ->map(function (Collection $items, string $groupId) use ($f, $names, $counted): array {
                 $first = $items->first();
-                $required = $items->filter(fn ($r) => ! $r->is_advanced);
+                // Not-assessable items don't count towards competency (NOT_ASSESSABLE.md).
+                $required = $items->filter(fn ($r) => ! $r->is_advanced && $r->coverage_status !== 'not_assessable');
 
                 return [
                     'groupId' => $groupId,
@@ -192,6 +193,7 @@ class CompetencyCoverageController extends Controller
                     'staleCount' => $items->filter(fn ($r) => $counted($r) && $this->isStale($r, $f['stale']))->count(),
                     'requiredAchieved' => $required->where('coverage_status', 'achieved')->count(),
                     'requiredItems' => $required->count(),
+                    'notAssessableCount' => $items->where('coverage_status', 'not_assessable')->count(),
                 ];
             })
             ->filter(fn (array $j): bool => match ($f['status']) {
@@ -227,6 +229,7 @@ class CompetencyCoverageController extends Controller
                     'neverCount' => $never,
                     'staleCount' => $rows->filter(fn ($r) => $this->isStale($r, $f['stale']))->count(),
                     'achievedCount' => $rows->where('coverage_status', 'achieved')->count(),
+                    'notAssessableCount' => $rows->where('coverage_status', 'not_assessable')->count(),
                     'neverPct' => $journeyCount > 0 ? (int) round($never / $journeyCount * 100) : 0,
                 ];
             })

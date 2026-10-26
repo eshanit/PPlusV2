@@ -2,7 +2,8 @@ import type { ISession } from '~/interfaces/ISession'
 import type { ITool } from '~/interfaces/ITool'
 import type { IEvalItem } from '~/interfaces/IEvalItem'
 import { COMPETENT_SCORE } from '~/data/evaluationItemData'
-import { getSessionRounds, sortSessions } from '~/composables/useCompetency'
+import { getNotAssessableItems, getSessionRounds, sortSessions } from '~/composables/useCompetency'
+import type { NotAssessableEntry } from '~/composables/useCompetency'
 
 /**
  * Competency coverage for one journey: which tool items have been evaluated,
@@ -17,7 +18,7 @@ import { getSessionRounds, sortSessions } from '~/composables/useCompetency'
 /** A pending item counts as "not evaluated recently" after this many sessions without a score. */
 export const STALE_AFTER_SESSIONS = 2
 
-export type CoverageStatus = 'achieved' | 'pending' | 'never' | 'only_na'
+export type CoverageStatus = 'achieved' | 'pending' | 'never' | 'only_na' | 'not_assessable'
 
 export interface ItemCoverage {
   item: IEvalItem
@@ -29,6 +30,8 @@ export interface ItemCoverage {
   timesEvaluated: number
   /** Below 4 and not scored for STALE_AFTER_SESSIONS or more sessions. */
   stale: boolean
+  /** Set when the item is marked not assessable. Such items are never missed or stale. */
+  notAssessable?: NotAssessableEntry
 }
 
 export interface JourneyCoverage {
@@ -39,6 +42,8 @@ export interface JourneyCoverage {
   staleRequired: ItemCoverage[]
   /** Advanced items never evaluated (not required for competency). */
   neverAdvanced: ItemCoverage[]
+  /** Items marked not assessable at the mentee's facility. */
+  notAssessable: ItemCoverage[]
   totalSessions: number
   lastSession?: { date: number; evaluatorName: string; evaluatorId: string }
 }
@@ -51,7 +56,7 @@ export function getJourneyCoverage(
   const ordered = sortSessions(sessions)
   const total = ordered.length
   const latestSession = ordered[total - 1]
-  const empty: JourneyCoverage = { items: [], neverRequired: [], staleRequired: [], neverAdvanced: [], totalSessions: total }
+  const empty: JourneyCoverage = { items: [], neverRequired: [], staleRequired: [], neverAdvanced: [], notAssessable: [], totalSessions: total }
   if (!tool) return empty
 
   // Per item: latest non-null score and the session it came from, plus N/A count.
@@ -73,11 +78,14 @@ export function getJourneyCoverage(
     }
   })
 
+  const marked = getNotAssessableItems(ordered)
   const items: ItemCoverage[] = tool.items.map((item) => {
     const entry = seen.get(item.slug)
     const sessionsSince = entry?.index === undefined ? total : total - 1 - entry.index
+    const mark = marked.get(item.slug)
     let status: CoverageStatus
-    if (entry?.score !== undefined) status = entry.score >= COMPETENT_SCORE ? 'achieved' : 'pending'
+    if (mark) status = 'not_assessable'
+    else if (entry?.score !== undefined) status = entry.score >= COMPETENT_SCORE ? 'achieved' : 'pending'
     else status = (entry?.na ?? 0) > 0 ? 'only_na' : 'never'
     return {
       item,
@@ -87,6 +95,7 @@ export function getJourneyCoverage(
       sessionsSince,
       timesEvaluated: entry?.times ?? 0,
       stale: status === 'pending' && sessionsSince >= staleAfter,
+      ...(mark ? { notAssessable: mark } : {}),
     }
   })
 
@@ -96,6 +105,7 @@ export function getJourneyCoverage(
     neverRequired: items.filter(c => !c.item.isAdvanced && isNever(c)),
     staleRequired: items.filter(c => !c.item.isAdvanced && c.stale),
     neverAdvanced: items.filter(c => c.item.isAdvanced && isNever(c)),
+    notAssessable: items.filter(c => c.status === 'not_assessable'),
     totalSessions: total,
     lastSession: latestSession
       ? {

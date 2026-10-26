@@ -155,6 +155,9 @@ const scoreColor = (score) => {
                             </td>
                             <td class="px-4 py-3">
                                 <Badge :variant="statusVariant(j.status)">{{ statusLabel(j.status) }}</Badge>
+                                <span v-if="j.notAssessable" class="mt-1 block text-xs text-muted-foreground">
+                                    {{ j.notAssessable }} not assessable
+                                </span>
                             </td>
                             <td class="hidden px-4 py-3 text-right tabular-nums text-muted-foreground xl:table-cell">
                                 {{ j.sessionsToBasic ?? '—' }}

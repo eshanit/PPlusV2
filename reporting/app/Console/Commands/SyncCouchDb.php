@@ -423,8 +423,8 @@ class SyncCouchDb extends Command
     }
 
     /**
-     * @param  array<int, array{itemSlug: string, menteeScore: int|null, notes?: string}>  $scores
-     * @return array<int, array{session_id: string, round_index: int, item_id: int, mentee_score: int|null, notes: string|null}>
+     * @param  array<int, array{itemSlug: string, menteeScore: int|null, notes?: string, notAssessable?: array{reason?: string, note?: string}}>  $scores
+     * @return array<int, array{session_id: string, round_index: int, item_id: int, mentee_score: int|null, notes: string|null, not_assessable_reason: string|null, not_assessable_note: string|null}>
      */
     private function sessionScoreRows(string $sessionId, array $scores, int $roundIndex): array
     {
@@ -437,12 +437,20 @@ class SyncCouchDb extends Command
                 continue;
             }
 
+            // A not-assessable mark only counts on an unscored entry (see NOT_ASSESSABLE.md).
+            $mark = $score['menteeScore'] === null && is_array($score['notAssessable'] ?? null)
+                && is_string($score['notAssessable']['reason'] ?? null)
+                ? $score['notAssessable']
+                : null;
+
             $rows[] = [
                 'session_id' => $sessionId,
                 'round_index' => $roundIndex,
                 'item_id' => (int) $itemId,
                 'mentee_score' => $score['menteeScore'],
                 'notes' => $score['notes'] ?? null,
+                'not_assessable_reason' => $mark ? substr($mark['reason'], 0, 40) : null,
+                'not_assessable_note' => $mark['note'] ?? null,
             ];
         }
 

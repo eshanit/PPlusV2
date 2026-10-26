@@ -15,6 +15,7 @@ import {
   SCORE_SHORT_LABELS,
 } from '~/data/evaluationItemData'
 import type { IRound, ISession, MentorshipPhase } from '~/interfaces/ISession'
+import type { IItemScore, INotAssessable } from '~/interfaces/IItemScore'
 import { calculateScoreCounts, averageValue } from '~/composables/useSessionCalculations'
 import { getCompetencyBreakdown, getCompetencyStatus } from '~/composables/useCompetency'
 import ScoreDistribution from '~/components/session/ScoreDistribution.vue'
@@ -41,6 +42,7 @@ interface PreviewItem {
   score: number | null
   notes: string
   evaluated?: boolean
+  notAssessable?: INotAssessable
 }
 
 interface PreviewData {
@@ -107,8 +109,22 @@ const notScoredCount = computed(() =>
 
 const naCount = computed(() => {
   if (!previewData.value) return 0
-  return previewData.value.items.filter(item => item.evaluated && item.score === null).length
+  return previewData.value.items.filter(item => item.evaluated && item.score === null && !item.notAssessable).length
 })
+
+const notAssessableCount = computed(() =>
+  previewData.value?.items.filter(item => item.notAssessable).length ?? 0)
+
+// The session-level score list saved with the session: one entry per item,
+// with its latest score across the rounds, or its not-assessable mark.
+function sessionScore(item: PreviewItem): IItemScore {
+  return {
+    itemSlug: item.slug,
+    menteeScore: (item.notAssessable ? null : item.score ?? null) as IItemScore['menteeScore'],
+    notes: item.notes?.trim() || undefined,
+    ...(item.notAssessable ? { notAssessable: item.notAssessable } : {}),
+  }
+}
 
 function averageFor(type: PreviewItem['type']): number | null {
   if (!previewData.value) return null
@@ -163,16 +179,8 @@ async function saveSession() {
       : [{
           roundId: `legacy-${now}`,
           label: 'Round 1',
-          itemScores: toolItems.map(item => ({
-            itemSlug: item.slug,
-            menteeScore: (item.score ?? null) as 1 | 2 | 3 | 4 | 5 | null,
-            notes: item.notes?.trim() || undefined,
-          })),
-          counsellingScores: counsellingItems.map(item => ({
-            itemSlug: item.slug,
-            menteeScore: (item.score ?? null) as 1 | 2 | 3 | 4 | 5 | null,
-            notes: item.notes?.trim() || undefined,
-          })),
+          itemScores: toolItems.map(sessionScore),
+          counsellingScores: counsellingItems.map(sessionScore),
           startedAt: now,
           completedAt: now,
         }]
@@ -199,16 +207,8 @@ async function saveSession() {
       reopenReason: pData.reopenReason,
       facilityId: mentee.facilityId ?? '',
       districtId: mentee.districtId ?? '',
-      itemScores: toolItems.map(item => ({
-        itemSlug: item.slug,
-        menteeScore: (item.score ?? null) as 1 | 2 | 3 | 4 | 5 | null,
-        notes: item.notes?.trim() || undefined,
-      })),
-      counsellingScores: counsellingItems.map(item => ({
-        itemSlug: item.slug,
-        menteeScore: (item.score ?? null) as 1 | 2 | 3 | 4 | 5 | null,
-        notes: item.notes?.trim() || undefined,
-      })),
+      itemScores: toolItems.map(sessionScore),
+      counsellingScores: counsellingItems.map(sessionScore),
       rounds,
       selectedItemSlugs: pData.selectedItemSlugs ?? toolItems.map(item => item.slug),
       selectedCounsellingSlugs: pData.selectedCounsellingSlugs ?? counsellingItems.map(item => item.slug),
@@ -275,9 +275,10 @@ const allItemMetadata = computed(() => {
 function toListItem(item: PreviewItem) {
   return {
     itemSlug: item.slug,
-    menteeScore: item.score,
+    menteeScore: item.notAssessable ? null : item.score,
     notes: item.notes,
     evaluated: item.evaluated ?? true,
+    notAssessable: item.notAssessable,
   }
 }
 
@@ -352,10 +353,7 @@ const draftSession = computed<ISession | null>(() => {
   const p = previewData.value
   if (!p) return null
   const toolItems = p.items.filter(i => i.type === 'tool' && (i.evaluated ?? true))
-  const itemScores = toolItems.map(item => ({
-    itemSlug: item.slug,
-    menteeScore: (item.score ?? null) as 1 | 2 | 3 | 4 | 5 | null,
-  }))
+  const itemScores = toolItems.map(sessionScore)
   return {
     _id: p.sessionId ?? '__review__',
     type: 'session',
@@ -386,16 +384,19 @@ const outcome = computed(() => {
 
   if (after.status === 'in_progress') {
     const count = after.basicBelow.length
+    const marked = after.notAssessable.length
     return {
       competent: false,
       title: 'Not yet competent',
-      detail: `${after.requiredAchieved} of ${after.requiredCount} required items achieved. ${count} still need${count === 1 ? 's' : ''} a score of 4 or 5. Items already achieved in earlier sessions stay achieved.`,
+      detail: `${after.requiredAchieved} of ${after.requiredCount} required items achieved. ${count} still need${count === 1 ? 's' : ''} a score of 4 or 5. Items already achieved in earlier sessions stay achieved.`
+        + (marked ? ` ${marked} item${marked === 1 ? ' is' : 's are'} not assessable and ${marked === 1 ? "doesn't" : "don't"} count.` : ''),
       itemsHeading: 'Not yet achieved',
       items: after.basicBelow,
     }
   }
 
   const label = STATUS_LABELS[after.status]
+    + (after.notAssessable.length ? ` · ${after.notAssessable.length} not assessable` : '')
   const unchanged = statusBefore.value === after.status && !previewData.value?.reopenReason
   const advancedCount = after.advancedBelow.length
   return {
@@ -611,6 +612,9 @@ const gapsByRound = computed(() => {
         <div class="rounded-lg border border-gray-200 bg-white p-3 text-center dark:border-gray-700 dark:bg-gray-900">
           <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ naCount }}</p>
           <p class="text-sm text-gray-600 dark:text-gray-300">Marked N/A</p>
+          <p v-if="notAssessableCount" class="mt-1 text-sm font-semibold text-slate-700 dark:text-slate-300">
+            {{ notAssessableCount }} not assessable
+          </p>
         </div>
         <div
           v-for="tile in averageTiles"

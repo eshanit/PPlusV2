@@ -49,12 +49,16 @@ class JourneyHeatmapController extends Controller
         // All scores for this journey (including null = N/A)
         $scores = DB::table('v_session_item_scores as sis')
             ->whereIn('sis.session_id', $sessionIds)
-            ->get(['sis.session_id', 'sis.item_id', 'sis.mentee_score']);
+            ->get(['sis.session_id', 'sis.item_id', 'sis.mentee_score', 'sis.not_assessable_reason']);
 
-        // score map: item_id → session_id → score|null
+        // score map: item_id → session_id → score|null, plus not-assessable marks
         $scoreMap = [];
+        $markMap = [];
         foreach ($scores as $s) {
             $scoreMap[$s->item_id][$s->session_id] = $s->mentee_score;
+            if ($s->mentee_score === null && $s->not_assessable_reason !== null) {
+                $markMap[$s->item_id][$s->session_id] = $s->not_assessable_reason;
+            }
         }
 
         // All items for this tool, ordered by category then item
@@ -77,15 +81,20 @@ class JourneyHeatmapController extends Controller
         // avgScore is intentionally not computed here — the frontend lets the
         // user toggle sessions in/out of the comparison, so the average is
         // recalculated client-side from these raw cells instead.
-        $rows = $items->map(function (object $item) use ($sessions, $scoreMap): array {
+        $rows = $items->map(function (object $item) use ($sessions, $scoreMap, $markMap): array {
             $itemScores = $scoreMap[$item->id] ?? [];
+            $itemMarks = $markMap[$item->id] ?? [];
 
-            $cells = $sessions->map(function (object $s) use ($itemScores): array {
+            $cells = $sessions->map(function (object $s) use ($itemScores, $itemMarks): array {
                 if (! array_key_exists($s->id, $itemScores)) {
                     return ['present' => false, 'score' => null];
                 }
 
-                return ['present' => true, 'score' => $itemScores[$s->id]];
+                return [
+                    'present' => true,
+                    'score' => $itemScores[$s->id],
+                    'notAssessable' => $itemMarks[$s->id] ?? null,
+                ];
             })->all();
 
             return [

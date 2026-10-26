@@ -1,7 +1,16 @@
 <script setup lang="ts">
 import { format } from 'date-fns'
 import type { IEvalItem } from '~/interfaces/IEvalItem'
-import { MENTOR_LABELS, NA_LABEL, SCORE_LABELS, scoreBackground, scoreTextColor } from '~/data/evaluationItemData'
+import type { INotAssessable, NotAssessableReason } from '~/interfaces/IItemScore'
+import {
+  MENTOR_LABELS,
+  NA_LABEL,
+  NOT_ASSESSABLE_REASONS,
+  SCORE_LABELS,
+  notAssessableLabel,
+  scoreBackground,
+  scoreTextColor,
+} from '~/data/evaluationItemData'
 import { getScoreChangeDisplay } from '~/composables/useSessionCalculations'
 
 type ScoreValue = 1 | 2 | 3 | 4 | 5 | null
@@ -11,6 +20,7 @@ interface PreviousAssessment {
   evalDate: number
   sessionNumber: number
   roundNumber: number
+  notAssessable?: INotAssessable
 }
 
 const props = defineProps<{
@@ -22,12 +32,36 @@ const props = defineProps<{
   note?: string
   /** Supporting information shown under the title, e.g. echo accuracy next to E8. */
   context?: string
+  /** Offer "Can't be assessed here". Tool items only, not counselling. */
+  allowNotAssessable?: boolean
+  /** Set when this round marks the item not assessable. */
+  notAssessable?: INotAssessable
 }>()
 
 const emit = defineEmits<{
   score: [value: ScoreValue]
   note: [value: string]
+  notAssessable: [value: INotAssessable | undefined]
 }>()
+
+// Reason picker. The mentor picks one reason; Other needs a note.
+const showReasonPicker = ref(false)
+const draftReason = ref<NotAssessableReason | undefined>(undefined)
+const draftReasonNote = ref('')
+
+function openReasonPicker() {
+  draftReason.value = props.notAssessable?.reason
+  draftReasonNote.value = props.notAssessable?.note ?? ''
+  showReasonPicker.value = true
+}
+
+const reasonNoteRequired = computed(() => draftReason.value === 'other' && !draftReasonNote.value.trim())
+
+function saveReason() {
+  if (!draftReason.value || reasonNoteRequired.value) return
+  emit('notAssessable', { reason: draftReason.value, note: draftReasonNote.value.trim() || undefined })
+  showReasonPicker.value = false
+}
 
 const scoreOptions: { value: ScoreValue; label: string }[] = [
   { value: 1, label: '1' },
@@ -39,7 +73,7 @@ const scoreOptions: { value: ScoreValue; label: string }[] = [
 ]
 
 function isSelected(value: ScoreValue): boolean {
-  return props.isScored && props.score === value
+  return props.isScored && !props.notAssessable && props.score === value
 }
 
 function selectedStyle(value: ScoreValue) {
@@ -48,7 +82,7 @@ function selectedStyle(value: ScoreValue) {
 }
 
 const selectedScoreLabel = computed(() => {
-  if (!props.isScored) return undefined
+  if (!props.isScored || props.notAssessable) return undefined
   return props.score === null ? NA_LABEL : SCORE_LABELS[props.score]
 })
 
@@ -59,7 +93,7 @@ const selectedMentorLabel = computed(() => {
   return MENTOR_LABELS[props.score]
 })
 
-const scoreChangeDisplay = computed(() => props.isScored
+const scoreChangeDisplay = computed(() => props.isScored && !props.notAssessable
   ? getScoreChangeDisplay(props.score, props.previousAssessment?.score)
   : undefined)
 </script>
@@ -165,12 +199,41 @@ const scoreChangeDisplay = computed(() => props.isScored
       </span>
     </div>
 
+    <!-- Not assessable at this facility: set with a reason, lifted by scoring -->
+    <div
+      v-if="notAssessable"
+      class="mt-3 flex flex-wrap items-start justify-between gap-2 rounded-lg border-2 border-slate-400 bg-slate-100 px-3 py-2 dark:border-slate-500 dark:bg-slate-800"
+      role="status"
+    >
+      <div class="min-w-0">
+        <p class="flex items-center gap-1.5 text-base font-bold text-slate-900 dark:text-slate-100">
+          <UIcon name="i-heroicons-no-symbol" class="size-5 shrink-0" />
+          Not assessable · {{ notAssessableLabel(notAssessable.reason) }}
+        </p>
+        <p v-if="notAssessable.note" class="mt-0.5 text-sm text-slate-700 dark:text-slate-300">{{ notAssessable.note }}</p>
+        <p class="mt-0.5 text-sm text-slate-600 dark:text-slate-400">
+          Doesn't count towards competency until it is scored. Tap a score to replace it.
+        </p>
+      </div>
+      <div class="flex shrink-0 gap-2">
+        <UButton size="sm" color="neutral" variant="outline" @click="openReasonPicker">Change reason</UButton>
+        <UButton size="sm" color="neutral" variant="ghost" @click="emit('notAssessable', undefined)">Remove</UButton>
+      </div>
+    </div>
+    <div v-else-if="allowNotAssessable" class="mt-2 flex justify-end">
+      <UButton size="sm" color="neutral" variant="link" icon="i-heroicons-no-symbol" class="px-0" @click="openReasonPicker">
+        Can't be assessed here…
+      </UButton>
+    </div>
+
     <div
       v-if="previousAssessment"
       class="mt-2 rounded-md bg-gray-50 px-2.5 py-2 text-sm text-gray-600 dark:bg-gray-900/70 dark:text-gray-300"
     >
       <span class="font-semibold">Previous score:</span>
-      {{ previousAssessment.score === null ? 'N/A' : previousAssessment.score }}
+      {{ previousAssessment.notAssessable
+        ? `Not assessable (${notAssessableLabel(previousAssessment.notAssessable.reason)})`
+        : previousAssessment.score === null ? 'N/A' : previousAssessment.score }}
       <template v-if="previousAssessment.score !== null">
         <span class="mt-0.5 block"><span class="font-semibold">Mentee</span><UIcon name="i-heroicons-arrow-right" class="mx-1 inline-block size-4 shrink-0 align-[-0.125em]" aria-hidden="true" />{{ SCORE_LABELS[previousAssessment.score] }}</span>
         <span class="block"><span class="font-semibold">Mentor</span><UIcon name="i-heroicons-arrow-right" class="mx-1 inline-block size-4 shrink-0 align-[-0.125em]" aria-hidden="true" />{{ MENTOR_LABELS[previousAssessment.score] }}</span>
@@ -184,7 +247,7 @@ const scoreChangeDisplay = computed(() => props.isScored
 
     <!-- Notes are for scored items only. N/A needs no explanation (client request). -->
     <UTextarea
-      v-if="isScored && score !== null"
+      v-if="isScored && score !== null && !notAssessable"
       :model-value="note ?? ''"
       class="mt-2 w-full"
       :rows="2"
@@ -193,5 +256,57 @@ const scoreChangeDisplay = computed(() => props.isScored
       :aria-label="`Notes for ${item.number}`"
       @update:model-value="emit('note', String($event))"
     />
+
+    <UModal
+      v-model:open="showReasonPicker"
+      :title="`${item.number} can't be assessed here`"
+      description="The item won't count towards this mentee's competency until it is scored. Choose why."
+    >
+      <template #body>
+        <div class="space-y-2" role="radiogroup" :aria-label="`Why ${item.number} can't be assessed`">
+          <button
+            v-for="reason in NOT_ASSESSABLE_REASONS"
+            :key="reason.value"
+            type="button"
+            role="radio"
+            :aria-checked="draftReason === reason.value"
+            class="flex min-h-12 w-full items-start gap-3 rounded-lg border-2 px-3 py-2 text-left transition-colors"
+            :class="draftReason === reason.value
+              ? 'border-primary-600 bg-primary-50 dark:border-primary-400 dark:bg-primary-950/40'
+              : 'border-gray-200 bg-white hover:border-gray-400 dark:border-gray-700 dark:bg-gray-900'"
+            @click="draftReason = reason.value"
+          >
+            <UIcon
+              :name="draftReason === reason.value ? 'i-heroicons-check-circle-solid' : 'i-heroicons-stop-circle'"
+              class="mt-0.5 size-5 shrink-0"
+              :class="draftReason === reason.value ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'"
+            />
+            <span class="min-w-0">
+              <span class="block text-base font-semibold text-gray-900 dark:text-white">{{ reason.label }}</span>
+              <span class="block text-sm text-gray-600 dark:text-gray-300">{{ reason.hint }}</span>
+            </span>
+          </button>
+          <UTextarea
+            v-model="draftReasonNote"
+            class="w-full pt-1"
+            :rows="2"
+            size="lg"
+            :placeholder="draftReason === 'other' ? 'Note (required for Other)' : 'Note (optional), e.g. no potassium test at the lab'"
+            :aria-label="`Note on why ${item.number} can't be assessed`"
+          />
+          <p v-if="reasonNoteRequired" class="text-sm text-amber-700 dark:text-amber-400">
+            Add a note saying why.
+          </p>
+        </div>
+      </template>
+      <template #footer>
+        <div class="flex w-full justify-end gap-2">
+          <UButton color="neutral" variant="ghost" @click="showReasonPicker = false">Cancel</UButton>
+          <UButton color="primary" :disabled="!draftReason || reasonNoteRequired" @click="saveReason">
+            Mark not assessable
+          </UButton>
+        </div>
+      </template>
+    </UModal>
   </article>
 </template>

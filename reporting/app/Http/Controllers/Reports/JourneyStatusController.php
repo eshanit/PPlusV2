@@ -47,6 +47,7 @@ class JourneyStatusController extends Controller
             'currentAvgScore' => $j->current_avg_score,
             'requiredAchieved' => $j->required_achieved,
             'requiredItems' => $j->required_items,
+            'notAssessable' => (int) ($j->not_assessable_items ?? 0),
             'status' => $j->competency_status,
             'sessionsToBasic' => $j->sessions_to_basic_competence,
             'daysToBasic' => $j->days_to_basic_competence,

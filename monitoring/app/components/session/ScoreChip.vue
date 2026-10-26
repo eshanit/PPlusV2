@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { MENTOR_LABELS, NA_LABEL, SCORE_LABELS, SCORE_SHORT_LABELS, scoreBackground, scoreTextColor } from '~/data/evaluationItemData'
+import type { NotAssessableReason } from '~/interfaces/IItemScore'
+import { MENTOR_LABELS, NA_LABEL, SCORE_LABELS, SCORE_SHORT_LABELS, notAssessableLabel, scoreBackground, scoreTextColor } from '~/data/evaluationItemData'
 
 /**
  * A score with its meaning. The full form shows both sides of the paper
@@ -14,6 +15,8 @@ const props = withDefaults(defineProps<{
   /** Use the one-word label instead of the full sentence. */
   short?: boolean
   size?: 'sm' | 'md'
+  /** Set when the item is marked not assessable; shown instead of the score. */
+  notAssessable?: NotAssessableReason
 }>(), {
   evaluated: true,
   short: false,
@@ -41,9 +44,19 @@ const style = computed(() => isNotScored.value
 </script>
 
 <template>
+  <!-- Not assessable at the mentee's facility -->
+  <span
+    v-if="notAssessable"
+    class="inline-flex max-w-full items-center gap-1.5 rounded-md border-2 border-slate-400 bg-slate-100 font-bold text-slate-800 dark:border-slate-500 dark:bg-slate-800 dark:text-slate-100"
+    :class="size === 'sm' ? 'px-2 py-0.5 text-sm' : 'px-2.5 py-1 text-base'"
+  >
+    <UIcon name="i-heroicons-no-symbol" class="size-4 shrink-0" aria-hidden="true" />
+    <span class="min-w-0">{{ short ? 'Not assessable' : `Not assessable · ${notAssessableLabel(notAssessable)}` }}</span>
+  </span>
+
   <!-- Full form: score plus labelled Mentee and Mentor meanings -->
   <span
-    v-if="showBoth"
+    v-else-if="showBoth"
     class="inline-flex max-w-full items-start gap-2.5 rounded-md text-left"
     :class="size === 'sm' ? 'px-2 py-1 text-sm' : 'px-2.5 py-1.5 text-base'"
     :style="style"

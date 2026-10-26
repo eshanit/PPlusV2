@@ -659,6 +659,16 @@ Exposed state: `cleanupRunning`, `lastCleanupAt`, `lastCleanupPurged`. Triggered
   presenter is `evaluator@penplus.local`; three colleague evaluators are demo
   users. Run `php artisan couchdb:push-users` before seeding. The old 100-mentee
   `seed-demo-couchdb.ts` is kept but no longer used.
+- **Not assessable** (client request, 2026-10-26; see `NOT_ASSESSABLE.md`): a tool
+  item can be marked not assessable at the mentee's facility with a reason code
+  (`IItemScore.notAssessable`, score null). The latest entry wins: a later score
+  lifts the mark, and N/A doesn't. Marked items are left out of Basic and Fully
+  Competent, and out of coverage. Monitoring uses `getNotAssessableItems()` in
+  `useCompetency.ts`. Reporting stores it in `session_item_scores.not_assessable_reason`
+  and `not_assessable_note`, and applies the same rule in `v_evaluation_group_status`,
+  `v_journey_progress`, `v_item_coverage` and `v_latest_item_scores`
+  (migration `2026_10_26_000001`). The report is at `/not-assessable`. Reason labels
+  live in three places; keep them in step.
 - **Evaluators see every district in reporting** (they move between
   facilities). `ReportScopeService` and `canFilterDistrict()` exempt
   `isEvaluator()`; only district admins stay district-scoped.

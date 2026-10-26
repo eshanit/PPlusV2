@@ -1,6 +1,7 @@
 import type { ISession } from '~/interfaces/ISession'
 import type { ITool } from '~/interfaces/ITool'
 import type { IEvalItem } from '~/interfaces/IEvalItem'
+import type { INotAssessable } from '~/interfaces/IItemScore'
 import { COMPETENT_SCORE } from '~/data/evaluationItemData'
 
 export type CompetencyStatus = 'fully_competent' | 'basic_competent' | 'in_progress'
@@ -50,6 +51,39 @@ export function getLatestItemScores(sessions: ISession[]): Map<string, LatestIte
   return latest
 }
 
+export interface NotAssessableEntry extends INotAssessable {
+  evalDate: number
+  sessionId: string
+  evaluatorName: string
+}
+
+/**
+ * Tool items currently marked not assessable in the journey: the item's latest
+ * entry is a not-assessable mark, with no score after it. A later score lifts
+ * the mark. N/A neither sets nor lifts it, so a mark carries forward until
+ * someone scores the item. Counselling items are ignored.
+ */
+export function getNotAssessableItems(sessions: ISession[]): Map<string, NotAssessableEntry> {
+  const marked = new Map<string, NotAssessableEntry>()
+  for (const session of sortSessions(sessions)) {
+    for (const round of getSessionRounds(session)) {
+      for (const score of round.itemScores ?? []) {
+        if (score.menteeScore !== null) {
+          marked.delete(score.itemSlug)
+        } else if (score.notAssessable) {
+          marked.set(score.itemSlug, {
+            ...score.notAssessable,
+            evalDate: session.evalDate,
+            sessionId: session._id,
+            evaluatorName: `${session.evaluator?.firstname ?? ''} ${session.evaluator?.lastname ?? ''}`.trim(),
+          })
+        }
+      }
+    }
+  }
+  return marked
+}
+
 export interface ItemBelowThreshold {
   item: IEvalItem
   /** Most recent recorded score for the item in this journey, or undefined if never scored. */
@@ -62,10 +96,12 @@ export interface CompetencyBreakdown {
   basicBelow: ItemBelowThreshold[]
   /** Advanced tool items whose latest score is below 4, or never scored. These block full competency only. */
   advancedBelow: ItemBelowThreshold[]
-  /** Number of required (non-advanced) items in the tool. */
+  /** Required (non-advanced) items that count towards competency: not marked not assessable. */
   requiredCount: number
   /** Required items whose latest score is 4 or 5. */
   requiredAchieved: number
+  /** Tool items marked not assessable. They don't count towards competency. */
+  notAssessable: Array<{ item: IEvalItem; entry: NotAssessableEntry }>
 }
 
 /**
@@ -76,23 +112,29 @@ export interface CompetencyBreakdown {
  * later sessions, but a lower re-rating makes it not achieved again.
  * - basic_competent: every required (non-advanced) item in the tool is achieved.
  * - fully_competent: every item, including advanced ones, is achieved.
+ * Items marked not assessable (see getNotAssessableItems) are left out of both,
+ * but at least one required item must be assessable and achieved.
  */
 export function getCompetencyBreakdown(
   sessions: ISession[],
   tool: ITool | null | undefined,
 ): CompetencyBreakdown {
-  const requiredItems = tool?.items.filter(item => !item.isAdvanced) ?? []
+  const allRequired = tool?.items.filter(item => !item.isAdvanced) ?? []
   const empty: CompetencyBreakdown = {
     status: 'in_progress',
-    basicBelow: requiredItems.map(item => ({ item, latestScore: undefined })),
+    basicBelow: allRequired.map(item => ({ item, latestScore: undefined })),
     advancedBelow: tool?.items.filter(item => item.isAdvanced).map(item => ({ item, latestScore: undefined })) ?? [],
-    requiredCount: requiredItems.length,
+    requiredCount: allRequired.length,
     requiredAchieved: 0,
+    notAssessable: [],
   }
   if (!tool || sessions.length === 0) return empty
 
   const latest = getLatestItemScores(sessions)
-  const below = tool.items
+  const marked = getNotAssessableItems(sessions)
+  const assessable = tool.items.filter(item => !marked.has(item.slug))
+  const requiredItems = assessable.filter(item => !item.isAdvanced)
+  const below = assessable
     .map(item => ({ item, latestScore: latest.get(item.slug)?.score }))
     .filter(entry => entry.latestScore === undefined || entry.latestScore < COMPETENT_SCORE)
 
@@ -110,6 +152,9 @@ export function getCompetencyBreakdown(
     advancedBelow,
     requiredCount: requiredItems.length,
     requiredAchieved: requiredItems.length - basicBelow.length,
+    notAssessable: tool.items
+      .filter(item => marked.has(item.slug))
+      .map(item => ({ item, entry: marked.get(item.slug)! })),
   }
 }
 

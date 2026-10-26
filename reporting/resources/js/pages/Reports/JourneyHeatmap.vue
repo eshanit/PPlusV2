@@ -428,6 +428,7 @@ const gapDomainEntries = computed(() =>
 // Cell colour based on score value and present flag
 function cellClass(cell) {
     if (!cell.present) return 'bg-muted/20';
+    if (cell.notAssessable) return 'bg-slate-300 text-slate-900';
     if (cell.score === null) return 'bg-muted/40 text-muted-foreground';
     if (cell.score >= 4) return 'bg-emerald-100 text-emerald-800';
     if (cell.score === 3) return 'bg-amber-100 text-amber-800';
@@ -436,6 +437,7 @@ function cellClass(cell) {
 
 function cellLabel(cell) {
     if (!cell.present) return '';
+    if (cell.notAssessable) return '⊘';
     if (cell.score === null) return 'N/A';
     return String(cell.score);
 }
@@ -451,6 +453,19 @@ const SCORE_RUBRIC = {
     5: 'Demonstrates exceptional competency',
 };
 
+// Keep in step with NOT_ASSESSABLE_REASONS in the monitoring app.
+const NOT_ASSESSABLE_LABELS = {
+    medicine_unavailable: 'Medicine not available',
+    lab_test_unavailable: 'Laboratory test not available',
+    equipment_unavailable: 'Equipment or imaging not available',
+    referral_unavailable: 'Referral service not available',
+    service_not_offered: 'Service not offered at this facility',
+    patient_group_not_seen: 'Patient group not seen at this facility',
+    not_locally_relevant: 'Not relevant in the local context',
+    outside_scope_of_practice: "Outside the mentee's scope of practice",
+    other: 'Other',
+};
+
 // A regression reason takes priority over the rubric text when both apply.
 function cellTooltip(row, idx) {
     const sessionId = props.sessions[idx]?.id;
@@ -459,7 +474,8 @@ function cellTooltip(row, idx) {
 
     const cell = row.cells[idx];
     if (!cell.present) return 'Not evaluated in this session';
-    if (cell.score === null) return 'N/A — the competency cannot be evaluated';
+    if (cell.notAssessable) return `Not assessable here: ${NOT_ASSESSABLE_LABELS[cell.notAssessable] ?? cell.notAssessable}`;
+    if (cell.score === null) return 'N/A — not observed this visit';
 
     return SCORE_RUBRIC[cell.score] ?? null;
 }
@@ -776,9 +792,13 @@ function avgScoreClass(score) {
                     <span class="inline-block size-4 rounded bg-red-100" />
                     Score 1–2 (gap)
                 </span>
-                <span class="flex items-center gap-1" title="The competency cannot be evaluated">
+                <span class="flex items-center gap-1" title="Not observed this visit">
                     <span class="inline-block size-4 rounded bg-muted/40 border" />
                     N/A
+                </span>
+                <span class="flex items-center gap-1" title="Can't be assessed at the mentee's facility; doesn't count towards competency">
+                    <span class="inline-flex size-4 items-center justify-center rounded bg-slate-300 text-[0.6rem] text-slate-900">⊘</span>
+                    Not assessable
                 </span>
                 <span class="flex items-center gap-1">
                     <span class="inline-block size-4 rounded bg-muted/20 border" />

@@ -3,10 +3,10 @@ import { format } from 'date-fns'
 import { useUserStore } from '~/stores/userStore'
 import { useSessionStore } from '~/stores/sessionStore'
 import { useGapStore } from '~/stores/gapStore'
-import { counsellingTool, getToolBySlug, toolIncludesCounselling } from '~/data/evaluationItemData'
-import { getCompetencyStatus, getLatestItemScores } from '~/composables/useCompetency'
+import { counsellingTool, getToolBySlug, notAssessableLabel, toolIncludesCounselling } from '~/data/evaluationItemData'
+import { getCompetencyStatus, getLatestItemScores, getNotAssessableItems } from '~/composables/useCompetency'
 import { getJourneyCoverage } from '~/composables/useCoverage'
-import type { IItemScore } from '~/interfaces/IItemScore'
+import type { IItemScore, INotAssessable } from '~/interfaces/IItemScore'
 import type { IEvalItem } from '~/interfaces/IEvalItem'
 import type { IRound, ISession, MentorshipPhase } from '~/interfaces/ISession'
 import type { IGapEntry } from '~/interfaces/IGapEntry'
@@ -37,6 +37,8 @@ interface DraftRound {
   gaps: IGapEntry[]
   scores: Record<string, ScoreValue>
   notes: Record<string, string>
+  // Items this round marks not assessable. Their score is null.
+  notAssessable: Record<string, INotAssessable>
   notesText: string
   startedAt: number
 }
@@ -57,6 +59,7 @@ interface PreviousAssessment {
   evalDate: number
   sessionNumber: number
   roundNumber: number
+  notAssessable?: INotAssessable
 }
 
 const route = useRoute()
@@ -241,6 +244,15 @@ function coverageLabel(slug: string): string | undefined {
   return undefined
 }
 
+// Items marked not assessable in earlier sessions. The mark carries forward
+// until someone scores the item, so they don't need selecting again.
+const priorNotAssessable = computed(() => getNotAssessableItems(sessionsBeforeCurrent.value))
+
+function notAssessableChip(slug: string): string | undefined {
+  const entry = priorNotAssessable.value.get(slug)
+  return entry ? `Not assessable · ${notAssessableLabel(entry.reason)}` : undefined
+}
+
 function achievedLabel(slug: string): string | undefined {
   const entry = achievedItems.value.get(slug)
   return entry ? `Achieved · ${entry.score} on ${format(new Date(entry.evalDate), 'd MMM')}` : undefined
@@ -362,6 +374,7 @@ const hasUnsavedChanges = computed(() => {
     || !!echocardiogramsPerformedInput.value
     || !!echocardiogramsCorrectDiagnosisInput.value
     || rounds.some(round => Object.keys(round.scores).length > 0
+      || Object.keys(round.notAssessable).length > 0
       || Object.values(round.notes).some(note => note.trim())
       || !!round.notesText.trim())
     || rounds.some(round => round.itemSlugs.length > 0
@@ -379,11 +392,13 @@ function createDraftRound(
 ): DraftRound {
   const scores: Record<string, ScoreValue> = {}
   const notes: Record<string, string> = {}
+  const notAssessable: Record<string, INotAssessable> = {}
 
   if (round) {
     for (const score of [...round.itemScores, ...round.counsellingScores]) {
       scores[score.itemSlug] = score.menteeScore
       if (score.notes) notes[score.itemSlug] = score.notes
+      if (score.notAssessable) notAssessable[score.itemSlug] = score.notAssessable
     }
   }
 
@@ -396,6 +411,7 @@ function createDraftRound(
     gaps: [],
     scores,
     notes,
+    notAssessable,
     notesText: round?.notes ?? '',
     startedAt: round?.startedAt ?? Date.now(),
   }
@@ -430,6 +446,7 @@ function previousAssessment(itemSlug: string): PreviousAssessment | undefined {
         evalDate: new Date(`${evalDateStr.value}T12:00:00`).getTime(),
         sessionNumber: currentSessionNumber.value,
         roundNumber: index + 1,
+        notAssessable: round.notAssessable[itemSlug],
       }
     }
   }
@@ -446,6 +463,7 @@ function previousAssessment(itemSlug: string): PreviousAssessment | undefined {
           evalDate: session.evalDate,
           sessionNumber: sessionsBeforeCurrent.value.findIndex(previous => previous._id === session._id) + 1,
           roundNumber: roundIndex + 1,
+          notAssessable: score.notAssessable,
         }
       }
     }
@@ -499,6 +517,7 @@ function applyPlanChanges(changes: PlanChange[]) {
       if (round) {
         delete round.scores[change.slug]
         delete round.notes[change.slug]
+        delete round.notAssessable[change.slug]
       }
     }
   }
@@ -554,6 +573,7 @@ function addRound() {
 function removeRound(index: number) {
   if (rounds.length <= 1 || !rounds[index]) return
   const hasData = Object.keys(rounds[index].scores).length > 0
+    || Object.keys(rounds[index].notAssessable).length > 0
     || rounds[index].gaps.length > 0
     || !!rounds[index].notesText.trim()
     || Object.values(rounds[index].notes).some(note => note.trim())
@@ -583,6 +603,25 @@ function setScore(slug: string, value: ScoreValue) {
     }
     // N/A has no notes field, so don't keep a hidden note from an earlier score.
     if (value === null) delete activeRound.value.notes[slug]
+    // Any score, including N/A, replaces a not-assessable mark in this round.
+    delete activeRound.value.notAssessable[slug]
+  }
+}
+
+// Mark an item not assessable in the active round, or remove the mark. The
+// score is null while marked; removing the mark leaves the item unscored.
+function setNotAssessable(slug: string, value: INotAssessable | undefined) {
+  const round = activeRound.value
+  if (!round) return
+  if (value) {
+    round.scores = { ...round.scores, [slug]: null }
+    round.notAssessable = { ...round.notAssessable, [slug]: value }
+    delete round.notes[slug]
+  } else {
+    const { [slug]: _removed, ...rest } = round.notAssessable
+    round.notAssessable = rest
+    const { [slug]: _score, ...scores } = round.scores
+    round.scores = scores
   }
 }
 
@@ -608,8 +647,9 @@ function roundScores(round: DraftRound, kind: ItemKind): IItemScore[] {
     .filter(slug => allowedSlugs.has(slug) && hasScore(round, slug))
     .map(itemSlug => ({
       itemSlug,
-      menteeScore: round.scores[itemSlug] ?? null,
+      menteeScore: round.notAssessable[itemSlug] ? null : round.scores[itemSlug] ?? null,
       notes: round.notes[itemSlug]?.trim() || undefined,
+      ...(round.notAssessable[itemSlug] ? { notAssessable: round.notAssessable[itemSlug] } : {}),
     }))
 }
 
@@ -636,12 +676,20 @@ function buildReviewPayload() {
       let evaluated = false
       let score: ScoreValue = null
       let note = ''
+      let notAssessable: INotAssessable | undefined
+      // The latest entry wins: a score lifts an earlier mark, a mark replaces an earlier score.
       for (const round of reviewRounds) {
         const scores = item.kind === 'counselling' ? round.counsellingScores : round.itemScores
         const current = scores.find(candidate => candidate.itemSlug === item.slug)
         if (current) {
           evaluated = true
-          if (current.menteeScore !== null) score = current.menteeScore
+          if (current.menteeScore !== null) {
+            score = current.menteeScore
+            notAssessable = undefined
+          } else if (current.notAssessable) {
+            score = null
+            notAssessable = current.notAssessable
+          }
           if (current.notes) note = current.notes
         }
       }
@@ -654,6 +702,7 @@ function buildReviewPayload() {
         score,
         notes: note,
         evaluated,
+        ...(notAssessable ? { notAssessable } : {}),
       }
     })
 
@@ -731,6 +780,7 @@ function hydrateDraft(draft: Record<string, unknown>): boolean {
       gaps: Array.isArray(round.gaps) ? round.gaps : [],
       scores: round.scores ?? {},
       notes: round.notes ?? {},
+      notAssessable: round.notAssessable ?? {},
       notesText: round.notesText ?? '',
       startedAt: round.startedAt ?? Date.now(),
     })))
@@ -993,7 +1043,14 @@ function viewEvaluation() {
               <span class="flex-1 text-base leading-snug text-gray-900 dark:text-gray-100">
                 {{ item.title }}
                 <span
-                  v-if="item.kind === 'tool' && achievedLabel(item.slug)"
+                  v-if="item.kind === 'tool' && notAssessableChip(item.slug)"
+                  class="mt-1 flex w-fit items-center gap-1 rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-800 dark:bg-slate-700 dark:text-slate-100"
+                >
+                  <UIcon name="i-heroicons-no-symbol" class="size-4" />
+                  {{ notAssessableChip(item.slug) }}
+                </span>
+                <span
+                  v-else-if="item.kind === 'tool' && achievedLabel(item.slug)"
                   class="mt-1 flex w-fit items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800 dark:bg-green-900/40 dark:text-green-200"
                 >
                   <UIcon name="i-heroicons-check-circle" class="size-4" />
@@ -1105,8 +1162,11 @@ function viewEvaluation() {
               :counselling="item.kind === 'counselling'"
               :context="itemContext(item.slug)"
               :note="activeRound?.notes[item.slug]"
+              :allow-not-assessable="item.kind === 'tool'"
+              :not-assessable="activeRound?.notAssessable[item.slug]"
               @note="setItemNote(item.slug, $event)"
               @score="setScore(item.slug, $event)"
+              @not-assessable="setNotAssessable(item.slug, $event)"
             />
           </div>
         </section>

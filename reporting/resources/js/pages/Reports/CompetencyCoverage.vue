@@ -214,7 +214,12 @@ const heatmapUrl = (groupId) => `/journey-heatmap?group_id=${encodeURIComponent(
                                     {{ j.lastSessionDate }}
                                     <span class="block text-xs text-muted-foreground">by {{ j.lastEvaluator ?? 'unknown' }} · {{ j.totalSessions }} session{{ j.totalSessions === 1 ? '' : 's' }}</span>
                                 </td>
-                                <td class="px-4 py-3 text-right tabular-nums">{{ j.requiredAchieved }} of {{ j.requiredItems }}</td>
+                                <td class="px-4 py-3 text-right tabular-nums">
+                                    {{ j.requiredAchieved }} of {{ j.requiredItems }}
+                                    <span v-if="j.notAssessableCount" class="block text-xs text-muted-foreground">
+                                        {{ j.notAssessableCount }} not assessable
+                                    </span>
+                                </td>
                                 <td class="px-4 py-3 text-right tabular-nums">
                                     <span :class="j.neverCount > 0 ? 'font-semibold text-red-600' : 'text-muted-foreground'">{{ j.neverCount }}</span>
                                 </td>

@@ -8,11 +8,13 @@ import {
   MENTOR_LABELS,
   NA_LABEL,
   SCORE_LABELS,
+  notAssessableLabel,
   scoreBackground,
   scoreTextColor,
   toolIncludesCounselling,
 } from '~/data/evaluationItemData'
 import { getCompetencyBreakdown, getLatestItemScores } from '~/composables/useCompetency'
+import type { INotAssessable } from '~/interfaces/IItemScore'
 
 /**
  * Paper-style view of a journey: competencies down the side, sessions across
@@ -59,28 +61,40 @@ const columns = computed(() => ordered.value.map((session, index) => ({
 })))
 
 interface CellValue {
-  /** 1-5, null for N/A, undefined when the session didn't evaluate the item. */
+  /** 1-5, null for N/A or not assessable, undefined when the session didn't evaluate the item. */
   score: Score | null | undefined
   note?: string
+  /** Set when the session's latest entry for the item marks it not assessable. */
+  notAssessable?: INotAssessable
 }
 
-// What each session recorded for an item: its latest non-N/A score across the
-// session's rounds, else N/A if it was only marked N/A, else nothing.
+// What each session recorded for an item: its latest non-N/A entry across the
+// session's rounds (a score or a not-assessable mark), else N/A if it was only
+// marked N/A, else nothing.
 function sessionValue(session: ISession, slug: string, kind: 'tool' | 'counselling'): CellValue {
   let score: Score | null | undefined
   let note: string | undefined
+  let notAssessable: INotAssessable | undefined
   for (const round of roundsOf(session)) {
     const list = kind === 'tool' ? round.itemScores : round.counsellingScores
     const entry = (list ?? []).find(s => s.itemSlug === slug)
     if (!entry) continue
-    if (entry.menteeScore !== null) score = entry.menteeScore
-    else if (score === undefined) score = null
+    if (entry.menteeScore !== null) {
+      score = entry.menteeScore
+      notAssessable = undefined
+    } else if (entry.notAssessable) {
+      score = null
+      notAssessable = entry.notAssessable
+    } else if (score === undefined) score = null
     if (entry.notes?.trim()) note = entry.notes.trim()
   }
-  return { score, note }
+  return { score, note, notAssessable }
 }
 
+const NOT_ASSESSABLE_STYLE = { backgroundColor: '#cbd5e1', color: '#0f172a' }
+
 const breakdown = computed(() => getCompetencyBreakdown(props.sessions, props.tool))
+const notAssessableSlugs = computed(() => new Set(breakdown.value.notAssessable.map(entry => entry.item.slug)))
 const latestScores = computed(() => getLatestItemScores(props.sessions))
 
 const selected = ref<{ slug: string; column: number } | null>(null)
@@ -94,13 +108,14 @@ function buildRow(item: IEvalItem, kind: 'tool' | 'counselling') {
   const cells = ordered.value.map((session, column) => {
     const value = sessionValue(session, item.slug, kind)
     const isSelected = selected.value?.slug === item.slug && selected.value.column === column
+    const label = value.notAssessable ? '⊘' : value.score === undefined ? '–' : value.score === null ? 'N/A' : String(value.score)
     return {
       column,
       ...value,
-      label: value.score === undefined ? '–' : value.score === null ? 'N/A' : String(value.score),
-      style: cellStyle(value.score),
+      label,
+      style: value.notAssessable ? NOT_ASSESSABLE_STYLE : cellStyle(value.score),
       isSelected,
-      aria: `${item.number}, session ${column + 1}: ${value.score === undefined ? 'not scored' : value.score === null ? 'N/A' : `score ${value.score}`}`,
+      aria: `${item.number}, session ${column + 1}: ${value.notAssessable ? 'not assessable' : value.score === undefined ? 'not scored' : value.score === null ? 'N/A' : `score ${value.score}`}`,
     }
   })
 
@@ -115,8 +130,10 @@ function buildRow(item: IEvalItem, kind: 'tool' | 'counselling') {
   }
 
   const achieved = latest !== undefined && latest >= 4
+  const marked = kind === 'tool' && notAssessableSlugs.value.has(item.slug)
   let status: { label: string; tone: 'achieved' | 'pending' | 'neutral' }
   if (kind === 'counselling') status = { label: 'Not counted', tone: 'neutral' }
+  else if (marked) status = { label: 'Not assessable', tone: 'neutral' }
   else if (achieved) status = { label: 'Achieved', tone: 'achieved' }
   else if (item.isAdvanced) status = { label: 'Not required', tone: 'neutral' }
   else status = { label: 'Not yet', tone: 'pending' }
@@ -182,9 +199,11 @@ const detail = computed(() => {
       date: column.date,
       label: cell.label,
       style: cell.style,
-      mentee: cell.score === null ? NA_LABEL : SCORE_LABELS[cell.score],
+      mentee: cell.notAssessable
+        ? `Not assessable · ${notAssessableLabel(cell.notAssessable.reason)}`
+        : cell.score === null ? NA_LABEL : SCORE_LABELS[cell.score],
       mentor: cell.score === null ? undefined : MENTOR_LABELS[cell.score],
-      note: cell.note,
+      note: cell.notAssessable?.note ?? cell.note,
     }
   }
   return null
@@ -202,7 +221,8 @@ const legend = [
     style: cellStyle(score),
     dashed: false,
   })),
-  { key: 'na', label: 'N/A', name: 'Not evaluated', style: cellStyle(null), dashed: false },
+  { key: 'na', label: 'N/A', name: 'Not observed', style: cellStyle(null), dashed: false },
+  { key: 'not-assessable', label: '⊘', name: 'Not assessable here', style: NOT_ASSESSABLE_STYLE, dashed: false },
   { key: 'none', label: '–', name: 'Not scored that session', style: undefined, dashed: true },
 ]
 </script>
@@ -217,6 +237,9 @@ const legend = [
         </p>
         <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
           An item is achieved once its latest score is 4 or 5. The mentee reaches Basic Competent when every required item is achieved. Advanced items are not required.
+          <template v-if="breakdown.notAssessable.length">
+            {{ breakdown.notAssessable.length }} item{{ breakdown.notAssessable.length === 1 ? ' is' : 's are' }} not assessable here and {{ breakdown.notAssessable.length === 1 ? "doesn't" : "don't" }} count.
+          </template>
         </p>
         <div
           class="mt-3 h-3 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700"

@@ -3,7 +3,7 @@ import { useSessionStore } from '~/stores/sessionStore'
 import { useGapStore } from '~/stores/gapStore'
 import { useUserStore } from '~/stores/userStore'
 import { getToolBySlug } from '~/data/evaluationItemData'
-import { useCompetency } from '~/composables/useCompetency'
+import { getCompetencyBreakdown, useCompetency } from '~/composables/useCompetency'
 import { calculateAverage } from '~/composables/useSessionCalculations'
 import type { IGapEntry } from '~/interfaces/IGapEntry'
 import type { ISession } from '~/interfaces/ISession'
@@ -11,6 +11,7 @@ import JourneySummaryCard from '~/components/journey/SummaryCard.vue'
 import JourneySessionCard from '~/components/journey/SessionCard.vue'
 import JourneyCompetencyGrid from '~/components/journey/CompetencyGrid.vue'
 import JourneyCoverageCard from '~/components/journey/CoverageCard.vue'
+import JourneyNotAssessableCard from '~/components/journey/NotAssessableCard.vue'
 import GapCard from '~/components/gap/GapCard.vue'
 import GapForm from '~/components/gap/GapForm.vue'
 
@@ -145,6 +146,9 @@ const { status: competencyStatus, isBasicCompetent } = useCompetency(
   tool,
 )
 
+// Items marked not assessable here; shown with the competency status.
+const notAssessableCount = computed(() => getCompetencyBreakdown(sessions.value, tool.value).notAssessable.length)
+
 const averageScore = computed(() => {
   if (sessions.value.length === 0) return '0'
   const latestSession = sessions.value[0]
@@ -256,6 +260,7 @@ async function confirmResolve() {
             :class="competencyStatus === 'fully_competent' ? 'text-teal-800 dark:text-teal-200' : 'text-green-800 dark:text-green-200'"
           >
             {{ competencyStatus === 'fully_competent' ? 'Fully Competent' : 'Basic Competency Reached' }}
+            <template v-if="notAssessableCount"> · {{ notAssessableCount }} item{{ notAssessableCount === 1 ? '' : 's' }} not assessable</template>
           </p>
           <p
             class="text-xs mt-0.5"
@@ -271,6 +276,8 @@ async function confirmResolve() {
       </div>
 
       <JourneyCoverageCard v-if="sessions.length > 0 && !isBasicCompetent" :sessions="sessions" :tool="tool" />
+
+      <JourneyNotAssessableCard v-if="sessions.length > 0" :sessions="sessions" :tool="tool" />
 
       <JourneyEchoActivityCard v-if="toolSlug === 'echo' && sessions.length > 0" :sessions="sessions" />
 

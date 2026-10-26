@@ -1,4 +1,5 @@
 import type { IItemGroup, ITool, IToolTheme } from '../interfaces/ITool'
+import type { NotAssessableReason } from '../interfaces/IItemScore'
 
 export const SCORE_LABELS: Record<1 | 2 | 3 | 4 | 5, string> = {
   1: 'Does not demonstrate competency',
@@ -8,7 +9,30 @@ export const SCORE_LABELS: Record<1 | 2 | 3 | 4 | 5, string> = {
   5: 'Demonstrates exceptional competency',
 }
 
-export const NA_LABEL = 'The competency cannot be evaluated'
+// Relabelled from the paper tool's "The competency cannot be evaluated" so it
+// isn't confused with Not assessable (see NOT_ASSESSABLE_REASONS).
+export const NA_LABEL = 'Not observed this visit'
+
+/**
+ * Why a competency can't be assessed at the mentee's facility. Marking an item
+ * not assessable takes it out of the competency requirement for this mentee's
+ * journey until a later score replaces it. Codes are stored; labels can change.
+ */
+export const NOT_ASSESSABLE_REASONS: ReadonlyArray<{ value: NotAssessableReason; label: string; hint: string }> = [
+  { value: 'medicine_unavailable', label: 'Medicine not available', hint: 'e.g. ACE inhibitors, hydroxyurea, morphine, inhaled steroids' },
+  { value: 'lab_test_unavailable', label: 'Laboratory test not available', hint: 'e.g. creatinine, potassium, HbA1c, Hb electrophoresis, FBC' },
+  { value: 'equipment_unavailable', label: 'Equipment or imaging not available', hint: 'e.g. spirometry, ECG, X-ray, ultrasound, glucometer' },
+  { value: 'referral_unavailable', label: 'Referral service not available', hint: 'e.g. cardiologist, nephrology, dialysis, physical therapy' },
+  { value: 'service_not_offered', label: 'Service not offered at this facility', hint: 'e.g. no inpatient ward, no antenatal care' },
+  { value: 'patient_group_not_seen', label: 'Patient group not seen at this facility', hint: 'e.g. pregnant women or children never seen here' },
+  { value: 'not_locally_relevant', label: 'Not relevant in the local context', hint: 'e.g. Ramadan insulin titration' },
+  { value: 'outside_scope_of_practice', label: "Outside the mentee's scope of practice", hint: 'e.g. not permitted to prescribe under national policy' },
+  { value: 'other', label: 'Other', hint: 'Please specify in the note' },
+]
+
+export function notAssessableLabel(reason: NotAssessableReason | undefined): string {
+  return NOT_ASSESSABLE_REASONS.find(r => r.value === reason)?.label ?? 'Not assessable'
+}
 
 /** Whether sessions with this tool include the general counselling competencies. */
 export function toolIncludesCounselling(tool: { includesCounselling?: boolean } | null | undefined): boolean {

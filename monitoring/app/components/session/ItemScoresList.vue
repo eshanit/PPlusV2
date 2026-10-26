@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import ScoreChip from './ScoreChip.vue'
+import type { INotAssessable } from '~/interfaces/IItemScore'
 import { getScoreChangeDisplay } from '~/composables/useSessionCalculations'
 
 interface ItemScore {
   itemSlug: string
   menteeScore: number | null
   notes?: string
+  notAssessable?: INotAssessable
   /** False when the item was planned but never scored. Defaults to true. */
   evaluated?: boolean
 }
@@ -40,7 +42,7 @@ const rows = computed(() => props.items.map((score) => {
     score,
     meta,
     previous,
-    change: getScoreChangeDisplay(score.menteeScore, previous),
+    change: score.notAssessable ? undefined : getScoreChangeDisplay(score.menteeScore, previous),
   }
 }))
 </script>
@@ -83,11 +85,19 @@ const rows = computed(() => props.items.map((score) => {
               <p v-if="score.notes" class="mt-1 text-sm text-gray-600 dark:text-gray-300">
                 <span class="font-semibold">Note:</span> {{ score.notes }}
               </p>
+              <p v-if="score.notAssessable?.note" class="mt-1 text-sm text-slate-700 dark:text-slate-300">
+                <span class="font-semibold">Why not assessable:</span> {{ score.notAssessable.note }}
+              </p>
             </div>
           </div>
 
           <div class="flex shrink-0 flex-col items-start gap-1 md:w-[19rem] md:items-end">
-            <ScoreChip :score="score.menteeScore" :evaluated="score.evaluated ?? true" size="sm" />
+            <ScoreChip
+              :score="score.menteeScore"
+              :evaluated="score.evaluated ?? true"
+              :not-assessable="score.notAssessable?.reason"
+              size="sm"
+            />
             <span
               v-if="change"
               class="inline-flex items-center gap-1 text-sm font-semibold"

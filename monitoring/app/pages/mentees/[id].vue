@@ -53,14 +53,14 @@
               <div class="flex flex-col items-end gap-1.5 shrink-0">
                 <UBadge
                   v-if="journey.competencyStatus === 'fully_competent'"
-                  label="Fully Competent"
+                  :label="`Fully Competent${journey.notAssessable ? ` · ${journey.notAssessable} not assessable` : ''}`"
                   color="success"
                   variant="solid"
                   size="md"
                 />
                 <UBadge
                   v-else-if="journey.competencyStatus === 'basic_competent'"
-                  label="Basic Competent"
+                  :label="`Basic Competent${journey.notAssessable ? ` · ${journey.notAssessable} not assessable` : ''}`"
                   color="success"
                   variant="soft"
                   size="md"
@@ -191,7 +191,7 @@ import { useSessionStore } from '~/stores/sessionStore'
 import { useGapStore } from '~/stores/gapStore'
 import { evaluationTools } from '~/data/evaluationItemData'
 import type { MentorshipPhase } from '~/interfaces/ISession'
-import { getCompetencyStatus, type CompetencyStatus } from '~/composables/useCompetency'
+import { getCompetencyBreakdown, type CompetencyStatus } from '~/composables/useCompetency'
 import { getJourneyCoverage } from '~/composables/useCoverage'
 
 const route = useRoute()
@@ -235,6 +235,7 @@ interface Journey {
   lastEvaluator: string
   lastEvaluatorIsMe: boolean
   notYetEvaluated: number
+  notAssessable: number
 }
 
 const journeys = computed((): Journey[] => {
@@ -261,7 +262,8 @@ const journeys = computed((): Journey[] => {
     const openGaps = gapStore.gaps.filter(
       g => g.evaluationGroupId === groupId && !g.resolvedAt
     ).length
-    const competencyStatus = getCompetencyStatus(sessions, tool)
+    const breakdown = getCompetencyBreakdown(sessions, tool)
+    const competencyStatus = breakdown.status
     const isClosed = competencyStatus === 'basic_competent' || competencyStatus === 'fully_competent'
     const lastEvaluator = sorted[0]!.evaluator
     const coverage = isClosed ? null : getJourneyCoverage(sessions, tool)
@@ -280,6 +282,7 @@ const journeys = computed((): Journey[] => {
       lastEvaluator: `${lastEvaluator.firstname} ${lastEvaluator.lastname}`.trim(),
       lastEvaluatorIsMe: lastEvaluator.id === userStore.currentUser?.id,
       notYetEvaluated: coverage?.neverRequired.length ?? 0,
+      notAssessable: breakdown.notAssessable.length,
     }
   }).sort((a, b) => b.lastSessionDate - a.lastSessionDate)
 })

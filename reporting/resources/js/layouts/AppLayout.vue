@@ -3,6 +3,7 @@ import Button from '../components/ui/Button.vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import {
     Activity,
+    Ban,
     BarChart2,
     BarChart3,
     ChevronRight,
@@ -44,6 +45,7 @@ const sections = computed(() => {
             items: [
                 { href: '/journey-status', label: 'Journey Status', icon: Target },
                 { href: '/competency-coverage', label: 'Competency Coverage', icon: ListChecks },
+                { href: '/not-assessable', label: 'Not Assessable', icon: Ban },
                 { href: '/tool-analysis', label: 'Tool Analysis', icon: BarChart2 },
                 { href: '/tool-score-distribution', label: 'Score Distribution', icon: PieChart },
                 { href: '/hot-spots', label: 'Hot Spots', icon: Flame, pro: true },
